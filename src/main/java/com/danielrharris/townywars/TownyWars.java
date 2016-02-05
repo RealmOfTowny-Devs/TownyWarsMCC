@@ -1,4 +1,4 @@
-package main.java.com.danielrharris.townywars;
+package com.danielrharris.townywars;
 
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.object.Nation;

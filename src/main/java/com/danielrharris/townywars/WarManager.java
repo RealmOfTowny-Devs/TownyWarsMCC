@@ -1,4 +1,4 @@
-package main.java.com.danielrharris.townywars;
+package com.danielrharris.townywars;
 
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.EconomyException;
@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import main.java.com.danielrharris.townywars.War.MutableInteger;
+import com.danielrharris.townywars.War.MutableInteger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

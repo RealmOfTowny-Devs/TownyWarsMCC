@@ -1,4 +1,4 @@
-package main.java.com.danielrharris.townywars;
+package com.danielrharris.townywars;
 
 // some extra resident fields needed to properly record deaths
 public class TownyWarsResident{

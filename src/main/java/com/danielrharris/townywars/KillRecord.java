@@ -1,4 +1,4 @@
-package main.java.com.danielrharris.townywars;
+package com.danielrharris.townywars;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

@@ -1,0 +1,11 @@
+name: TownyWars
+version: 1.1.5
+authors: [DanielRHarris]
+main: com.danielrharris.townywars.TownyWars
+depend: [Towny]
+commands:
+  twar:
+    usage: No permission!
+  twar neutral:
+    permission: townywars.neutral
+    usage: Syntax error! Perhaps you meant /twar neutral [nation]
