@@ -13,11 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +28,7 @@ import java.util.logging.Logger;
 
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -37,6 +41,11 @@ public class TownyWars
   public static double pKill;
   public static double declareCost;
   public static double endCost;
+  public static boolean allowGriefing;
+  public static boolean allowRollback;
+  public static ArrayList<String> worldBlackList;
+  private ArrayList<String> blockStringBlackList;
+  public static Set<Material> blockBlackList;
   
   public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
   
@@ -94,6 +103,11 @@ public class TownyWars
     getConfig().addDefault("declare-cost", Double.valueOf(10.0D));
     getConfig().addDefault("end-cost", Double.valueOf(0.0D));
     getConfig().addDefault("death-cost", Double.valueOf(0.0D));
+    getConfig().createSection("griefing");
+    getConfig().addDefault("griefing.allow-griefing", Boolean.valueOf("FALSE"));
+    getConfig().addDefault("griefing.allow-rollback", Boolean.valueOf("TRUE"));
+    getConfig().addDefault("griefing.worldBlackList", new ArrayList<String>());
+    getConfig().addDefault("griefing.blockBlackList", new ArrayList<String>());
     getConfig().options().copyDefaults(true);
     saveConfig();
     
@@ -102,7 +116,14 @@ public class TownyWars
     declareCost = getConfig().getDouble("declare-cost");
     endCost = getConfig().getDouble("end-cost");
     pKill = getConfig().getDouble("death-cost");
-    
+    allowGriefing = getConfig().getBoolean("griefing.allow-griefing");
+    allowRollback = getConfig().getBoolean("griefing.allow-rollback");
+    for(String string : (ArrayList<String>) getConfig().getStringList("griefing.worldBlackList")){
+    	worldBlackList.add(string.toLowerCase());
+    }   
+    this.blockStringBlackList = (ArrayList<String>) getConfig().getStringList("griefing.blockBlackList");
+    blockBlackList = convertBanList(this.blockStringBlackList);
+     
     try{
     	for (Resident re : tUniverse.getActiveResidents()){
     		if (allTownyWarsResidents.get(re.getName())==null){
@@ -156,5 +177,17 @@ public class TownyWars
 		// all good!
 		return 0;
 	}
-  
+  	
+  	public Set<Material> convertBanList(List<String> banList2){
+  		Set<Material> newBanList = new HashSet<Material>();
+		if(!banList2.equals(null)){
+			for(String s : banList2){
+				Material mat = Material.valueOf(s.toUpperCase());
+				if(!mat.equals(null)){
+					newBanList.add(mat);
+				}
+			}
+		}
+		return newBanList;
+	}
 }

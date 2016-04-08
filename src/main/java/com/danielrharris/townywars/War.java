@@ -286,6 +286,7 @@ public class War {
 						* town.getTownBlocks().size())));
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void broadcast(Nation n, String message) {
 		for (Resident re : n.getResidents()) {
 			Player plr = Bukkit.getPlayer(re.getName());
