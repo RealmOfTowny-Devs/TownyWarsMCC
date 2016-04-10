@@ -39,6 +39,7 @@ public class TownyWars
   public static double pPlayer;
   public static double pPlot;
   public static double pKill;
+  public static double pBlock;
   public static double declareCost;
   public static double endCost;
   public static boolean allowGriefing;
@@ -54,7 +55,8 @@ public class TownyWars
   private static final Charset utf8 = StandardCharsets.UTF_8;
 	
   private static final String deathsFile="deaths.txt";
- 
+
+  @Override
   public void onDisable()
   {
     try
@@ -67,7 +69,7 @@ public class TownyWars
     }
   }
   
-  
+  @Override
   public void onEnable()
   {
     try
@@ -98,26 +100,20 @@ public class TownyWars
     
     TownyUniverse.getDataSource().saveTowns();
     
-    getConfig().addDefault("pper-player", Double.valueOf(2.0D));
-    getConfig().addDefault("pper-plot", Double.valueOf(0.5D));
-    getConfig().addDefault("declare-cost", Double.valueOf(10.0D));
-    getConfig().addDefault("end-cost", Double.valueOf(0.0D));
-    getConfig().addDefault("death-cost", Double.valueOf(0.0D));
-    getConfig().createSection("griefing");
-    getConfig().addDefault("griefing.allow-griefing", Boolean.valueOf("FALSE"));
-    getConfig().addDefault("griefing.allow-rollback", Boolean.valueOf("TRUE"));
-    getConfig().addDefault("griefing.worldBlackList", new ArrayList<String>());
-    getConfig().addDefault("griefing.blockBlackList", new ArrayList<String>());
-    getConfig().options().copyDefaults(true);
-    saveConfig();
+    this.saveDefaultConfig();
     
     pPlayer = getConfig().getDouble("pper-player");
     pPlot = getConfig().getDouble("pper-plot");
     declareCost = getConfig().getDouble("declare-cost");
     endCost = getConfig().getDouble("end-cost");
     pKill = getConfig().getDouble("death-cost");
-    allowGriefing = getConfig().getBoolean("griefing.allow-griefing");
-    allowRollback = getConfig().getBoolean("griefing.allow-rollback");
+    String allowGriefingS;
+    allowGriefingS = getConfig().getString("griefing.allow-griefing");
+    String allowRollbackS;
+    allowRollbackS = getConfig().getString("griefing.allow-rollback");
+    allowGriefing = Boolean.valueOf(allowGriefingS.toUpperCase());
+    allowRollback = Boolean.valueOf(allowRollbackS.toUpperCase());
+    pBlock = getConfig().getDouble("griefing.per-block-cost");
     for(String string : (ArrayList<String>) getConfig().getStringList("griefing.worldBlackList")){
     	worldBlackList.add(string.toLowerCase());
     }   

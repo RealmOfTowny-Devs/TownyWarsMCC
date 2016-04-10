@@ -7,24 +7,32 @@ import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
 
+import me.drkmatr1984.BlocksAPI.utils.SBlock;
+
+import java.text.DecimalFormat;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 
 
 class WarExecutor implements CommandExecutor
 {
   private TownyWars plugin;
+  private GriefManager gm;
  
    public WarExecutor(TownyWars aThis)
   {
     this.plugin = aThis;
+    this.gm = new GriefManager(plugin);
   }
   
   public boolean onCommand(CommandSender cs, Command cmnd, String string, String[] strings)
@@ -129,6 +137,56 @@ class WarExecutor implements CommandExecutor
       }
       return true;
     }
+    if (farg.equals("repair"))
+    {
+    	if(cs instanceof Player){
+    		Player p = (Player) cs;
+        	unknownCommand=false;
+        	int numBlocks = 0;
+        	String yesNo = "[{\"text\":\"Yes\",\"color\":\"green\",\"bold\":true,\"clickEvent\":{\"action\":\"run_command\",\"value\":\"twar repair yes\"}},{\"text\":\"/\",\"color\":\"white\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"YourCommand\"}},{\"text\":\"No\",\"color\":\"dark_red\",\"bold\":true,\"clickEvent\":{\"action\":\"run_command\",\"value\":\"twar repair no\"}}]";
+        	Town town = null;
+        	double price = 0;
+        	DecimalFormat d = new DecimalFormat("#.00");
+        	try {
+    			
+				town = TownyUniverse.getDataSource().getResident(p.getName()).getTown();
+				
+				for(SBlock b : gm.loadData(town)){
+					if(b.getType()!=Material.AIR){
+						numBlocks++;
+					}
+				}
+				price = Math.round((numBlocks * TownyWars.pBlock)*1e2)/1e2;
+    		} catch (NotRegisteredException e) {
+				p.sendMessage(ChatColor.RED + "You are not in a Town!");
+				return true;
+			}		
+    		if (strings.length == 0 && town!=null){   			
+    			if(numBlocks > 0){
+    				//Rollback everything, charge for block destructions								
+    				p.sendMessage(ChatColor.GREEN + "Price to Repair " + ChatColor.WHITE+ ": " + ChatColor.YELLOW + d.format(price));
+    				p.sendRawMessage(yesNo);
+    			}else if(numBlocks == 0 && gm.loadData(town).size() > 0){
+    				p.sendMessage(ChatColor.GREEN + "Price to Repair " + ChatColor.WHITE+ ": " + ChatColor.YELLOW + d.format(price));
+    				p.sendRawMessage(yesNo);
+    				//rollback block places only (free)
+    			}else if(numBlocks == 0 && (gm.loadData(town).isEmpty() || gm.loadData(town)==null)){
+    				//nothing to rollback
+    			}		   			
+        	}
+    		if (strings.length == 1 && town!=null){
+    			String response = ChatColor.stripColor(strings[1]).toLowerCase();
+    			if(response.equals("yes")){
+    				//yes, so do the repairs
+    				gm.rollbackBlocks(town);
+    			}
+    			if(response.equals("no")){
+    				//no, so skip em
+    			}
+    		}
+        }  
+    }
+    
     if (farg.equals("showtowndp")){
     	unknownCommand=false;
     	Town town = null;

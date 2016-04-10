@@ -6,13 +6,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.material.Attachable;
+import org.bukkit.material.PistonExtensionMaterial;
 
 import com.palmergames.bukkit.towny.object.Town;
 
+import me.drkmatr1984.BlocksAPI.tasks.DelayedRegenTask;
 import me.drkmatr1984.BlocksAPI.utils.BlockSerialization;
 import me.drkmatr1984.BlocksAPI.utils.SBlock;
+import me.drkmatr1984.BlocksAPI.utils.Utils;
 
 //Make into a class that stores the blocks in data files per town among other uses
 public class GriefManager
@@ -21,13 +29,13 @@ public class GriefManager
 	private File townDataFolder;
 	private File townData;
 	private FileConfiguration blocks;
-	private Set<SBlock> blocksBroken = new HashSet<SBlock>();
 	
 	public GriefManager(TownyWars plugin){
 		this.plugin = plugin;
 	}
 	
 	public Set<SBlock> loadData(Town town){
+		Set<SBlock> blocksBroken = new HashSet<SBlock>();
 		String listSerial = "";
 		int size;
 		townDataFolder = new File(plugin.getDataFolder().toString() + "/towndata");
@@ -103,4 +111,26 @@ public class GriefManager
 			return false;
 		}
 	}
+	
+	@SuppressWarnings({ "deprecation" })
+	public void rollbackBlocks(Town town){
+		Set<SBlock> sBlocks = loadData(town);
+		townDataFolder = new File(plugin.getDataFolder().toString() + "/towndata");
+		townData = new File(townDataFolder, (town.getName().toLowerCase() + ".yml"));
+		int delay = 1;
+    	for(SBlock sb : sBlocks){
+    		Location l = new Location(Bukkit.getServer().getWorld(sb.world),sb.x,sb.y,sb.z);
+    		Block bl = l.getBlock();
+    		BlockState blockState = bl.getState();
+    		Material mat = Material.valueOf(sb.mat);
+    		bl.setTypeIdAndData(mat.getId(), sb.data, true);
+    		if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
+    			new DelayedRegenTask(sb).runTaskLaterAsynchronously(plugin, delay+3);
+    		}else{
+    			new DelayedRegenTask(sb).runTaskLaterAsynchronously(plugin, delay);
+    		}
+    		delay++;
+    	}   	
+	}
+	
 }

@@ -33,6 +33,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -51,23 +52,26 @@ public class WarListener implements Listener
 	}
 	
 	//Here's where I'll grab the block break event and make it record broken blocks
-	@SuppressWarnings("deprecation")
 	//during war
-	@EventHandler(priority=EventPriority.HIGH, ignoreCancelled=true)
+	@SuppressWarnings("unused")
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
 	public void onWarTownDamage(BlockBreakEvent event){
 		if(TownyWars.allowGriefing){
 			Block block = event.getBlock();
 			Town town = null;
-			if(TownyWars.worldBlackList.contains(block.getWorld().getName().toString().toLowerCase())){
-				return;
-			}
-			if(TownyWars.blockBlackList.contains(block.getType())){
-				return;
-			}
+			if(TownyWars.worldBlackList!=(null))
+				if(TownyWars.worldBlackList.contains(block.getWorld().getName().toString().toLowerCase())){
+					return;
+				}
+			if(TownyWars.blockBlackList!=(null))
+				if(TownyWars.blockBlackList.contains(block.getType())){
+					return;
+				}
 			if(event.getPlayer()!=null){		
 				HashSet<SBlock> sBlocks = new HashSet<SBlock>();
 				Player p = event.getPlayer();
 				Entity entity = (Entity) p;
+				Town otherTown = null;
 				boolean atWar = false;
 				try
 				{
@@ -87,7 +91,7 @@ public class WarListener implements Listener
 							{
 								if(TownyUniverse.getTownBlock(block.getLocation())!=null){
 									TownBlock townBlock = TownyUniverse.getTownBlock(block.getLocation());
-									Town otherTown = townBlock.getTown();
+									otherTown = townBlock.getTown();
 									if(otherTown!=re.getTown()){
 										if(otherTown.getNation()!=null){
 											Nation otherNation = otherTown.getNation();
@@ -148,17 +152,81 @@ public class WarListener implements Listener
 						}else{
 							sBlocks.add(new SBlock(block));
 						}
-						mplugin.getServer().getScheduler().scheduleAsyncDelayedTask(mplugin, new SaveTask(m, town, sBlocks){
-							public void run() {		
-							}
-		    			}, 1L);						
+						new SaveTask(m, otherTown, sBlocks).runTaskLater(mplugin, 1L);			
 					}
 					//Set the event as not cancelled to override any protections in place
 					event.setCancelled(false);
 				}
 			}
 		}
-		//Record the broken blocks in an array and a file
+	}
+	
+	@SuppressWarnings("unused")
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+	public void onWarBuild(BlockPlaceEvent event) {
+		if(TownyWars.allowGriefing){
+			Block block = event.getBlock();
+			Town town = null;
+			if(event.getPlayer()!=null){		
+				Player p = event.getPlayer();
+				Entity entity = (Entity) p;
+				Town otherTown = null;
+				boolean atWar = false;
+				try
+				{
+					if(TownyUniverse.getDataSource().getResident(p.getName())!=null)
+					{
+						Resident re = TownyUniverse.getDataSource().getResident(p.getName());
+						if(re.getTown().getNation()!=null){
+							town = re.getTown();
+							Nation nation = re.getTown().getNation();
+							// add the player to the master list if they don't exist in it yet
+							if (mplugin.getTownyWarsResident(re.getName())==null){
+								mplugin.addTownyWarsResident(re.getName());
+								System.out.println("resident added!");
+							}
+							War ww = WarManager.getWarForNation(nation);
+							if (ww != null)
+							{
+								if(TownyUniverse.getTownBlock(block.getLocation())!=null){
+									TownBlock townBlock = TownyUniverse.getTownBlock(block.getLocation());
+									otherTown = townBlock.getTown();
+									if(otherTown!=re.getTown()){
+										if(otherTown.getNation()!=null){
+											Nation otherNation = otherTown.getNation();
+											if(otherNation!=nation){									
+												Set<Nation> nationsInWar = ww.getNationsInWar();
+												if(nationsInWar.contains(otherNation)){
+													//nations are at war with each other
+													atWar = true;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}				
+				}catch (Exception ex) {
+					ex.printStackTrace();
+					return;
+				}
+				if(atWar){
+					if(TownyWars.allowRollback){
+						SBlock sb;
+						if(entity!=null){
+							sb = new SBlock(block, entity);
+						}else{
+							sb = new SBlock(block);
+						}
+						sb.mat = "AIR";
+						new SaveTask(m, otherTown, sb).runTaskLater(mplugin, 1L);
+					}
+					event.setBuild(true);
+					event.setCancelled(false);
+				}
+			}
+		}
 	}
   
 	@EventHandler

@@ -1,0 +1,12 @@
+pper-player: 2.0
+pper-plot: 0.5
+declare-cost: 10.0
+end-cost: 0.0
+death-cost: 0.0
+griefing:
+  allow-griefing: false
+  allow-rollback: true
+  per-block-points: 0.01
+  per-block-cost: 2.0
+  worldBlackList: []
+  blockBlackList: []

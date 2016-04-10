@@ -70,6 +70,13 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/BlocksAPI-0.01.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>me.mrCookieSlime.CSCoreLibPlugin</groupId>
+            <artifactId>CSCoreLib</artifactId>
+            <version>1.4</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/CS-CoreLib_v1.4.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <!-- Build information -->
