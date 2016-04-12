@@ -18,8 +18,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.danielrharris.townywars.War.MutableInteger;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -31,7 +29,7 @@ public class WarManager
   private static String fileSeparator = System.getProperty("file.separator");
   private static Set<War> activeWars = new HashSet<War>();
   private static Set<String> requestedPeace = new HashSet<String>();
-  public static Map<String, MutableInteger> neutral = new HashMap<String, MutableInteger>();
+  public static Map<String, Double> neutral = new HashMap<String, Double>();
   public static Town townremove;
   //private static final int SAVING_VERSION = 1;
   
@@ -121,7 +119,8 @@ public class WarManager
 	  createWar(nat, onat, cs, null);
   }
   
-  public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellion r)
+  @SuppressWarnings("deprecation")
+public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellion r)
   { 
     if ((getWarForNation(nat) != null) || (getWarForNation(onat) != null))
     {
@@ -179,7 +178,8 @@ public class WarManager
 	}
   }
   
-  public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
+  @SuppressWarnings("deprecation")
+public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
   {
 	  
     if ((admin) || (requestedPeace.contains(onat.getName())))

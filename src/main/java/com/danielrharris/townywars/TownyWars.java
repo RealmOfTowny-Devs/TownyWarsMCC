@@ -39,7 +39,11 @@ public class TownyWars
   public static double pPlayer;
   public static double pPlot;
   public static double pKill;
+  public static double pKillPoints;
+  public static double pMayorKill;
+  public static double pKingKill;
   public static double pBlock;
+  public static double pBlockPoints;
   public static double declareCost;
   public static double endCost;
   public static boolean allowGriefing;
@@ -111,6 +115,9 @@ public class TownyWars
     declareCost = getConfig().getDouble("declare-cost");
     endCost = getConfig().getDouble("end-cost");
     pKill = getConfig().getDouble("death-cost");
+    pKillPoints = getConfig().getDouble("pper-player-kill");
+    pMayorKill = getConfig().getDouble("pper-mayor-kill");
+    pKingKill = getConfig().getDouble("pper-king-kill");
     String allowGriefingS;
     allowGriefingS = getConfig().getString("griefing.allow-griefing");
     String allowRollbackS;
@@ -118,6 +125,7 @@ public class TownyWars
     allowGriefing = Boolean.valueOf(allowGriefingS.toUpperCase());
     allowRollback = Boolean.valueOf(allowRollbackS.toUpperCase());
     pBlock = getConfig().getDouble("griefing.per-block-cost");
+    pBlockPoints = getConfig().getDouble("griefing.per-block-points");
     for(String string : (ArrayList<String>) getConfig().getStringList("griefing.worldBlackList")){
     	worldBlackList.add(string.toLowerCase());
     }   

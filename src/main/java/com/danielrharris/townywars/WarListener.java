@@ -6,9 +6,6 @@ import com.palmergames.bukkit.towny.event.NationAddTownEvent;
 import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
 import com.palmergames.bukkit.towny.event.TownAddResidentEvent;
 import com.palmergames.bukkit.towny.event.TownRemoveResidentEvent;
-//import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
-//import com.palmergames.bukkit.towny.exceptions.EconomyException;
-//import com.palmergames.bukkit.towny.exceptions.EmptyNationException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
@@ -77,7 +74,9 @@ public class WarListener implements Listener
 				Player p = event.getPlayer();
 				Entity entity = (Entity) p;
 				Town otherTown = null;
+				Nation otherNation = null;
 				boolean atWar = false;
+				War ww = null;
 				try
 				{
 					if(TownyUniverse.getDataSource().getResident(p.getName())!=null)
@@ -91,7 +90,7 @@ public class WarListener implements Listener
 								mplugin.addTownyWarsResident(re.getName());
 								System.out.println("resident added!");
 							}
-							War ww = WarManager.getWarForNation(nation);
+							ww = WarManager.getWarForNation(nation);
 							if (ww != null)
 							{
 								if(TownyUniverse.getTownBlock(block.getLocation())!=null){
@@ -99,7 +98,7 @@ public class WarListener implements Listener
 									otherTown = townBlock.getTown();
 									if(otherTown!=re.getTown()){
 										if(otherTown.getNation()!=null){
-											Nation otherNation = otherTown.getNation();
+											otherNation = otherTown.getNation();
 											if(otherNation!=nation){									
 												Set<Nation> nationsInWar = ww.getNationsInWar();
 												if(nationsInWar.contains(otherNation)){
@@ -185,41 +184,45 @@ public class WarListener implements Listener
 						}else{
 							sBlocks.add(new SBlock(block));
 						}
-						for(Resident r : otherTown.getResidents()){
-							Player player = Bukkit.getServer().getPlayer(r.getName());
-							if(player!=null){
-								War ww = null;
-								Float percent = 1.0F;
-								try {
-									ww = WarManager.getWarForNation(otherTown.getNation());
-									if(ww != null && !((Double)(War.getTownMaxPoints(otherTown))).equals(null)){
-										try {
-											percent = (float)((ww.getTownPoints(otherTown)/((Double)War.getTownMaxPoints(otherTown)).intValue()));
-											if(TownyWars.isBossBar){
-												if(percent!=0){
-												BossBarAPI.removeAllBars(player);
+						War wwar = null;
+						if(otherNation!=null){
+							for(Resident r : otherNation.getResidents()){
+								if(r.getName()!=null){
+									Player player = Bukkit.getServer().getPlayer(r.getName());
+									if(player!=null){								
+										Float percent = 1.0F;
+										wwar = WarManager.getWarForNation(otherNation);
+										if(wwar != null && !((Double)(War.getTownMaxPoints(otherTown))).equals(null)){
+											try {
+												percent = (float)((wwar.getTownPoints(otherTown)/((Double)War.getTownMaxPoints(otherTown)).intValue()));
 												String message = "&b&l" + otherTown.getName() + " &r&4is Under Attack!";
-												BossBar bossBar = BossBarAPI.addBar(player,
-											       new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', message)), // Displayed message
-												   BossBarAPI.Color.BLUE,
-												   BossBarAPI.Style.NOTCHED_20, 
-												   percent,
-												   500,
-												   500);
+												if(TownyWars.isBossBar){
+													if(percent!=0){
+													BossBarAPI.removeAllBars(player);
+													BossBar bossBar = BossBarAPI.addBar(player,
+												       new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', message)), // Displayed message
+													   BossBarAPI.Color.BLUE,
+													   BossBarAPI.Style.NOTCHED_20, 
+													   percent,
+													   500,
+													   500);
+													}
+												}else{
+													player.sendMessage(message);
 												}
+											} catch (Exception e) {
+												// TODO Auto-generated catch block
+												e.printStackTrace();
 											}
-										} catch (Exception e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										}
+										}				
 									}
-								} catch (NotRegisteredException e1) {
-									// TODO Auto-generated catch block
-									e1.printStackTrace();
-								}				
-							}						
+								}
+														
+							}
 						}
-						new SaveTask(m, otherTown, sBlocks).runTask(mplugin);			
+						double points = (Math.round(((double)(sBlocks.size() * TownyWars.pBlockPoints))*1e2)/1e2);
+						wwar.chargeTownPoints(otherNation, otherTown, points);
+						new SaveTask(m, otherTown, sBlocks).runTask(mplugin);
 					}
 					//Set the event as not cancelled to override any protections in place
 					event.setCancelled(false);
@@ -593,8 +596,46 @@ public class WarListener implements Listener
 			if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName()))) {
 				try
 				{
-					war.chargeTownPoints(damagedd, tdamagedd, 1);
-					int lP = war.getTownPoints(tdamagedd);
+					if(tdamagedd.hasResident(playerName)){
+						Resident res = TownyUniverse.getDataSource().getResident(playerName);
+						Resident killer = TownyUniverse.getDataSource().getResident(playerKiller);
+						String dmessage = "";
+						String kmessage = "";
+						String resTitle = "";
+						String killerTitle = "";
+						if(res.hasTitle()){
+							resTitle = res.getTitle();
+						}
+						if(killer.hasTitle()){
+							killerTitle = killer.getTitle();
+						}
+						if(res.isMayor() && !res.isKing()){
+							if(killer.hasTitle()){
+								dmessage = ChatColor.YELLOW + resTitle + " " + playerName + ChatColor.RED + " has been slain in Combat by the vile " + ChatColor.YELLOW + killerTitle + " " + playerKiller + "!";
+								kmessage = ChatColor.YELLOW + killerTitle + " " + playerKiller + ChatColor.RED + " has brought down the corrupt " + ChatColor.YELLOW + resTitle + " " + playerName + " in Combat!";
+							}else{
+								dmessage = ChatColor.YELLOW + resTitle + " " + playerName + ChatColor.RED + " has been slain in Combat by slimy " + ChatColor.YELLOW + playerKiller + "!";
+								kmessage = ChatColor.YELLOW + playerKiller + ChatColor.RED + " has butchered the sneaky " + ChatColor.YELLOW + resTitle + " " + playerKiller + " in Combat!";
+							}
+							War.broadcast(damagedd, dmessage);
+							War.broadcast(damagerr, kmessage);
+							war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pMayorKill);
+						}else if(res.isKing()){
+							if(killer.hasTitle()){
+								dmessage = ChatColor.YELLOW + resTitle + " " + playerName + ChatColor.RED + " has been slain in Combat by the vile " + ChatColor.YELLOW + killerTitle + " " + playerKiller + "!";
+								kmessage = ChatColor.YELLOW + killerTitle + " " + playerKiller + ChatColor.RED + " has brought down the corrupt " + ChatColor.YELLOW + resTitle + " " + playerName + " in Combat!";
+							}else{
+								dmessage = ChatColor.YELLOW + resTitle + " " + playerName + ChatColor.RED + " has been slain in Combat by slimy " + ChatColor.YELLOW + playerKiller + "!";
+								kmessage = ChatColor.YELLOW + playerKiller + ChatColor.RED + " has butchered the sneaky " + ChatColor.YELLOW + resTitle + " " + playerKiller + " in Combat!";
+							}
+							War.broadcast(damagedd, dmessage);
+							War.broadcast(damagerr, kmessage);
+							war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pKingKill);
+						}else{
+							war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pKillPoints);
+						}
+					}
+					double lP = war.getTownPoints(tdamagedd);
 					if (lP <= 10 && lP != -1 && WarManager.getWars().contains(war)) {
 						event.getEntity().sendMessage(ChatColor.RED + "Be careful! Your town only has a " + lP + " points left!");
 					}

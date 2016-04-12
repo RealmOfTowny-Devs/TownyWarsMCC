@@ -25,7 +25,7 @@ import org.bukkit.entity.Player;
 public class War {
 	private Nation nation1, nation2;
 	private int nation1points, nation2points;
-	private Map<Town, MutableInteger> towns = new HashMap<Town, MutableInteger>();
+	private Map<Town, Double> towns = new HashMap<Town, Double>();
 
 	private Rebellion rebelwar;
 
@@ -70,7 +70,7 @@ public class War {
 		for(String temp : slist.get(4).split("  ")){
 			temp2 = temp.split(" ");
 			try {
-				towns.put(TownyUniverse.getDataSource().getTown(temp2[0]), new MutableInteger(Integer.parseInt(temp2[1])));
+				towns.put(TownyUniverse.getDataSource().getTown(temp2[0]), Double.parseDouble(temp2[1]));
 			} catch (NumberFormatException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -106,7 +106,7 @@ public class War {
 		
 		for(Town town : towns.keySet()){
 			s += town.getName() + " ";
-			s += towns.get(town).value + "  ";
+			s += towns.get(town) + "  ";
 		}
 		
 		if(rebelwar != null)
@@ -148,8 +148,8 @@ public class War {
 		throw(new Exception("Not registred"));
 	}
 
-	public Integer getTownPoints(Town town) throws Exception {
-		return towns.get(town).value;
+	public double getTownPoints(Town town) throws Exception {
+		return (double)towns.get(town);
 	}
 
 	//rewrite
@@ -159,16 +159,18 @@ public class War {
 		else if(nat.equals(nation2))
 			nation2points = nat.getNumTowns();
 		for (Town town : nat.getTowns()) {
-			towns.put(town, new MutableInteger((int) getTownMaxPoints(town)));
+			towns.put(town, getTownMaxPoints(town));
 		}
 	}
 	
 	public void addNewTown(Town town){
-		towns.put(town, new MutableInteger((int) getTownMaxPoints(town)));
+		towns.put(town, getTownMaxPoints(town));
 	}
 	
 	public static double getTownMaxPoints(Town town){
-		return (50-50*Math.pow(Math.E, (-0.04605*town.getNumResidents()))) + (60-60*Math.pow(Math.E, (-0.00203*town.getTownBlocks().size())));
+		return (town.getNumResidents()
+				* TownyWars.pPlayer) + (TownyWars.pPlot
+				* town.getTownBlocks().size());
 	}
 
 	boolean hasNation(Nation onation) {
@@ -188,8 +190,11 @@ public class War {
 	}
 
 	public void chargeTownPoints(Nation nnation, Town town, double i) {
-		towns.get(town).value -= i;
-		if (towns.get(town).value <= 0) {
+		double value = towns.get(town) - i;
+		if(value > 0){
+			towns.replace(town, value);
+		}
+		if (value <= 0) {
 			try {
 				if(nnation.getTowns().size() > 1 && nnation.getCapital() == town){
 					if(nnation.getTowns().get(0) != town){
@@ -281,9 +286,9 @@ public class War {
 		if(nation2 == nation)
 			nation2points++;
 		towns.put(town,
-				new MutableInteger((int) (town.getNumResidents()
+				(town.getNumResidents()
 						* TownyWars.pPlayer + TownyWars.pPlot
-						* town.getTownBlocks().size())));
+						* town.getTownBlocks().size()));
 	}
 
 	@SuppressWarnings("deprecation")
@@ -293,14 +298,6 @@ public class War {
 			if (plr != null) {
 				plr.sendMessage(message);
 			}
-		}
-	}
-
-	public static class MutableInteger {
-		public int value;
-
-		public MutableInteger(int v) {
-			this.value = v;
 		}
 	}
 }

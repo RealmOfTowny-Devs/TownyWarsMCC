@@ -1,5 +1,8 @@
 pper-player: 2.0
-pper-plot: 0.5
+pper-plot: 1.0
+pper-player-kill: 1.0
+pper-mayor-kill: 3.0
+pper-king-kill: 5.0
 declare-cost: 10.0
 end-cost: 0.0
 death-cost: 0.0
