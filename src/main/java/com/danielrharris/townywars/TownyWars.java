@@ -47,6 +47,7 @@ public class TownyWars
   public static ArrayList<String> worldBlackList;
   private ArrayList<String> blockStringBlackList;
   public static Set<Material> blockBlackList;
+  public static boolean isBossBar = false;
   
   public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
   
@@ -85,6 +86,9 @@ public class TownyWars
     pm.registerEvents(new WarListener(this), this);
     getCommand("twar").setExecutor(new WarExecutor(this));
     tUniverse = ((Towny)Bukkit.getPluginManager().getPlugin("Towny")).getTownyUniverse();
+    if(Bukkit.getPluginManager().getPlugin("BossBarAPI")!=null){
+    	isBossBar = true;
+    }
     for(Town town : TownyUniverse.getDataSource().getTowns()){
     	town.setAdminEnabledPVP(false);
     	town.setAdminDisabledPVP(false);

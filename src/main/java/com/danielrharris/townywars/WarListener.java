@@ -18,10 +18,12 @@ import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 import me.drkmatr1984.BlocksAPI.utils.SBlock;
 import me.drkmatr1984.BlocksAPI.utils.Utils;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.HashSet;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -39,6 +41,9 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.material.Attachable;
+import org.bukkit.material.Vine;
+import org.inventivetalent.bossbar.BossBar;
+import org.inventivetalent.bossbar.BossBarAPI;
 
 public class WarListener implements Listener
 {
@@ -53,7 +58,7 @@ public class WarListener implements Listener
 	
 	//Here's where I'll grab the block break event and make it record broken blocks
 	//during war
-	@SuppressWarnings("unused")
+	@SuppressWarnings({ "deprecation", "unused" })
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
 	public void onWarTownDamage(BlockBreakEvent event){
 		if(TownyWars.allowGriefing){
@@ -117,7 +122,35 @@ public class WarListener implements Listener
 						//griefing is allowed and so is the rollback feature, so lets record the blocks and add them to the list
 						for(BlockFace face : BlockFace.values()){
 							if(!face.equals(BlockFace.SELF)){
-								if((block.getRelative(face)).getState().getData() instanceof Attachable || (block.getRelative(face)).getType().equals(Material.VINE) || (block.getRelative(face)).getType().equals(Material.CHORUS_PLANT) || (block.getRelative(face)).getType().equals(Material.CHORUS_FLOWER)){
+								if((block.getRelative(face)).getState().getData() instanceof Attachable){
+									Block b = (block.getRelative(face));
+									Attachable att = (Attachable) (block.getRelative(face)).getState().getData();
+									if(b.getRelative(att.getAttachedFace()).equals(block)){
+										if(entity!=null){
+											sBlocks.add(new SBlock((block.getRelative(face)), entity));
+										}else{
+											sBlocks.add(new SBlock((block.getRelative(face))));
+										}
+									}
+								}
+								if(block.getRelative(face).getState().getData() instanceof Vine){
+									Vine vine = (Vine) block.getRelative(face).getState().getData();
+									if(vine.isOnFace(face)){
+										if(entity!=null){
+											sBlocks.add(new SBlock((block.getRelative(face)), entity));
+										}else{
+											sBlocks.add(new SBlock((block.getRelative(face))));
+										}
+									}
+								}
+								if((block.getRelative(face)).getType().equals(Material.CHORUS_PLANT)){
+									if(entity!=null){
+										sBlocks.add(new SBlock((block.getRelative(face)), entity));
+									}else{
+										sBlocks.add(new SBlock((block.getRelative(face))));
+									}
+								}
+								if((block.getRelative(face)).getType().equals(Material.CHORUS_FLOWER)){
 									if(entity!=null){
 										sBlocks.add(new SBlock((block.getRelative(face)), entity));
 									}else{
@@ -152,7 +185,41 @@ public class WarListener implements Listener
 						}else{
 							sBlocks.add(new SBlock(block));
 						}
-						new SaveTask(m, otherTown, sBlocks).runTaskLater(mplugin, 1L);			
+						for(Resident r : otherTown.getResidents()){
+							Player player = Bukkit.getServer().getPlayer(r.getName());
+							if(player!=null){
+								War ww = null;
+								Float percent = 1.0F;
+								try {
+									ww = WarManager.getWarForNation(otherTown.getNation());
+									if(ww != null && !((Double)(War.getTownMaxPoints(otherTown))).equals(null)){
+										try {
+											percent = (float)((ww.getTownPoints(otherTown)/((Double)War.getTownMaxPoints(otherTown)).intValue()));
+											if(TownyWars.isBossBar){
+												if(percent!=0){
+												BossBarAPI.removeAllBars(player);
+												String message = "&b&l" + otherTown.getName() + " &r&4is Under Attack!";
+												BossBar bossBar = BossBarAPI.addBar(player,
+											       new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', message)), // Displayed message
+												   BossBarAPI.Color.BLUE,
+												   BossBarAPI.Style.NOTCHED_20, 
+												   percent,
+												   500,
+												   500);
+												}
+											}
+										} catch (Exception e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+									}
+								} catch (NotRegisteredException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}				
+							}						
+						}
+						new SaveTask(m, otherTown, sBlocks).runTask(mplugin);			
 					}
 					//Set the event as not cancelled to override any protections in place
 					event.setCancelled(false);

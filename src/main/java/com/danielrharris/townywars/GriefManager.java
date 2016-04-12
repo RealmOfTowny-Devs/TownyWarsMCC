@@ -121,16 +121,18 @@ public class GriefManager
     	for(SBlock sb : sBlocks){
     		Location l = new Location(Bukkit.getServer().getWorld(sb.world),sb.x,sb.y,sb.z);
     		Block bl = l.getBlock();
-    		BlockState blockState = bl.getState();
     		Material mat = Material.valueOf(sb.mat);
     		bl.setTypeIdAndData(mat.getId(), sb.data, true);
+    		BlockState blockState = bl.getState();
     		if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
-    			new DelayedRegenTask(sb).runTaskLaterAsynchronously(plugin, delay+3);
+    			new DelayedRegenTask(sb).runTaskLaterAsynchronously(plugin, delay+20);
     		}else{
     			new DelayedRegenTask(sb).runTaskLaterAsynchronously(plugin, delay);
     		}
     		delay++;
-    	}   	
-	}
-	
+    	}
+    	if(townData.exists()){
+    		townData.delete();
+    	}	
+	}	
 }

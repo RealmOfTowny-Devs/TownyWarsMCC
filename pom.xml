@@ -24,7 +24,19 @@
         <repository>
 			<id>md_5-repo</id>
 			<url>http://repo.md-5.net/content/groups/public/</url>
-		  </repository>
+		</repository>
+		<repository>
+		    <id>fanciful-mvn-repo</id>
+            <url>http://repo.stealthyone.com/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>repo</id>
+            <url>file://c:/localmavenrepo/repo/</url>
+        </repository>
+        <repository>
+            <id>inventive-repo</id>
+            <url>https://repo.inventivetalent.org/content/groups/public/</url>
+        </repository> 
     </repositories>
     <!-- Dependencies -->
     <dependencies>
@@ -36,8 +48,8 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot</artifactId>
+            <groupId>org.bukkit</groupId>
+            <artifactId>craftbukkit</artifactId>
             <version>1.9.2-R0.1-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
@@ -67,8 +79,7 @@
             <groupId>me.drkmatr1984.BlocksAPI</groupId>
             <artifactId>BlocksAPI</artifactId>
             <version>0.01</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/BlocksAPI-0.01.jar</systemPath>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>me.mrCookieSlime.CSCoreLibPlugin</groupId>
@@ -76,6 +87,33 @@
             <version>1.4</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/CS-CoreLib_v1.4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>mkremins</groupId>
+            <artifactId>fanciful</artifactId>
+            <version>0.3.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.inventivetalent</groupId>
+            <artifactId>bossbarapi</artifactId>
+            <version>2.3.8</version>
+        </dependency>
+        <dependency>
+            <groupId>net.md-5</groupId>
+            <artifactId>bungeecord-chat</artifactId>
+            <version>1.9-SNAPSHOT</version>
+            <type>jar</type>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.code.gson</groupId>
+                    <artifactId>gson</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.sf.trove4j</groupId>
+                    <artifactId>trove4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -90,6 +128,28 @@
                     <source>1.7</source>
                     <target>1.7</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes>
+                                    <include>mkremins:fanciful</include>
+                                    <include>net.md-5:bungeecord-chat</include>
+                                    <include>me.drkmatr1984.BlocksAPI:BlocksAPI</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
