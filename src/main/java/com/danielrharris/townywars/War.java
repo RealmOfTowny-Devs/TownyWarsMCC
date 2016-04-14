@@ -173,7 +173,7 @@ public class War {
 				* town.getTownBlocks().size());
 	}
 
-	boolean hasNation(Nation onation) {
+	public boolean hasNation(Nation onation) {
 		if(onation != nation1 && onation != nation2 && (onation.getName().equals(nation1.getName()) || onation.getName().equals(nation2.getName())))
 				System.out.println("hasNation() error. Please report to Noxer");
 		return (onation.getName().equals(nation1.getName()) || onation.getName().equals(nation2.getName()));

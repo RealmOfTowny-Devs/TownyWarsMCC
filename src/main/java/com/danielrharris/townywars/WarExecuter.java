@@ -64,7 +64,7 @@ class WarExecutor implements CommandExecutor
       Player p;
       Resident res;  
       cs.sendMessage(ChatColor.GREEN + "Towny Wars Help:");
-      cs.sendMessage(ChatColor.AQUA + "/twar" + ChatColor.YELLOW + "Displays the TownyWars configuration information");
+      cs.sendMessage(ChatColor.AQUA + "/twar - " + ChatColor.YELLOW + "Displays the TownyWars configuration information");
       cs.sendMessage(ChatColor.AQUA + "/twar help - " + ChatColor.YELLOW + "Displays the TownyWars help page");
       cs.sendMessage(ChatColor.AQUA + "/twar status - " + ChatColor.YELLOW + "Displays a list of on-going wars");
       cs.sendMessage(ChatColor.AQUA + "/twar status [nation] - " + ChatColor.YELLOW + "Displays a list of the nation's towns and their defense points");
@@ -72,6 +72,7 @@ class WarExecutor implements CommandExecutor
     	  cs.sendMessage(ChatColor.AQUA + "/twar repair - " + ChatColor.YELLOW + "Allows you to repair war grief by paying money from town bank");
       }  
       cs.sendMessage(ChatColor.AQUA + "/twar showtowndp - " + ChatColor.YELLOW + "Shows your towns current defense points.");
+      cs.sendMessage(ChatColor.AQUA + "/twar showtownmaxdp - " + ChatColor.YELLOW + "Shows your towns max defense points.");
       if(cs.hasPermission("townywars.leader")){
     	  cs.sendMessage(ChatColor.AQUA + "/twar declare [nation] - " + ChatColor.YELLOW + "Starts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT)");
           cs.sendMessage(ChatColor.AQUA + "/twar end - " + ChatColor.YELLOW + "Request from enemy nations king to end the ongoing war. (REQUIRES YOU TO BE A KING/ASSISTANT)");

@@ -13,3 +13,8 @@ griefing:
   per-block-cost: 2.0
   worldBlackList: []
   blockBlackList: []
+  allow-explosions-war: true
+  explosions:
+    realistic-explosions: true
+    debris-chance: 75
+ 

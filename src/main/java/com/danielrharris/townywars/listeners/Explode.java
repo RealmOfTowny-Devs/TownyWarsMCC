@@ -1,0 +1,61 @@
+package com.danielrharris.townywars.listeners;
+
+import java.util.Iterator;
+import java.util.List;
+
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Explosive;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.util.Vector;
+
+public class Explode {
+	
+	@SuppressWarnings("deprecation")
+	public static void explode(Entity ent, List<Block> blocks, Location center, int DEBRIS_CHANCE){
+		float yield = 3.0f;
+		
+		if(ent instanceof Explosive) {
+			Explosive e = (Explosive) ent;
+			yield = e.getYield();
+		} else if (ent instanceof Creeper) {
+			Creeper c = (Creeper) ent;
+			if(c.isPowered()) {
+				yield = 6.0f;
+			} else {
+				yield = 3.0f;
+			}
+		}
+		
+		Iterator<Block> itr = blocks.iterator();
+		while(itr.hasNext()) { //Iterates through blocks
+			Block b = itr.next();
+			if((Math.random() * 100.0F) <= DEBRIS_CHANCE) { //Randomly chooses the blocks based on chance
+				if(!(b.getState() instanceof InventoryHolder)){
+					b.getDrops().clear();
+				}else{
+					continue;
+				}	
+				Location loc = b.getLocation();
+				//Spawn the "debris"
+				FallingBlock debris = loc.getWorld().spawnFallingBlock(loc, b.getType(), b.getData()); 
+				Location d = debris.getLocation();
+				Location relative = new Location(loc.getWorld(), d.getX() - center.getX(),
+						d.getY() - center.getY(), d.getZ() - center.getZ());
+				
+				//Set the vector
+				Vector vec = new Vector(yield / relative.getX(), 
+						yield / relative.getY(), 
+						yield / relative.getZ());
+				
+				vec.normalize();
+				vec.multiply(d.distance(center) / 2.5F);
+				
+				debris.setVelocity(vec);
+			}
+		}
+	}
+}
