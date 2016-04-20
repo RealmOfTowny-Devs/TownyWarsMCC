@@ -9,6 +9,7 @@ death-cost: 0.0
 griefing:
   allow-griefing: false
   allow-rollback: true
+  save-timer: 10
   per-block-points: 0.01
   per-block-cost: 2.0
   worldBlackList: []

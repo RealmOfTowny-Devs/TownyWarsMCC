@@ -148,64 +148,69 @@ public class PvPListener implements Listener{
 		// if we've made it this far, it means that the death should affect Towny
 		// now we know who to credit, so let's adjust Towny to match		  
 		try {
-			Town tdamagerr = TownyUniverse.getDataSource().getResident(playerKiller).getTown();
-			Nation damagerr = tdamagerr.getNation();
-
-			Town tdamagedd = TownyUniverse.getDataSource().getResident(playerName).getTown();
-			Nation damagedd = tdamagedd.getNation();
-	      
-			War war = WarManager.getWarForNation(damagerr);
-			if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName())))
-			{
-				tdamagedd.pay(TownyWars.pKill, "Death cost");
-				tdamagerr.collect(TownyWars.pKill);
-			}
-			if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName()))) {
-				try
-				{
-					if(tdamagedd.hasResident(playerName)){
-						Resident res = TownyUniverse.getDataSource().getResident(playerName);
-						Resident killer = TownyUniverse.getDataSource().getResident(playerKiller);
-						String dmessage = "";
-						String kmessage = "";
-						String resName = res.getFormattedName();
-						String killerName = killer.getFormattedName();
-						if(res.isMayor() && !res.isKing()){
-							if(killer.isKing() || killer.isMayor()){
-								dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by the vile " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
-								kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has brought down the corrupt " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
-							}else{
-								dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by slimy " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
-								kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has butchered the sneaky " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
+			Resident resi = TownyUniverse.getDataSource().getResident(playerKiller);
+			Resident otherRes = TownyUniverse.getDataSource().getResident(playerName);
+			if(resi.hasTown()){
+				Town tdamagerr = resi.getTown();
+				Nation damagerr = tdamagerr.getNation();
+				if(otherRes.hasTown()){
+					Town tdamagedd = TownyUniverse.getDataSource().getResident(playerName).getTown();
+					Nation damagedd = tdamagedd.getNation();
+			      
+					War war = WarManager.getWarForNation(damagerr);
+					if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName())))
+					{
+						tdamagedd.pay(TownyWars.pKill, "Death cost");
+						tdamagerr.collect(TownyWars.pKill);
+					}
+					if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName()))) {
+						try
+						{
+							if(tdamagedd.hasResident(playerName)){
+								Resident res = TownyUniverse.getDataSource().getResident(playerName);
+								Resident killer = TownyUniverse.getDataSource().getResident(playerKiller);
+								String dmessage = "";
+								String kmessage = "";
+								String resName = res.getFormattedName();
+								String killerName = killer.getFormattedName();
+								if(res.isMayor() && !res.isKing()){
+									if(killer.isKing() || killer.isMayor()){
+										dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by the vile " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
+										kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has brought down the corrupt " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
+									}else{
+										dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by slimy " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
+										kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has butchered the sneaky " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
+									}
+									War.broadcast(damagedd, dmessage);
+									War.broadcast(damagerr, kmessage);
+									war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pMayorKill);
+								}else if(res.isKing()){
+									if(killer.isKing() || killer.isMayor()){
+										dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by the vile " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
+										kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has brought down the corrupt " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
+									}else{
+										dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by slimy " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
+										kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has butchered the sneaky " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
+									}
+									War.broadcast(damagedd, dmessage);
+									War.broadcast(damagerr, kmessage);
+									war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pKingKill);
+								}else{
+									war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pKillPoints);
+								}
 							}
-							War.broadcast(damagedd, dmessage);
-							War.broadcast(damagerr, kmessage);
-							war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pMayorKill);
-						}else if(res.isKing()){
-							if(killer.isKing() || killer.isMayor()){
-								dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by the vile " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
-								kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has brought down the corrupt " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
-							}else{
-								dmessage = ChatColor.YELLOW + resName + ChatColor.RED + " has been slain in Combat by slimy " + ChatColor.YELLOW + killerName + ChatColor.RED + "!";
-								kmessage = ChatColor.YELLOW + killerName + ChatColor.RED + " has butchered the sneaky " + ChatColor.YELLOW + resName + ChatColor.RED + " in Combat!";
+							double lP = war.getTownPoints(tdamagedd);
+							if (lP <= 10 && lP != -1 && WarManager.getWars().contains(war)) {
+								event.getEntity().sendMessage(ChatColor.RED + "Be careful! Your town only has a " + lP + " points left!");
 							}
-							War.broadcast(damagedd, dmessage);
-							War.broadcast(damagerr, kmessage);
-							war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pKingKill);
-						}else{
-							war.chargeTownPoints(damagedd, tdamagedd, TownyWars.pKillPoints);
+						}catch (Exception ex)
+						{
+							event.getEntity().sendMessage(ChatColor.RED + "An error occured, check the console!");
+							ex.printStackTrace();
 						}
 					}
-					double lP = war.getTownPoints(tdamagedd);
-					if (lP <= 10 && lP != -1 && WarManager.getWars().contains(war)) {
-						event.getEntity().sendMessage(ChatColor.RED + "Be careful! Your town only has a " + lP + " points left!");
-					}
-				}catch (Exception ex)
-				{
-					event.getEntity().sendMessage(ChatColor.RED + "An error occured, check the console!");
-					ex.printStackTrace();
-				}
-			}
+				}			
+			}	
 	    }catch (Exception ex) {
 	    	ex.printStackTrace();
 	    }    

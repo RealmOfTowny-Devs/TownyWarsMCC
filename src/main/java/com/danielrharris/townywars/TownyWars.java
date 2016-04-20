@@ -3,6 +3,7 @@ package com.danielrharris.townywars;
 import com.danielrharris.townywars.listeners.GriefListener;
 import com.danielrharris.townywars.listeners.PvPListener;
 import com.danielrharris.townywars.listeners.WarListener;
+import com.danielrharris.townywars.tasks.SaveTask;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
@@ -55,6 +56,7 @@ public class TownyWars
   public static double endCost;
   public static boolean allowGriefing;
   public static boolean allowRollback;
+  public static int timer;
   public static boolean warExplosions;
   public static boolean realisticExplosions;
   public static int debrisChance;
@@ -63,6 +65,7 @@ public class TownyWars
   public static Set<Material> blockBlackList;
   public static boolean isBossBar = false;
   private static TownyWars plugin;
+  private GriefManager gm;
   
   public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
   
@@ -75,9 +78,10 @@ public class TownyWars
   @Override
   public void onDisable()
   {
+	gm.saveData(GriefListener.getGriefedBlocks());
     try
     {
-      WarManager.save();
+      WarManager.save();  
     }
     catch (Exception ex)
     {
@@ -97,9 +101,8 @@ public class TownyWars
     {
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
-    
     PluginManager pm = getServer().getPluginManager();
-    GriefManager gm = new GriefManager(this);
+    gm = new GriefManager(this);
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);
     pm.registerEvents(new PvPListener(this), this);
@@ -140,6 +143,9 @@ public class TownyWars
     allowRollbackS = getConfig().getString("griefing.allow-rollback");
     allowGriefing = Boolean.valueOf(allowGriefingS.toUpperCase());
     allowRollback = Boolean.valueOf(allowRollbackS.toUpperCase());
+    if(allowRollback){
+    	timer = ((getConfig().getInt("griefing.save-timer"))*60)*20;
+    }   
     pBlock = getConfig().getDouble("griefing.per-block-cost");
     pBlockPoints = getConfig().getDouble("griefing.per-block-points");
     String tempExplosions = getConfig().getString("griefing.allow-explosions-war");
@@ -151,8 +157,10 @@ public class TownyWars
     	worldBlackList.add(string.toLowerCase());
     }   
     this.blockStringBlackList = (ArrayList<String>) getConfig().getStringList("griefing.blockBlackList");
-    blockBlackList = convertBanList(this.blockStringBlackList);
-     
+    blockBlackList = convertBanList(this.blockStringBlackList);  
+    if(TownyWars.allowRollback){
+    	new SaveTask(this.gm).runTaskTimer(plugin, TownyWars.timer, TownyWars.timer);
+    }
     try{
     	for (Resident re : tUniverse.getActiveResidents()){
     		if (allTownyWarsResidents.get(re.getName())==null){
@@ -163,8 +171,7 @@ public class TownyWars
     {
         System.out.println("failed to add residents!");
         ex.printStackTrace();
-      }
-    
+    }   
   }
   
   public void addTownyWarsResident(String playerName){
@@ -230,27 +237,29 @@ public class TownyWars
 			if(TownyUniverse.getDataSource().getResident(p.getName())!=null)
 			{
 				Resident re = TownyUniverse.getDataSource().getResident(p.getName());
-				if(re.getTown().getNation()!=null){
-					Nation nation = re.getTown().getNation();
-					// add the player to the master list if they don't exist in it yet
-					if (plugin.getTownyWarsResident(re.getName())==null){
-						plugin.addTownyWarsResident(re.getName());
-						System.out.println("resident added!");
-					}
-					War ww = WarManager.getWarForNation(nation);
-					if (ww != null)
-					{
-						if(TownyUniverse.getTownBlock(loc)!=null){
-							TownBlock townBlock = TownyUniverse.getTownBlock(loc);
-							Town otherTown = townBlock.getTown();
-							if(otherTown!=re.getTown()){
-								if(otherTown.getNation()!=null){
-									Nation otherNation = otherTown.getNation();
-									if(otherNation!=nation){									
-										Set<Nation> nationsInWar = ww.getNationsInWar();
-										if(nationsInWar.contains(otherNation)){
-											//nations are at war with each other
-											return true;
+				if(re.getTown()!=null){
+					if(re.getTown().getNation()!=null){
+						Nation nation = re.getTown().getNation();
+						// add the player to the master list if they don't exist in it yet
+						if (plugin.getTownyWarsResident(re.getName())==null){
+							plugin.addTownyWarsResident(re.getName());
+							System.out.println("resident added!");
+						}
+						War ww = WarManager.getWarForNation(nation);
+						if (ww != null)
+						{
+							if(TownyUniverse.getTownBlock(loc)!=null){
+								TownBlock townBlock = TownyUniverse.getTownBlock(loc);
+								Town otherTown = townBlock.getTown();
+								if(otherTown!=re.getTown()){
+									if(otherTown.getNation()!=null){
+										Nation otherNation = otherTown.getNation();
+										if(otherNation!=nation){									
+											Set<Nation> nationsInWar = ww.getNationsInWar();
+											if(nationsInWar.contains(otherNation)){
+												//nations are at war with each other
+												return true;
+											}
 										}
 									}
 								}
@@ -260,9 +269,12 @@ public class TownyWars
 				}
 			}				
 		}catch (Exception ex) {
-			ex.printStackTrace();
 			return false;
 		}
 		return false;
+	}
+	
+	public static TownyWars getInstance(){
+		return plugin;
 	}
 }

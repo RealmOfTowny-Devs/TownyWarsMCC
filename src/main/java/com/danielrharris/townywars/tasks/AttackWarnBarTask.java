@@ -20,18 +20,20 @@ import com.palmergames.bukkit.towny.object.Town;
 import mkremins.fanciful.FancyMessage;
 import net.md_5.bungee.api.chat.TextComponent;
 
-public class BossBarTask extends BukkitRunnable{
+public class AttackWarnBarTask extends BukkitRunnable{
 	
 	private float percent;
 	private Town town;
-	private Nation nation;
+	private Nation nation = null;
 	private TownyWars plugin;
 	private DecimalFormat d = new DecimalFormat("#.00");
 	
-	public BossBarTask(Town town, TownyWars plugin){
+	public AttackWarnBarTask(Town town, TownyWars plugin){
 		this.town = town;
 		try {
-			this.nation = town.getNation();
+			if(town.hasNation()){
+				this.nation = town.getNation();
+			}			
 		} catch (NotRegisteredException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
