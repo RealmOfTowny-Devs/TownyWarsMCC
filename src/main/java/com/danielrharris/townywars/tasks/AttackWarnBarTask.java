@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.inventivetalent.bossbar.BossBar;
@@ -93,31 +94,70 @@ public class AttackWarnBarTask extends BukkitRunnable{
 	
 	public void sendAttackMessage(Player player, War wwar, Town town){
 		String points = "";
-		try {
-			points = ChatColor.YELLOW + d.format(((Double)wwar.getTownPoints(town))) + ChatColor.WHITE + " Town Points Left";
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		String name = player.getName();
+		
+		if (TownyWars.messagedPlayers.contains(name))
+		{
+			try {
+				points = ChatColor.RED + "" + ChatColor.BOLD + town.getName() + ChatColor.DARK_RED + " is Under Attack!";
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			try {
+				new FancyMessage("                     ")
+				.then(d.format(((Double)wwar.getTownPoints(town))))
+				    .color(ChatColor.YELLOW)
+				    .tooltip(points)
+				    .command("/twar showtowndp")
+				.then(" Defense Points Remaining")
+					.color(ChatColor.WHITE)
+				    .tooltip(points)
+				    .command("/twar showtowndp")
+				.send(player);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 10, 10);
 		}
-		new FancyMessage("                 ")
-		.then("g")
-			.color(ChatColor.WHITE)
-			.style(ChatColor.MAGIC)
-		.then("  ")
-		.then(town.getName())
-			.color(ChatColor.RED)
-			.style(ChatColor.BOLD)
-			.tooltip("Click to Travel to " + ChatColor.GREEN + town.getName())
-			.command("/t spawn " + town.getName())
-		.then(" is Under Attack!")
-		    .color(ChatColor.DARK_RED)
-		    .style(ChatColor.ITALIC)
-		    .tooltip(points)
-		    .command("/twar showtowndp")
-		.then("  ")
-		.then("g")
-			.color(ChatColor.WHITE)
-			.style(ChatColor.MAGIC)
-		.send(player);
-	  }
+		
+		if (!TownyWars.messagedPlayers.contains(name))
+		{
+			TownyWars.messagedPlayers.add(name);
+			
+			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+				  public void run() {
+				      TownyWars.messagedPlayers.remove(name);
+				  }
+				}, 3 * 60 * 20);
+			try {
+				points = ChatColor.YELLOW + d.format(((Double)wwar.getTownPoints(town))) + ChatColor.WHITE + " Town Points Left";
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			new FancyMessage("                 ")
+			.then("g")
+				.color(ChatColor.WHITE)
+				.style(ChatColor.MAGIC)
+			.then("  ")
+			.then(town.getName())
+				.color(ChatColor.RED)
+				.style(ChatColor.BOLD)
+				.tooltip("Click to Travel to " + ChatColor.GREEN + town.getName())
+				.command("/t spawn " + town.getName())
+			.then(" is Under Attack!")
+			    .color(ChatColor.DARK_RED)
+			    .style(ChatColor.ITALIC)
+			    .tooltip(points)
+			    .command("/twar showtowndp")
+			.then("  ")
+			.then("g")
+				.color(ChatColor.WHITE)
+				.style(ChatColor.MAGIC)
+			.send(player);
+			player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 10, 10);
+			}
+	}
 }

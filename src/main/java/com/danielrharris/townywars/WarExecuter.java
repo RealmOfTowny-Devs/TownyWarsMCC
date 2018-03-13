@@ -8,15 +8,9 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
-
 import me.drkmatr1984.BlocksAPI.utils.SBlock;
 import me.drkmatr1984.BlocksAPI.utils.Utils;
 import mkremins.fanciful.FancyMessage;
-
-import java.text.DecimalFormat;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -25,6 +19,10 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
+
+import java.text.DecimalFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 class WarExecutor implements CommandExecutor
@@ -465,7 +463,6 @@ class WarExecutor implements CommandExecutor
     	cs.sendMessage(ChatColor.GREEN + "--------------------");
     	unknownCommand=false;
     }
-
 	catch (NotRegisteredException ex)
     {
 		cs.sendMessage(ChatColor.RED + farg + " does not exist!");

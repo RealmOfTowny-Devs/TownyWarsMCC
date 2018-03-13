@@ -1,16 +1,19 @@
 package com.danielrharris.townywars;
 
-import com.danielrharris.townywars.listeners.GriefListener;
-import com.danielrharris.townywars.listeners.PvPListener;
-import com.danielrharris.townywars.listeners.WarListener;
+import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
 import com.palmergames.bukkit.towny.Towny;
-import com.palmergames.bukkit.towny.object.Nation;
-import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownBlock;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
+import com.palmergames.bukkit.towny.object.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -18,26 +21,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 //import main.java.com.danielrharris.townywars.War.MutableInteger;
-
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class TownyWars
   extends JavaPlugin
@@ -67,7 +55,13 @@ public class TownyWars
   private static TownyWars plugin;
   private GriefManager gm;
   
+  File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
+  
+  public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
+  
   public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
+  
+  public static List<String> messagedPlayers = new ArrayList<String>();
   
   //set up the date conversion spec and the character set for file writing
   private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
@@ -106,6 +100,8 @@ public class TownyWars
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);
     pm.registerEvents(new PvPListener(this), this);
+    pm.registerEvents(new NationWalkEvent(),this);
+    pm.registerEvents(new EnemyWalkWWar(),this);
     getCommand("twar").setExecutor(new WarExecutor(this));
     towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
     tUniverse = towny.getTownyUniverse();
@@ -128,6 +124,17 @@ public class TownyWars
     TownyUniverse.getDataSource().saveTowns();
     
     this.saveDefaultConfig();
+    
+    if(!(wallConfigFile.exists())){
+	      try {
+	    	  wallConfigFile.createNewFile();
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
+    }
+     
+    YamlConfiguration wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
     
     pPlayer = getConfig().getDouble("pper-player");
     pPlot = getConfig().getDouble("pper-plot");

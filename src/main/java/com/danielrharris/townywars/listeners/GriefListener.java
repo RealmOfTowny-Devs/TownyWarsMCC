@@ -143,7 +143,7 @@ public class GriefListener implements Listener{
 	}
 	
 	@SuppressWarnings("unused")
-	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
 	public void onWarBuild(BlockPlaceEvent event) {
 		if(TownyWars.allowGriefing){
 			Block block = event.getBlock();
@@ -341,7 +341,7 @@ public class GriefListener implements Listener{
 										ev.setCancelled(false);
 									}
 									if(TownyWars.realisticExplosions){
-										p.sendMessage("Doing Realistic Explosion");
+										//p.sendMessage("Doing Realistic Explosion");
 										Explode.explode(ev.getEntity(), blocks, center, DEBRIS_CHANCE);
 									}
 									return;

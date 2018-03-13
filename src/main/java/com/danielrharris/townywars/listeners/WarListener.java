@@ -4,6 +4,7 @@ import com.danielrharris.townywars.Rebellion;
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.War;
 import com.danielrharris.townywars.WarManager;
+import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.event.DeleteNationEvent;
 import com.palmergames.bukkit.towny.event.NationAddTownEvent;
 import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
@@ -15,10 +16,12 @@ import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 public class WarListener implements Listener
@@ -28,6 +31,34 @@ public class WarListener implements Listener
 	public WarListener(TownyWars aThis)
 	{ 
 		this.mplugin=aThis;
+	}
+	
+	@EventHandler
+	public void onNationDeleteAttempt(PlayerCommandPreprocessEvent event){	
+		String command = event.getMessage().toLowerCase();
+		if (command.startsWith("/n") && command.contains("delete"))
+		{
+			for(War w : WarManager.getWars()){
+				for(Nation n : w.getNationsInWar()){
+					if(n.hasResident(event.getPlayer().getName())){
+						event.setCancelled(true);
+						event.getPlayer().sendMessage(ChatColor.RED + "You cannot delete a nation while at war!");
+					}
+				}
+			}
+		}
+		
+		if (command.startsWith("/n") && command.contains("leave"))
+		{
+			for(War w : WarManager.getWars()){
+				for(Nation n : w.getNationsInWar()){
+					if(n.hasResident(event.getPlayer().getName())){
+						event.setCancelled(true);
+						event.getPlayer().sendMessage(ChatColor.RED + "You cannot leave a nation while at war!");
+					}
+				}
+			}
+		}
 	}
   
 	@EventHandler

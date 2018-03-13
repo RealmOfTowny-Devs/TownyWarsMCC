@@ -150,10 +150,23 @@ public class GriefManager
     		Material mat = Material.valueOf(sb.mat);
     		bl.setTypeIdAndData(mat.getId(), sb.data, true);
     		BlockState blockState = bl.getState();
+    		/*if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
+    			new DelayedRegenTask(sb).runTaskLater(plugin, delay+20);*/
+
     		if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
-    			new DelayedRegenTask(sb).runTaskLater(plugin, delay+20);
+    			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+      			  public void run() {
+      				  //Bukkit.getServer().broadcastMessage("Area 1");
+      				new DelayedRegenTask(sb).run();
+      			  }
+      			}, delay + 20);
     		}else{
-    			new DelayedRegenTask(sb).runTaskLater(plugin, delay);
+    			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+        			  public void run() {
+          				 // Bukkit.getServer().broadcastMessage("Area 2");
+        				new DelayedRegenTask(sb).run();
+        			  }
+        			}, delay);
     		}
     		delay++;
     	}
