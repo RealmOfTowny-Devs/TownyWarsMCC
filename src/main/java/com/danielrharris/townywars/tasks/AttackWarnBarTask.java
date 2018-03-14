@@ -94,7 +94,7 @@ public class AttackWarnBarTask extends BukkitRunnable{
 	
 	public void sendAttackMessage(Player player, War wwar, Town town){
 		String points = "";
-		String name = player.getName();
+		final String name = player.getName();
 		
 		if (TownyWars.messagedPlayers.contains(name))
 		{
