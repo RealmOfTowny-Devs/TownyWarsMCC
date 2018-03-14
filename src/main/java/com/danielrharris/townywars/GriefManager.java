@@ -144,7 +144,7 @@ public class GriefManager
 		townDataFolder = new File(plugin.getDataFolder().toString() + "/towndata");
 		townData = new File(townDataFolder, (town.getName().toLowerCase() + ".yml"));
 		int delay = 1;
-    	for(SBlock sb : sBlocks){
+    	for(final SBlock sb : sBlocks){
     		Location l = new Location(Bukkit.getServer().getWorld(sb.world),sb.x,sb.y,sb.z);
     		Block bl = l.getBlock();
     		Material mat = Material.valueOf(sb.mat);

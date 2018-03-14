@@ -30,8 +30,8 @@
             <url>http://repo.stealthyone.com/content/repositories/snapshots/</url>
         </repository>
         <repository>
-            <id>repo</id>
-            <url>file://c:/localmavenrepo/repo/</url>
+            <id>drkmatr1984-repo</id>
+            <url>https://minevolt.net/repo/</url>
         </repository>
         <repository>
             <id>inventive-repo</id>
@@ -55,48 +55,46 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.palmergames.bukkit</groupId>
-            <artifactId>towny</artifactId>
+            <groupId>com.palmergames.bukkit.towny</groupId>
+            <artifactId>Towny</artifactId>
             <version>0.90.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/Towny.jar</systemPath>
+            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.palmergames.bukkit</groupId>
-            <artifactId>townychat</artifactId>
-            <version>0.90.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/TownyChat.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>com.palmergames.bukkit</groupId>
-            <artifactId>questioner</artifactId>
-            <version>0.90.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/Questioner.jar</systemPath>
+            <groupId>ca.xshade.bukkit.questioner</groupId>
+            <artifactId>Questioner</artifactId>
+            <version>0.6</version>
+            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>me.drkmatr1984.BlocksAPI</groupId>
             <artifactId>BlocksAPI</artifactId>
             <version>0.01</version>
-            <scope>compile</scope>
+            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>me.mrCookieSlime.CSCoreLibPlugin</groupId>
             <artifactId>CSCoreLib</artifactId>
-            <version>1.4</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/CS-CoreLib_v1.4.jar</systemPath>
+            <version>1.5.3</version>
+            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>mkremins</groupId>
             <artifactId>fanciful</artifactId>
             <version>0.3.3-SNAPSHOT</version>
+            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.inventivetalent</groupId>
             <artifactId>bossbarapi</artifactId>
             <version>2.3.8</version>
+            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.md-5</groupId>
