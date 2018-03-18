@@ -25,7 +25,8 @@ public class EnemyWalkWWar implements Listener {
         } catch (NotRegisteredException e) {
             e.printStackTrace();
         }
-        if (!Objects.requireNonNull(resident).hasTown()) System.out.println("The resident doesn't have a town.");
+        assert resident !=null;
+        if (!resident.hasTown()) System.out.println("The resident doesn't have a town.");
         if (resident.hasTown() && !resident.hasNation()) System.out.println("Resident has town but doesn't have a Nation.");
         if (to == null) return;
         if (TownyUniverse.getTownBlock(event.getMoveEvent().getTo()) != null) {
@@ -56,6 +57,7 @@ public class EnemyWalkWWar implements Listener {
                             for (Nation nation : nationTo.getAllies()){
                                 for (Resident resident1 : nation.getResidents()){
                                     Player player1 = Bukkit.getPlayer(resident1.getName());
+                                    if(player1 == null)return;
                                     Title.sendTitle(player1,20,20,20, ChatColor.GREEN.toString() + nationTo.getName()," is under attack!");
                                 }
                             }
