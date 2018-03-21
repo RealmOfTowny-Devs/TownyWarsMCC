@@ -1,7 +1,9 @@
 package com.danielrharris.townywars.tasks;
 
+import java.awt.*;
 import java.text.DecimalFormat;
 
+import mkremins.fanciful.FancyMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -17,8 +19,6 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-
-import mkremins.fanciful.FancyMessage;
 import net.md_5.bungee.api.chat.TextComponent;
 
 public class AttackWarnBarTask extends BukkitRunnable{

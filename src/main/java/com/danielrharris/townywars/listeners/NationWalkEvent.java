@@ -24,8 +24,9 @@ public class NationWalkEvent implements Listener{
             e.printStackTrace();
         }
 
-        if (!Objects.requireNonNull(resident).hasTown()) debug("The resident doesn't have a town.");
-        if (resident.hasTown() && !resident.hasNation()) debug("Resident has town but doesn't have a Nation.");
+        assert resident != null;
+        if (!resident.hasTown()) return;
+        if (resident.hasTown() && !resident.hasNation()) return;
         if (blockTo == null) return;
         if (TownyUniverse.getTownBlock(event.getMoveEvent().getTo()) != null) {
             TownBlock townBlock = TownyUniverse.getTownBlock(event.getMoveEvent().getTo());
