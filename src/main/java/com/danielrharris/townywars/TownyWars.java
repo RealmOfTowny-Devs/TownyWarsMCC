@@ -1,7 +1,9 @@
 package com.danielrharris.townywars;
 
+import com.danielrharris.townywars.ideologies.IdeologiesFile;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
+import com.danielrharris.townywars.trades.TradeFile;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.object.*;
 import org.bukkit.Bukkit;
@@ -56,6 +58,7 @@ public class TownyWars
   private GriefManager gm;
   
   File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
+  private TradeFile tradeFile;
   
   public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
   
@@ -68,8 +71,9 @@ public class TownyWars
   private static final Charset utf8 = StandardCharsets.UTF_8;
 	
   private static final String deathsFile="deaths.txt";
+    private IdeologiesFile ideologiesFile;
 
-  @Override
+    @Override
   public void onDisable()
   {
 	gm.saveData(GriefListener.getGriefedBlocks());
@@ -96,6 +100,8 @@ public class TownyWars
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
     PluginManager pm = getServer().getPluginManager();
+    tradeFile = new TradeFile(this);
+    ideologiesFile = new IdeologiesFile(this);
     gm = new GriefManager(this);
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);
@@ -284,4 +290,12 @@ public class TownyWars
 	public static TownyWars getInstance(){
 		return plugin;
 	}
+
+    public TradeFile getTradeFile() {
+        return tradeFile;
+    }
+    
+    public IdeologiesFile getIdeologiesFile(){
+	    return ideologiesFile;
+    }
 }

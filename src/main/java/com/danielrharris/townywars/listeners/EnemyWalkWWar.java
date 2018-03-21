@@ -26,8 +26,8 @@ public class EnemyWalkWWar implements Listener {
             e.printStackTrace();
         }
         assert resident !=null;
-        if (!resident.hasTown()) System.out.println("The resident doesn't have a town.");
-        if (resident.hasTown() && !resident.hasNation()) System.out.println("Resident has town but doesn't have a Nation.");
+        if (!resident.hasTown()) return;
+        if (resident.hasTown() && !resident.hasNation()) return;
         if (to == null) return;
         if (TownyUniverse.getTownBlock(event.getMoveEvent().getTo()) != null) {
             TownBlock townBlock = TownyUniverse.getTownBlock(event.getMoveEvent().getTo());
