@@ -1,15 +1,14 @@
 package com.danielrharris.townywars;
 
-import com.danielrharris.townywars.ideologies.IdeologiesFile;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
 import com.danielrharris.townywars.trades.TradeFile;
 import com.palmergames.bukkit.towny.Towny;
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.*;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
@@ -52,26 +51,28 @@ public class TownyWars
   public static int debrisChance;
   public static ArrayList<String> worldBlackList;
   private ArrayList<String> blockStringBlackList;
+  public static File idConfigFile = null;
+  public static YamlConfiguration idConfig = null;
   public static Set<Material> blockBlackList;
   public static boolean isBossBar = false;
   private static TownyWars plugin;
   private GriefManager gm;
-  
+
   File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
   private TradeFile tradeFile;
-  
+
   public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
-  
+
   public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
-  
+
   public static List<String> messagedPlayers = new ArrayList<String>();
-  
+
   //set up the date conversion spec and the character set for file writing
   private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
   private static final Charset utf8 = StandardCharsets.UTF_8;
-	
+
   private static final String deathsFile="deaths.txt";
-    private IdeologiesFile ideologiesFile;
+
 
     @Override
   public void onDisable()
@@ -79,14 +80,14 @@ public class TownyWars
 	gm.saveData(GriefListener.getGriefedBlocks());
     try
     {
-      WarManager.save();  
+      WarManager.save();
     }
     catch (Exception ex)
     {
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
-  
+
   @Override
   public void onEnable()
   {
@@ -101,7 +102,7 @@ public class TownyWars
     }
     PluginManager pm = getServer().getPluginManager();
     tradeFile = new TradeFile(this);
-    ideologiesFile = new IdeologiesFile(this);
+      idConfigFile = new File(getDataFolder(), "ideology.yml");
     gm = new GriefManager(this);
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);
@@ -109,6 +110,8 @@ public class TownyWars
     pm.registerEvents(new NationWalkEvent(),this);
     pm.registerEvents(new EnemyWalkWWar(),this);
     getCommand("twar").setExecutor(new WarExecutor(this));
+    getCommand("ideology").setExecutor(this);
+    getCommand("townideology").setExecutor(this);
     towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
     tUniverse = towny.getTownyUniverse();
     if(Bukkit.getPluginManager().getPlugin("BossBarAPI")!=null){
@@ -126,22 +129,39 @@ public class TownyWars
           }
       }
     }
-    
+
     TownyUniverse.getDataSource().saveTowns();
-    
+
     this.saveDefaultConfig();
-    
+
     if(!(wallConfigFile.exists())){
 	      try {
 	    	  wallConfigFile.createNewFile();
 		} catch (IOException e) {
-			
+
 			e.printStackTrace();
 		}
-    }
-     
+    } if (!idConfigFile.exists()) {
+      try
+      {
+          idConfigFile.createNewFile();
+      }
+      catch (IOException e)
+      {
+          e.printStackTrace();
+      }
+  }  idConfig = YamlConfiguration.loadConfiguration(idConfigFile);
+      try
+      {
+          idConfig.save(idConfigFile);
+      }
+      catch (IOException e)
+      {
+          e.printStackTrace();
+      }
+
     YamlConfiguration wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
-    
+
     pPlayer = getConfig().getDouble("pper-player");
     pPlot = getConfig().getDouble("pper-plot");
     declareCost = getConfig().getDouble("declare-cost");
@@ -158,7 +178,7 @@ public class TownyWars
     allowRollback = Boolean.valueOf(allowRollbackS.toUpperCase());
     if(allowRollback){
     	timer = ((getConfig().getInt("griefing.save-timer"))*60)*20;
-    }   
+    }
     pBlock = getConfig().getDouble("griefing.per-block-cost");
     pBlockPoints = getConfig().getDouble("griefing.per-block-points");
     String tempExplosions = getConfig().getString("griefing.allow-explosions-war");
@@ -168,9 +188,9 @@ public class TownyWars
     debrisChance = getConfig().getInt("griefing.explosions.debris-chance");
     for(String string : (ArrayList<String>) getConfig().getStringList("griefing.worldBlackList")){
     	worldBlackList.add(string.toLowerCase());
-    }   
+    }
     this.blockStringBlackList = (ArrayList<String>) getConfig().getStringList("griefing.blockBlackList");
-    blockBlackList = convertBanList(this.blockStringBlackList);  
+    blockBlackList = convertBanList(this.blockStringBlackList);
     if(TownyWars.allowRollback){
     	new SaveTask(this.gm).runTaskTimer(plugin, TownyWars.timer, TownyWars.timer);
     }
@@ -184,38 +204,115 @@ public class TownyWars
     {
         System.out.println("failed to add residents!");
         ex.printStackTrace();
-    }   
-  }
-  
+    }
+
+  } public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
+    if (cmd.getName().equalsIgnoreCase("ideology"))
+    {
+        if (!(sender instanceof Player))
+        {
+            sender.sendMessage(ChatColor.RED + "This command is only usable by players, sorry!");
+            return true;
+        }
+        Player player = (Player)sender;
+        try
+        {
+            Resident res = TownyUniverse.getDataSource().getResident(player.getName());
+            if (res.hasTown())
+            {
+                Town t = res.getTown();
+                String name = t.getName();
+                if (idConfig.contains(name))
+                {
+                    player.sendMessage(ChatColor.RED + "Your town already has an ideology set!");
+                    return true;
+                }
+                if (t.getMayor() != res)
+                {
+                    player.sendMessage(ChatColor.RED + "You cannot set your town's ideology if you are not the mayor!");
+                    return true;
+                }
+                if (args.length != 1)
+                {
+                    player.sendMessage(ChatColor.RED + "/ideology <ideology>");
+                    return true;
+                }
+                String id = args[0].toLowerCase();
+                if ((!id.equals("economic")) && (!id.equals("religious")) && (!id.equals("militaristic")))
+                {
+                    player.sendMessage(ChatColor.RED + "Valid ideologies are: Economic, Religious, Militaristic");
+                    return true;
+                }
+                idConfig.set(t.getName(), id);
+                try
+                {
+                    idConfig.save(idConfigFile);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+                player.sendMessage(ChatColor.GREEN + "Ideology set!");
+                return true;
+            }else {
+                player.sendMessage(ChatColor.RED.toString() + "You do not have a town!");
+            }
+        }
+        catch (NotRegisteredException localNotRegisteredException) {}
+    }
+    if(cmd.getName().equalsIgnoreCase("townideology")){
+        Player player = (Player) sender;
+        try {
+            Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
+            if(resident.hasTown()){
+                Town town = resident.getTown();
+                String tname = town.getName();
+                if(idConfig.contains(tname)){
+                    player.sendMessage(ChatColor.GREEN.toString() + "Your ideology is: " + ChatColor.DARK_GREEN.toString() + idConfig.getString(tname));
+                    return true;
+                }else {
+                    player.sendMessage(ChatColor.RED.toString() + "Your town hasn't chosen an ideology.");
+                    return true;
+                }
+            }else {
+                player.sendMessage(ChatColor.RED.toString() + "You do not have a town!");
+            }
+        } catch (NotRegisteredException e) {
+            e.printStackTrace();
+        }
+    }
+    return false;
+}
+
   public void addTownyWarsResident(String playerName){
 	  TownyWarsResident newPlayer = new TownyWarsResident(playerName);
 	  allTownyWarsResidents.put(playerName,newPlayer);
   }
-  
+
   public TownyWarsResident getTownyWarsResident(String playerName){
 	  return allTownyWarsResidents.get(playerName);
   }
-  
 
-	
+
+
   // takes in information about the death that just happened and writes it to a file
   public int writeKillRecord(long deathTime, String playerName, String killerName, String damageCause, String deathMessage){
-		
+
 		// convert the time in milliseconds to a date and then convert it to a string in a useful format (have to tack on the milliseconds)
 		// format example: 2014-08-29 EDT 10:05:25:756
 		Date deathDate = new Date(deathTime);
 	    String deathDateString = format.format(deathDate)+":"+deathTime%1000;
-		
+
 	    if (killerName==null) {
 	    	killerName="nonplayer";
 	    }
-	    
+
 	    // prepare the death record string that will be written to file
 		List<String> deathRecord = Arrays.asList(deathDateString+": "+playerName+" died to "+killerName+" via "+damageCause+"; '"+deathMessage+"'");
-		
-		
+
+
 		// append the death record to the specified file
-		try {	
+		try {
 				Files.write(Paths.get(deathsFile), deathRecord, utf8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 		}
 		// some kind of error occurred . . . .
@@ -226,7 +323,7 @@ public class TownyWars
 		// all good!
 		return 0;
 	}
-  	
+
   	public Set<Material> convertBanList(List<String> banList2){
   		Set<Material> newBanList = new HashSet<Material>();
 		if(!banList2.equals(null)){
@@ -239,7 +336,7 @@ public class TownyWars
 		}
 		return newBanList;
 	}
-  	
+
   	/*
 	 * Takes a player and a location, the player is someone who wants to find out if the location
 	 * interacted with is located in a town that their nation is at war With
@@ -267,7 +364,7 @@ public class TownyWars
 								if(otherTown!=re.getTown()){
 									if(otherTown.getNation()!=null){
 										Nation otherNation = otherTown.getNation();
-										if(otherNation!=nation){									
+										if(otherNation!=nation){
 											Set<Nation> nationsInWar = ww.getNationsInWar();
 											if(nationsInWar.contains(otherNation)){
 												//nations are at war with each other
@@ -280,22 +377,18 @@ public class TownyWars
 						}
 					}
 				}
-			}				
+			}
 		}catch (Exception ex) {
 			return false;
 		}
 		return false;
 	}
-	
+
 	public static TownyWars getInstance(){
 		return plugin;
 	}
 
     public TradeFile getTradeFile() {
         return tradeFile;
-    }
-    
-    public IdeologiesFile getIdeologiesFile(){
-	    return ideologiesFile;
     }
 }

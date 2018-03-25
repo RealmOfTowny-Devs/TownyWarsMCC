@@ -5,6 +5,10 @@ main: com.danielrharris.townywars.TownyWars
 depend: [Towny]
 softdepend: [CS-CoreLib, CSCoreLib, BossBarAPI]
 commands:
+  ideology:
+    description: Set your ideology
+  townideology:
+    description: Check your ideology
   twar:
     usage: No permission!
   twar neutral:

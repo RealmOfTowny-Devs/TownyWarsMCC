@@ -18,6 +18,7 @@ public class NationWalkEvent implements Listener{
         Player player = event.getPlayer();
         Resident resident = null;
         WorldCoord blockTo = event.getTo();
+        WorldCoord blockFrom = event.getFrom();
         try {
             resident = TownyUniverse.getDataSource().getResident(player.getName());
         } catch (NotRegisteredException e) {
@@ -31,7 +32,6 @@ public class NationWalkEvent implements Listener{
         if (TownyUniverse.getTownBlock(event.getMoveEvent().getTo()) != null) {
             TownBlock townBlock = TownyUniverse.getTownBlock(event.getMoveEvent().getTo());
 
-
             Town rTown = null;
             Nation rNation = null;
             try {
@@ -43,32 +43,34 @@ public class NationWalkEvent implements Listener{
             Town townTo;
 
             Nation nationTo;
-
             try {
                 townTo = townBlock.getTown();
-                if(!townTo.hasNation()){
-                    Title.sendTitle(player,20,20,20,ChatColor.WHITE.toString() + townTo.getName(),"doesn't have a nation.");
-                }else {
-                    nationTo = townTo.getNation();
+                System.out.println("got town to");
+                if (!townTo.hasNation()) {
+                    Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + townTo.getName(), "doesn't have a nation.");
+                } else
+                    if (!blockFrom.getTownyWorld().isClaimable()) return;
+                    else {
+                        nationTo = townTo.getNation();
+                        assert rNation != null;
+                        if (rNation.getName().equals(nationTo.getName())) return;
 
+                        if (rNation.hasEnemy(nationTo)) {
+                            Title.sendTitle(player, 20, 20, 20, ChatColor.RED.toString() + nationTo.getName(), "is your enemy!");
+                        }
+                        if (rNation.hasAlly(nationTo)) {
+                            Title.sendTitle(player, 20, 20, 20, ChatColor.GREEN.toString() + nationTo.getName(), "is your ally!");
+                        }
+                        if (!rNation.hasEnemy(nationTo) && !rNation.hasAlly(nationTo)) {
+                            Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + nationTo.getName(), "is neutral with your nation.");
+                        }
+                    }
 
-                    if (rNation.hasEnemy(nationTo)) {
-                        Title.sendTitle(player, 20, 20, 20, ChatColor.RED.toString() + nationTo.getName(), "is your enemy!");
-                    }
-                    if (rNation.hasAlly(nationTo)) {
-                        Title.sendTitle(player, 20, 20, 20, ChatColor.GREEN.toString() + nationTo.getName(), "is your ally!");
-                    }
-                    if (!rNation.hasEnemy(nationTo) && !rNation.hasAlly(nationTo)) {
-                        Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + nationTo.getName(), "is neutral with your nation.");
-                    }
-                    if(rNation.getName().equalsIgnoreCase(nationTo.getName()))return;
-                }
-
-            } catch (NotRegisteredException e) {
+                }catch(NotRegisteredException e){
                 e.printStackTrace();
             }
+            }
         }
-    }
     private void debug(String message){
         System.out.println("[DEBUG] " + message);
     }
@@ -81,4 +83,5 @@ public class NationWalkEvent implements Listener{
  * CHECK IF TOWN IS WILDERNESS, IF SO, STOP.
  *
  *
+ if (!townBlock1.hasTown() || townBlock1.getType() == TownBlockType.WILDS) {
  **/
