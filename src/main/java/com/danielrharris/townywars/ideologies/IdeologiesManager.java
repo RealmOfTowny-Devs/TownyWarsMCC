@@ -2,6 +2,7 @@ package com.danielrharris.townywars.ideologies;
 
 import com.danielrharris.townywars.TownyWars;
 import com.palmergames.bukkit.towny.object.Town;
+
 import org.bukkit.configuration.file.FileConfiguration;
 
 public class IdeologiesManager {
@@ -11,23 +12,43 @@ public class IdeologiesManager {
     private FileConfiguration config = ideologiesFile.getConfig();
 
     public boolean hasIdeology(Town town){
-        return config.contains("Ideologies." + town.getUID() + "." + town.getName() + ".ideology");
+        return config.contains(town.getName());
     }
 
     public void addIdeologyToTown(Ideology ideology, Town toTown){
         if(hasIdeology(toTown))return;
-        config.set("Ideologies." + toTown.getUID() + "." + toTown.getName()+".ideology",ideology);
+        config.set(toTown.getName(), ideology.getName());
         ideologiesFile.saveFile();
         ideologiesFile.reloadFile();
     }
 
-    public void getIdeology(Town town){
+    public Ideology getIdeology(Town town){
         if(hasIdeology(town)){
-            config.get("Ideologies." + town.getUID() + "." + town.getName() + ".ideology");
+            String idName = (String) config.get(town.getName());
+            return getIdeologyFromName (idName);
         }
+		return null;
     }
 
     public static IdeologiesManager getIdeologiesManager() {
         return ideologiesManager;
+    }
+    
+    public Ideology getIdeologyFromName (String string)
+    {
+    	String name = string.toLowerCase();
+    	if (name.contains("eco"))
+    	{
+    		return Ideology.ECONOMIC;
+    	}
+    	if (name.contains("mili"))
+    	{
+    		return Ideology.MILITARISTIC;
+    	}
+    	if (name.contains("reli"))
+    	{
+    		return Ideology.RELIGIOUS;
+    	}
+    	return null;
     }
 }

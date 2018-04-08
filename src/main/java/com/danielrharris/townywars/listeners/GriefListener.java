@@ -28,19 +28,25 @@ import com.palmergames.bukkit.util.BukkitTools;
 
 import me.drkmatr1984.BlocksAPI.utils.SBlock;
 import me.drkmatr1984.BlocksAPI.utils.Utils;
+import net.md_5.bungee.api.ChatColor;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -48,8 +54,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.Attachable;
 import org.bukkit.material.Vine;
+import org.bukkit.plugin.PluginBase;
 
 public class GriefListener implements Listener{
 		
@@ -135,16 +146,141 @@ public class GriefListener implements Listener{
 	}
 	
 	
-	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void suppressTownyBuildEvent(BlockPlaceEvent event) {
 		if(TownyWars.allowGriefing){
 			event.setCancelled(true);
 		}
 	}
 	
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void wallBreakEvent(BlockBreakEvent event) {
+		if (TownyWars.wallBlocks.containsKey(event.getBlock().getChunk()))
+		{
+			Player player = event.getPlayer();
+			if (TownyWars.wallBlocks.get(event.getBlock().getChunk()).contains(event.getBlock().getLocation()))
+			{
+				Town town;
+				try {
+					town = WorldCoord.parseWorldCoord(event.getBlock().getLocation()).getTownBlock().getTown();
+					
+					 if (town != null)
+					    {
+					    	boolean found = false;
+					    	for (Resident res : town.getResidents())
+					    	{
+					    		//Bukkit.getServer().broadcastMessage(res.getName());
+					    		if (res.getName().contains(player.getName()))
+					    		{
+					    			found = true;
+					    			player.sendMessage(ChatColor.GREEN + "Wall block removed");
+					    			Chunk chunk = event.getBlock().getChunk();
+					    			Location loc = event.getBlock().getLocation();
+					    			List<String> list = TownyWars.wallConfig.getStringList(chunk.getX() + "," + chunk.getZ() + "," + loc.getWorld().getName());
+					    			list.remove(loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+					    			TownyWars.wallConfig.set(chunk.getX() + "," + chunk.getZ() + "," + loc.getWorld().getName(), list);
+					    			try {
+										TownyWars.wallConfig.save(TownyWars.wallConfigFile);
+									} catch (IOException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+					    			if (TownyWars.wallBlocks.containsKey(chunk))
+					    			{
+					    				List<Location> locList = TownyWars.wallBlocks.get(chunk);
+					    				locList.remove(event.getBlock().getLocation());
+					    				TownyWars.wallBlocks.replace(chunk, locList);
+					    			}
+					    			
+					    			return;
+					    		}
+					    	}
+					    	if (!found)
+					    	{
+					    		event.setCancelled(true);
+					    		player.sendMessage(ChatColor.RED + "You can only damage walls with explosives");
+					    		return;
+					    	}
+					    }
+				} catch (NotRegisteredException e) {
+					// TODO Auto-generated catch block
+					//e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	@SuppressWarnings("unused")
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
 	public void onWarBuild(BlockPlaceEvent event) {
+		Player player = event.getPlayer();
+		ItemStack item = player.getItemInHand();
+		if (item.hasItemMeta())
+		{
+			ItemMeta meta = item.getItemMeta();
+			if (meta.hasDisplayName())
+			{
+				if (meta.getDisplayName().contains(TownyWars.townyBlockName))
+				{
+					Location loc = event.getBlock().getLocation();
+					try {
+					    //Try to get the town where the player is Standing
+					    Town town = WorldCoord.parseWorldCoord(loc).getTownBlock().getTown();
+					    if (town != null)
+					    {
+					    	boolean found = false;
+					    	for (Resident res : town.getResidents())
+					    	{
+					    		//Bukkit.getServer().broadcastMessage(res.getName());
+					    		if (res.getName().contains(player.getName()))
+					    		{
+					    			found = true;
+					    			Chunk chunk = loc.getChunk();
+					    			player.sendMessage(ChatColor.GREEN + "Wall block placed!");
+					    			if (TownyWars.wallBlocks.containsKey(chunk))
+					    			{
+					    				List<Location> locList = TownyWars.wallBlocks.get(chunk);
+					    				locList.add(loc);
+					    				TownyWars.wallBlocks.replace(chunk, locList);
+					    			}
+					    			else
+					    			{
+					    				List<Location> locList = new ArrayList<Location>();
+					    				locList.add(loc);
+					    				TownyWars.wallBlocks.put(chunk, locList);
+					    			}
+					    			///TownyWars.wallConfig.set(arg0, arg1);
+
+					    			List<String> list = TownyWars.wallConfig.getStringList(chunk.getX() + "," + chunk.getZ() + "," + loc.getWorld().getName());
+					    			list.add(loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+					    			TownyWars.wallConfig.set(chunk.getX() + "," + chunk.getZ() + "," + loc.getWorld().getName(), list);
+					    			//TownyWars.wallConfig.set(chunk.getX() + "," + chunk.getZ(), loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ() + "," + loc.getWorld().getName());
+					    			try {
+										TownyWars.wallConfig.save(TownyWars.wallConfigFile);
+									} catch (IOException e) {
+										// TODO Auto-generated catch block
+										//e.printStackTrace();
+									}
+					    			
+					    			event.setCancelled(false);
+					    			return;
+					    		}
+					    	}
+					    	if (!found)
+					    	{
+					    		player.sendMessage(ChatColor.RED + "You are not allowed to place this here, sorry!");
+					    		event.setCancelled(true);
+					    		return;
+					    	}
+					    }
+					} catch (NotRegisteredException e) {
+					    player.sendMessage(ChatColor.RED + "You must be in a town to place this!");
+					    event.setCancelled(true);
+					    return;
+					}
+				}
+			}
+		}
 		if(TownyWars.allowGriefing){
 			Block block = event.getBlock();
 			if(event.getPlayer()!=null){		
@@ -155,7 +291,7 @@ public class GriefListener implements Listener{
 					res = TownyUniverse.getDataSource().getResident(p.getName());
 				} catch (NotRegisteredException e2) {
 					// TODO Auto-generated catch block
-					e2.printStackTrace();
+					//eckTrace();
 				}
 				if(TownyWars.atWar(p, block.getLocation())){
 					if(TownyWars.allowRollback){
@@ -168,7 +304,7 @@ public class GriefListener implements Listener{
 								otherTown = townBlock.getTown();
 								otherNation = otherTown.getNation();
 							} catch (NotRegisteredException e) {
-								e.printStackTrace();
+								//e.printStackTrace();
 								p.sendMessage("An error has occurred. Please get an Admin to check the logs.");
 							}
 							if(GriefListener.sBlocks.get(otherTown)==null){
@@ -201,7 +337,6 @@ public class GriefListener implements Listener{
 						return;
 					}
 
-					Player player = event.getPlayer();
 					WorldCoord worldCoord;
 					try {				
 						TownyWorld world = TownyUniverse.getDataSource().getWorld(block.getWorld().getName());
@@ -261,9 +396,87 @@ public class GriefListener implements Listener{
 			}
 		}
 	}
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
+	public void onPearlThrown(ProjectileLaunchEvent ev) {
+		if (ev.getEntityType() == EntityType.ENDER_PEARL)
+		{
+			EnderPearl e = (EnderPearl) ev.getEntity();
+			if (e.getShooter() instanceof Player)
+			{
+				String name = ((Player) e.getShooter()).getName();
+				TownyWars.enderpearls.put(name , ev.getEntity());
+				
+				Bukkit.getScheduler().scheduleAsyncDelayedTask(TownyWars.getInstance(), new Runnable() {
+			        @Override
+			        public void run() {
+			        	if (TownyWars.enderpearls.containsKey(name))
+			        	{
+			        		TownyWars.enderpearls.remove(name);
+			        	}
+			        }
+			    }, 60 * 20);
+			}
+		}
+	}
 	
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
 	public void ignoreProtections(EntityExplodeEvent ev) {
+		List<Block> removeList = new ArrayList<Block>();
+		for (Block b : ev.blockList())
+		{
+			Chunk c = b.getChunk();
+			Location l = b.getLocation();
+			if (TownyWars.wallBlocks.containsKey(c))
+			{
+				if (TownyWars.wallBlocks.get(c).contains(l))
+				{
+					if (TownyWars.wallHealth.containsKey(b))
+					{
+						if (TownyWars.wallHealth.get(b) > 0)
+						{
+							removeList.add(b);
+						}
+						if (TownyWars.wallHealth.get(b) <= 0)
+						{
+							Chunk chunk = b.getLocation().getChunk();
+			    			Location loc = b.getLocation();
+			    			List<String> list = TownyWars.wallConfig.getStringList(chunk.getX() + "," + chunk.getZ() + "," + loc.getWorld().getName());
+			    			list.remove(loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+			    			TownyWars.wallConfig.set(chunk.getX() + "," + chunk.getZ() + "," + loc.getWorld().getName(), list);
+			    			try {
+								TownyWars.wallConfig.save(TownyWars.wallConfigFile);
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+			    			if (TownyWars.wallBlocks.containsKey(chunk))
+			    			{
+			    				List<Location> locList = TownyWars.wallBlocks.get(chunk);
+			    				locList.remove(b.getLocation());
+			    				TownyWars.wallBlocks.replace(chunk, locList);
+			    			}
+						}
+					}
+					if (!TownyWars.wallHealth.containsKey(b))
+					{
+						removeList.add(b);
+					}
+					if (TownyWars.wallHealth.containsKey(b))
+					{
+						TownyWars.wallHealth.replace(b, TownyWars.wallHealth.get(b) - 1);
+					}
+					else
+					{
+						TownyWars.wallHealth.put(b, TownyWars.getInstance().getConfig().getInt("townyWallHealth"));
+					}
+				}
+			}
+		}
+		for (Block b : removeList)
+		{
+			ev.blockList().remove(b);
+		}
+		removeList.clear();
 		Location center = ev.getLocation();
 		TownBlock townBlock = null;
 		townBlock = TownyUniverse.getTownBlock(center);
@@ -280,10 +493,57 @@ public class GriefListener implements Listener{
 							}
 						} catch (NotRegisteredException e) {
 							// TODO Auto-generated catch block
-							e.printStackTrace();
+							//e.printStackTrace();
 						}
 					}
 							
+				}
+			}
+		}
+	}
+	
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
+	public void onPlayerMoveWall(PlayerMoveEvent ev) {
+		Location to = ev.getTo();
+		Chunk c = to.getChunk();
+		TownBlock tb = TownyUniverse.getTownBlock(to);
+		try {
+			if (tb != null)
+			{
+				if (tb.getTown() != null)
+				{
+					Town town = tb.getTown();
+					 Resident resident = null;
+				        try {
+				            resident = TownyUniverse.getDataSource().getResident(ev.getPlayer().getName());
+				            if (resident != null)
+				            {
+				            	if (resident.hasTown())
+				            	{
+					            	if (resident.getTown() == town)
+					            	{
+					            		return;
+					            	}
+				            	}
+				            }
+				        } catch (NotRegisteredException e) {
+				            e.printStackTrace();
+				        }
+				}
+			}
+		} catch (NotRegisteredException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+		}
+		if (TownyWars.wallBlocks.containsKey(c))
+		{
+			List<Location> locs = TownyWars.wallBlocks.get(c);
+			for (Location l : locs)
+			{
+				if (to.getBlockX() == l.getBlockX() && to.getBlockZ() == l.getBlockZ())
+				{
+					ev.getPlayer().sendMessage(ChatColor.RED + "You cannot cross this wall!");
+					ev.setCancelled(true);
 				}
 			}
 		}

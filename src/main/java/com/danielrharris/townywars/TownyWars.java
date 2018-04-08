@@ -1,15 +1,16 @@
 package com.danielrharris.townywars;
 
+import com.danielrharris.townywars.ideologies.IdeologiesFile;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
-import com.danielrharris.townywars.trades.TradeFile;
+//import com.danielrharris.townywars.trades.TradeFile;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.*;
 import org.bukkit.*;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -51,17 +52,22 @@ public class TownyWars
   public static int debrisChance;
   public static ArrayList<String> worldBlackList;
   private ArrayList<String> blockStringBlackList;
-  public static File idConfigFile = null;
-  public static YamlConfiguration idConfig = null;
+  private IdeologiesFile idFile = null;
   public static Set<Material> blockBlackList;
   public static boolean isBossBar = false;
   private static TownyWars plugin;
   private GriefManager gm;
+  
+  public static HashMap<String, Entity> enderpearls = new HashMap<String, Entity>();
+  
+  public static String townyBlockName;
 
-  File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
-  private TradeFile tradeFile;
+  public static File wallConfigFile = null;
+  public static YamlConfiguration  wallConfig = null;
+  //private TradeFile tradeFile;
 
   public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
+  public static HashMap<Block, Integer> wallHealth = new HashMap<Block, Integer>();
 
   public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
 
@@ -100,9 +106,14 @@ public class TownyWars
     {
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
+    wallConfigFile = new File(this.getDataFolder(), "walls.yml");
     PluginManager pm = getServer().getPluginManager();
-    tradeFile = new TradeFile(this);
-      idConfigFile = new File(getDataFolder(), "ideology.yml");
+    //tradeFile = new TradeFile(this);
+    idFile = new IdeologiesFile(this);
+    
+    townyBlockName = getConfig().getString("townyBlockName");
+    townyBlockName = townyBlockName.replaceAll("&", "§");
+    
     gm = new GriefManager(this);
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);
@@ -110,8 +121,8 @@ public class TownyWars
     pm.registerEvents(new NationWalkEvent(),this);
     pm.registerEvents(new EnemyWalkWWar(),this);
     getCommand("twar").setExecutor(new WarExecutor(this));
-    getCommand("ideology").setExecutor(this);
-    getCommand("townideology").setExecutor(this);
+    getCommand("ideology").setExecutor(new IdeologyCMD());
+    //getCommand("givewall").setExecutor(new GiveWallCMD());
     towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
     tUniverse = towny.getTownyUniverse();
     if(Bukkit.getPluginManager().getPlugin("BossBarAPI")!=null){
@@ -138,29 +149,40 @@ public class TownyWars
 	      try {
 	    	  wallConfigFile.createNewFile();
 		} catch (IOException e) {
-
+			
 			e.printStackTrace();
 		}
-    } if (!idConfigFile.exists()) {
-      try
-      {
-          idConfigFile.createNewFile();
-      }
-      catch (IOException e)
-      {
-          e.printStackTrace();
-      }
-  }  idConfig = YamlConfiguration.loadConfiguration(idConfigFile);
-      try
-      {
-          idConfig.save(idConfigFile);
-      }
-      catch (IOException e)
-      {
-          e.printStackTrace();
-      }
-
-    YamlConfiguration wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
+    }
+    
+    wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
+    try {
+		wallConfig.save(wallConfigFile);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+    
+    for (String s : wallConfig.getKeys(false))
+    {
+    	String[] strings = s.split(",");
+    	int x = Integer.parseInt(strings[0]);
+    	int z = Integer.parseInt(strings[1]);
+    	String worldName = strings[2];
+    	World world = Bukkit.getWorld(worldName);
+    	Chunk chunk = world.getChunkAt(x, z);
+    	List<String> list = wallConfig.getStringList(s);
+    	List<Location> locList = new ArrayList<Location>();
+    	for (String string : list)
+    	{
+    		String[] parsed = string.split(",");
+        	int xx = Integer.parseInt(parsed[0]);
+        	int yy = Integer.parseInt(parsed[1]);
+        	int zz = Integer.parseInt(parsed[2]);
+        	Location loc = new Location(world,xx,yy,zz);
+        	locList.add(loc);
+    	}
+    	wallBlocks.put(chunk, locList);
+    }
 
     pPlayer = getConfig().getDouble("pper-player");
     pPlot = getConfig().getDouble("pper-plot");
@@ -205,84 +227,77 @@ public class TownyWars
         System.out.println("failed to add residents!");
         ex.printStackTrace();
     }
-
-  } public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
-    if (cmd.getName().equalsIgnoreCase("ideology"))
-    {
-        if (!(sender instanceof Player))
-        {
-            sender.sendMessage(ChatColor.RED + "This command is only usable by players, sorry!");
-            return true;
-        }
-        Player player = (Player)sender;
-        try
-        {
-            Resident res = TownyUniverse.getDataSource().getResident(player.getName());
-            if (res.hasTown())
+    
+    Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+        @Override
+        public void run() {
+            List<Entity> remove = new ArrayList<Entity>();
+        	for (String p : enderpearls.keySet())
+        	{
+        		Entity e = enderpearls.get(p);
+        		Bukkit.getServer().broadcastMessage(e.getLocation().getBlockX() + "");
+        		if (e.isDead() || e.getLocation() == null)
+        		{
+        			remove.add(e);
+        		}
+        		Location location = e.getLocation().getBlock().getLocation();
+        		Chunk c = location.getChunk();
+        		TownBlock tb = TownyUniverse.getTownBlock(location);
+    			if (tb != null && tb.hasTown())
+    			{
+        			try {
+						if (tb.getTown() != null)
+						{
+							Town town = tb.getTown();
+							 Resident resident = null;
+						        try {
+						            resident = TownyUniverse.getDataSource().getResident(p);
+						            Bukkit.getServer().broadcastMessage(resident.getName());
+						            if (resident != null)
+						            {
+						            	if (resident.hasTown())
+						            	{
+							            	if (resident.getTown() == town)
+							            	{
+							            		return;
+							            	}
+						            	}
+						            }
+						        } catch (NotRegisteredException ee) {
+						            ee.printStackTrace();
+						        }
+						}
+					} catch (NotRegisteredException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+    			}
+    			if (wallBlocks.containsKey(c))
+        		{
+        			List<Location> locs = TownyWars.wallBlocks.get(c);
+        			for (Location l : locs)
+        			{
+        				int blockX = location.getBlockX();
+        				int blockX2 = l.getBlockX();
+        				int blockZ = location.getBlockZ();
+        				int blockZ2 = l.getBlockZ();
+        				if ((blockX == blockX2 || blockX - 1 == blockX2 || blockX + 1 == blockX2 || blockX + 2 == blockX2 || blockX - 2 == blockX2) && (blockZ == blockZ2 || blockZ - 1 == blockZ2 || blockZ + 1 == blockZ2 || blockZ + 2 == blockZ2 || blockZ - 2 == blockZ2))
+        				{
+        					remove.add(e);
+        					e.remove();
+        				}
+        			}
+        		}
+    		} 
+            for (Entity e : remove)
             {
-                Town t = res.getTown();
-                String name = t.getName();
-                if (idConfig.contains(name))
-                {
-                    player.sendMessage(ChatColor.RED + "Your town already has an ideology set!");
-                    return true;
-                }
-                if (t.getMayor() != res)
-                {
-                    player.sendMessage(ChatColor.RED + "You cannot set your town's ideology if you are not the mayor!");
-                    return true;
-                }
-                if (args.length != 1)
-                {
-                    player.sendMessage(ChatColor.RED + "/ideology <ideology>");
-                    return true;
-                }
-                String id = args[0].toLowerCase();
-                if ((!id.equals("economic")) && (!id.equals("religious")) && (!id.equals("militaristic")))
-                {
-                    player.sendMessage(ChatColor.RED + "Valid ideologies are: Economic, Religious, Militaristic");
-                    return true;
-                }
-                idConfig.set(t.getName(), id);
-                try
-                {
-                    idConfig.save(idConfigFile);
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-                player.sendMessage(ChatColor.GREEN + "Ideology set!");
-                return true;
-            }else {
-                player.sendMessage(ChatColor.RED.toString() + "You do not have a town!");
+            	enderpearls.remove(e);
             }
+            remove.clear();
         }
-        catch (NotRegisteredException localNotRegisteredException) {}
-    }
-    if(cmd.getName().equalsIgnoreCase("townideology")){
-        Player player = (Player) sender;
-        try {
-            Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
-            if(resident.hasTown()){
-                Town town = resident.getTown();
-                String tname = town.getName();
-                if(idConfig.contains(tname)){
-                    player.sendMessage(ChatColor.GREEN.toString() + "Your ideology is: " + ChatColor.DARK_GREEN.toString() + idConfig.getString(tname));
-                    return true;
-                }else {
-                    player.sendMessage(ChatColor.RED.toString() + "Your town hasn't chosen an ideology.");
-                    return true;
-                }
-            }else {
-                player.sendMessage(ChatColor.RED.toString() + "You do not have a town!");
-            }
-        } catch (NotRegisteredException e) {
-            e.printStackTrace();
-        }
-    }
-    return false;
-}
+    }, 0L, 1L);
+
+  } 
 
   public void addTownyWarsResident(String playerName){
 	  TownyWarsResident newPlayer = new TownyWarsResident(playerName);
@@ -388,7 +403,13 @@ public class TownyWars
 		return plugin;
 	}
 
-    public TradeFile getTradeFile() {
-        return tradeFile;
-    }
+	public IdeologiesFile getIdeologiesFile() {
+		return idFile;
+	}
+	
+	
+
+    //public TradeFile getTradeFile() {
+    //    return tradeFile;
+    //}
 }

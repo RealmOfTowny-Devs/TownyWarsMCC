@@ -15,7 +15,7 @@ public class IdeologiesFile {
 
     public IdeologiesFile(Plugin plugin){
         if(!plugin.getDataFolder().exists())plugin.getDataFolder().mkdir();
-        this.file=  new File(plugin.getDataFolder(),"ideologies.yml");
+        this.file=  new File(plugin.getDataFolder(),"ideology.yml");
         if(!this.file.exists()){
             try {
                 this.file.createNewFile();

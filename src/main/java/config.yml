@@ -1,0 +1,20 @@
+pper-player: 2.0
+pper-plot: 1.0
+pper-player-kill: 1.0
+pper-mayor-kill: 3.0
+pper-king-kill: 5.0
+declare-cost: 10.0
+end-cost: 0.0
+death-cost: 0.0
+griefing:
+  allow-griefing: false
+  allow-rollback: true
+  save-timer: 10
+  per-block-points: 0.01
+  per-block-cost: 2.0
+  worldBlackList: []
+  blockBlackList: []
+  allow-explosions-war: true
+  explosions:
+    realistic-explosions: true
+    debris-chance: 75

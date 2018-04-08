@@ -42,7 +42,7 @@ public class Economic extends BukkitRunnable{
             e.printStackTrace();
         }
         if(pointsAdded >= War.getTownMaxPoints(town)){
-            wWar.addNationPoint();
+            //wWar.addNationPoint();
         }
     }
 }
