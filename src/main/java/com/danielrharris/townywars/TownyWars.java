@@ -57,9 +57,9 @@ public class TownyWars
   public static boolean isBossBar = false;
   private static TownyWars plugin;
   private GriefManager gm;
+  private TradeFile tradeFile;
 
   File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
-  private TradeFile tradeFile;
 
   public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
 
@@ -101,8 +101,8 @@ public class TownyWars
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
     PluginManager pm = getServer().getPluginManager();
-    tradeFile = new TradeFile(this);
-      idConfigFile = new File(getDataFolder(), "ideology.yml");
+    idConfigFile = new File(getDataFolder(), "ideology.yml");
+    tradeFile =new TradeFile(this);
     gm = new GriefManager(this);
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);

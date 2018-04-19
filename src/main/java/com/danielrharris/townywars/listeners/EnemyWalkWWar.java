@@ -44,7 +44,6 @@ public class EnemyWalkWWar implements Listener {
 
             Town townTo;
             Nation nationTo;
-
             try {
                 townTo = townBlock.getTown();
                 assert townTo.hasNation();

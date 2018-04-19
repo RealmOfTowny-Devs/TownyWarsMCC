@@ -14,7 +14,7 @@ import java.util.Objects;
 public class NationWalkEvent implements Listener{
 
     @EventHandler
-    public void onEnter(PlayerChangePlotEvent event)  {
+    public void onEnter(PlayerChangePlotEvent event) {
         Player player = event.getPlayer();
         Resident resident = null;
         WorldCoord blockTo = event.getTo();
@@ -45,34 +45,30 @@ public class NationWalkEvent implements Listener{
             Nation nationTo;
             try {
                 townTo = townBlock.getTown();
-                System.out.println("got town to");
                 if (!townTo.hasNation()) {
                     Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + townTo.getName(), "doesn't have a nation.");
-                } else
-                    if (!blockFrom.getTownyWorld().isClaimable()) return;
-                    else {
-                        nationTo = townTo.getNation();
-                        assert rNation != null;
-                        if (rNation.getName().equals(nationTo.getName())) return;
+                }
+                assert blockFrom != null;
+                if (blockFrom.getTownyWorld().isClaimable()) {
+                    nationTo = townTo.getNation();
+                    assert rNation != null;
+                    if (rNation.getName().equals(nationTo.getName())) return;
 
-                        if (rNation.hasEnemy(nationTo)) {
-                            Title.sendTitle(player, 20, 20, 20, ChatColor.RED.toString() + nationTo.getName(), "is your enemy!");
-                        }
-                        if (rNation.hasAlly(nationTo)) {
-                            Title.sendTitle(player, 20, 20, 20, ChatColor.GREEN.toString() + nationTo.getName(), "is your ally!");
-                        }
-                        if (!rNation.hasEnemy(nationTo) && !rNation.hasAlly(nationTo)) {
-                            Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + nationTo.getName(), "is neutral with your nation.");
-                        }
+                    if (rNation.hasEnemy(nationTo) && !blockFrom.getTownyWorld().hasTowns()) {
+                        Title.sendTitle(player, 20, 20, 20, ChatColor.RED.toString() + nationTo.getName(), "is your enemy!");
                     }
+                    if (rNation.hasAlly(nationTo)) {
+                        Title.sendTitle(player, 20, 20, 20, ChatColor.GREEN.toString() + nationTo.getName(), "is your ally!");
+                    }
+                    if (!rNation.hasEnemy(nationTo) && !rNation.hasAlly(nationTo)) {
+                        Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + nationTo.getName(), "is neutral with your nation.");
+                    }
+                }
 
-                }catch(NotRegisteredException e){
+            } catch (NotRegisteredException e) {
                 e.printStackTrace();
             }
-            }
         }
-    private void debug(String message){
-        System.out.println("[DEBUG] " + message);
     }
 
 }
