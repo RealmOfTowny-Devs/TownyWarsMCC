@@ -1,11 +1,13 @@
 package com.danielrharris.townywars;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.danielrharris.townywars.listeners.GriefListener;
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.TownyUniverse;
+import me.drkmatr1984.BlocksAPI.tasks.DelayedRegenTask;
+import me.drkmatr1984.BlocksAPI.utils.BlockSerialization;
+import me.drkmatr1984.BlocksAPI.utils.SBlock;
+import me.drkmatr1984.BlocksAPI.utils.Utils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -17,15 +19,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.material.Attachable;
 import org.bukkit.material.PistonExtensionMaterial;
 
-import com.danielrharris.townywars.listeners.GriefListener;
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
-import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
-
-import me.drkmatr1984.BlocksAPI.tasks.DelayedRegenTask;
-import me.drkmatr1984.BlocksAPI.utils.BlockSerialization;
-import me.drkmatr1984.BlocksAPI.utils.SBlock;
-import me.drkmatr1984.BlocksAPI.utils.Utils;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 //Make into a class that stores the blocks in data files per town among other uses
 public class GriefManager
