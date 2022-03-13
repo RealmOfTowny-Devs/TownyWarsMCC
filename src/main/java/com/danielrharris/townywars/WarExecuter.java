@@ -2,12 +2,11 @@ package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.listeners.GriefListener;
 import com.danielrharris.townywars.tasks.ShowDPTask;
-import com.palmergames.bukkit.towny.exceptions.EconomyException;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 import me.drkmatr1984.BlocksAPI.utils.SBlock;
 import me.drkmatr1984.BlocksAPI.utils.Utils;
 import mkremins.fanciful.FancyMessage;
@@ -21,6 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 
 import java.text.DecimalFormat;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,7 +80,7 @@ class WarExecutor implements CommandExecutor
       if(cs instanceof Player){
     	  p = (Player) cs;
     	  try {
-			res = TownyUniverse.getDataSource().getResident(p.getName());
+			res = TownyUniverse.getInstance().getResident(p.getName());
 			if(res.getTown().getNation().getCapital() != res.getTown()){
 				cs.sendMessage(ChatColor.AQUA + "/twar createrebellion [name] - " + ChatColor.YELLOW + "Creates a (secret) rebellion within your nation.");
 			    cs.sendMessage(ChatColor.AQUA + "/twar joinrebellion [name] - " + ChatColor.YELLOW + "Joins a rebellion within your nation using the name.");
@@ -88,7 +88,7 @@ class WarExecutor implements CommandExecutor
 			    cs.sendMessage(ChatColor.AQUA + "/twar showrebellion - " + ChatColor.YELLOW + "Shows your current rebellion and its members.");
 			    cs.sendMessage(ChatColor.AQUA + "/twar executerebellion - " + ChatColor.YELLOW + "Executes your rebellion and you go to war with your nation (requires to be leader of rebellion).");
 	    	}
-		} catch (NotRegisteredException e) {
+		} catch (Exception e) {
 			return true;
 		}   	  
       }
@@ -133,9 +133,9 @@ class WarExecutor implements CommandExecutor
       Nation t;
       try
       {
-        t = TownyUniverse.getDataSource().getNation(onation);
+        t = TownyUniverse.getInstance().getNation(onation);
       }
-      catch (NotRegisteredException ex)
+      catch (Exception ex)
       {
         cs.sendMessage(ChatColor.GOLD + "No nation called " + onation + " could be found!");
         return true;
@@ -206,17 +206,17 @@ class WarExecutor implements CommandExecutor
 	            				String response = ChatColor.stripColor(strings[1]).toLowerCase();
 	                			if(response.equals("yes")){
 	                				try {
-	            						if(town.canPayFromHoldings(price)){
-	            							town.pay(price, "repairs");
+	            						if(town.getAccount().canPayFromHoldings(price)) {
+	            							town.getAccount().withdraw(price, "repairs");
 	            							p.sendMessage("");
 	            							p.sendMessage(ChatColor.GREEN+ "Repairs are underway!");
-	            							p.sendMessage(ChatColor.AQUA + "New Town Balance: " + ChatColor.YELLOW + town.getHoldingFormattedBalance());  				
+	            							p.sendMessage(ChatColor.AQUA + "New Town Balance: " + ChatColor.YELLOW + town.getAccount().getHoldingFormattedBalance());
 	            		    				gm.rollbackBlocks(town);
 	            						}else{
 	            							p.sendMessage("");
 	            		    				p.sendMessage(ChatColor.DARK_RED + town.getName() + " does not have enough money to pay for repairs.");
 	            						}
-	            					} catch (EconomyException e) {
+	            					} catch (Exception e) {
 	            						// TODO Auto-generated catch block
 	            						e.printStackTrace();
 	            					}
@@ -240,8 +240,9 @@ class WarExecutor implements CommandExecutor
     	unknownCommand=false;
     	Town town = null;
     	try {
-    		Resident re = TownyUniverse.getDataSource().getResident(cs.getName());
-    		if(re.hasTown()){
+    		Resident re = TownyUniverse.getInstance().getResident(cs.getName());
+			assert re != null;
+			if(re.hasTown()){
     			town = re.getTown();
     			Double points = War.getTownMaxPoints(town);
     	    	String proper = d.format(points);
@@ -267,9 +268,10 @@ class WarExecutor implements CommandExecutor
     	Double points = null;
     	War wwar = null;
     	try {
-    		Resident re = TownyUniverse.getDataSource().getResident(cs.getName());
-    		if(re.hasTown()){
-    			town = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
+    		Resident re = TownyUniverse.getInstance().getResident(cs.getName());
+			assert re != null;
+			if(re.hasTown()){
+    			town = Objects.requireNonNull(TownyUniverse.getInstance().getResident(cs.getName())).getTown();
     			if(town.hasNation()){
     				try {
     					wwar = WarManager.getWarForNation(town.getNation());
@@ -323,8 +325,8 @@ class WarExecutor implements CommandExecutor
       Nation csNation;
       try
       {
-        Town csTown = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
-        csNation = TownyUniverse.getDataSource().getTown(csTown.toString()).getNation();
+        Town csTown = Objects.requireNonNull(TownyUniverse.getInstance().getResident(cs.getName())).getTown();
+        csNation = Objects.requireNonNull(TownyUniverse.getInstance().getTown(csTown.toString())).getNation();
       }
       catch (NotRegisteredException ex)
       {
@@ -344,16 +346,8 @@ class WarExecutor implements CommandExecutor
       {
         String onation = strings[1];
         Nation t;
-        try
-        {
-          t = TownyUniverse.getDataSource().getNation(onation);
-        }
-        catch (NotRegisteredException ex)
-        {
-          cs.sendMessage(ChatColor.GOLD + "The nation called " + onation + " could not be found!");
-          return true;
-        }
-        WarManager.neutral.put(t.toString(), 0D);
+		  t = TownyUniverse.getInstance().getNation(onation);
+		  WarManager.neutral.put(t.toString(), 0D);
       }
     }
     if (farg.equals("astart"))
@@ -475,13 +469,13 @@ class WarExecutor implements CommandExecutor
   
   private boolean addTownDp(CommandSender cs, String[] strings) {
 	Town town = null;
-	if(strings.length != 2){
+	if (strings.length != 2){
 		cs.sendMessage(ChatColor.RED + "You need to specify a town!");
 		return false;
 	}
 	
 	try {
-		town = TownyUniverse.getDataSource().getTown(strings[1]);
+		town = TownyUniverse.getInstance().getDataSource().getTown(strings[1]);
 	} catch (NotRegisteredException e) {
 		cs.sendMessage(ChatColor.RED + "Town doesn't exist!");
 		return false;
@@ -510,7 +504,7 @@ class WarExecutor implements CommandExecutor
 		}
 		
 		try {
-			town = TownyUniverse.getDataSource().getTown(strings[1]);
+			town = TownyUniverse.getInstance().getDataSource().getTown(strings[1]);
 		} catch (NotRegisteredException e) {
 			cs.sendMessage(ChatColor.RED + "Town doesn't exist!");
 			return false;
@@ -535,8 +529,8 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
 	  
 	  Resident res = null;
 	  try {
-		res = TownyUniverse.getDataSource().getResident(cs.getName());
-	  } catch (NotRegisteredException e3) {
+		res = TownyUniverse.getInstance().getResident(cs.getName());
+	  } catch (Exception e3) {
 		// TODO Auto-generated catch block
 		e3.printStackTrace();
 		}
@@ -580,13 +574,8 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
   private boolean createRebellion(CommandSender cs, String[] strings, boolean admin){
 	  
 	  Resident res = null;
-	try {
-		res = TownyUniverse.getDataSource().getResident(cs.getName());
-	} catch (NotRegisteredException e2) {
-		// TODO Auto-generated catch block
-		e2.printStackTrace();
-	}
-	  
+	  res = TownyUniverse.getInstance().getResident(cs.getName());
+
 	  if(strings.length != 2){
 	  	cs.sendMessage(ChatColor.RED + "You need to give your rebellion a name!");
 	  	return true;
@@ -624,7 +613,7 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
 		e1.printStackTrace();
 	}
 	  
-	  for(Rebellion r : Rebellion.getAllRebellions()){
+	  for (Rebellion r : Rebellion.getAllRebellions()){
 		  try {
 			if(r.isRebelTown(res.getTown()) || r.isRebelLeader(res.getTown())){
 			  		cs.sendMessage(ChatColor.RED + "You are already in a rebellion!");
@@ -659,13 +648,8 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
   private boolean joinRebellion(CommandSender cs, String[] strings, boolean admin)
   {
 	  Resident res = null;
-	  try {
-		res = TownyUniverse.getDataSource().getResident(cs.getName());
-	} catch (NotRegisteredException e3) {
-		// TODO Auto-generated catch block
-		e3.printStackTrace();
-	}
-	  
+	  res = TownyUniverse.getInstance().getResident(cs.getName());
+
 	  if(strings.length != 2){
 		  	cs.sendMessage(ChatColor.RED + "You need to specify which rebellion to join!");
 		  	return true;
@@ -730,15 +714,10 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
   private boolean leaveRebellion(CommandSender cs, String[] strings, boolean admin){
 	  
 	Resident res = null;
-	
-	try {
-		res = TownyUniverse.getDataSource().getResident(cs.getName());
-	} catch (NotRegisteredException e2) {
-		// TODO Auto-generated catch block
-		e2.printStackTrace();
-	}
-	
-	try {
+
+	  res = TownyUniverse.getInstance().getResident(cs.getName());
+
+	  try {
 		if ((!admin) && (!res.getTown().isMayor(res)))
 		  {
 		      cs.sendMessage(ChatColor.RED + "You are not powerful enough in your town to do that!");
@@ -774,14 +753,9 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
   private boolean executeRebellion(CommandSender cs, String[] strings, boolean admin){
 
 	  Resident res = null;
-	  
-	  try {
-			res = TownyUniverse.getDataSource().getResident(cs.getName());
-		} catch (NotRegisteredException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-	  
+
+	  res = TownyUniverse.getInstance().getResident(cs.getName());
+
 	  try {
 		if ((!admin) && (!res.getTown().isMayor(res)))
 		  {
@@ -836,11 +810,11 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
     {
       if (admin)
       {
-        nat = TownyUniverse.getDataSource().getNation(strings[2]);
+        nat = TownyUniverse.getInstance().getNation(strings[2]);
       }
       else
       {
-        res = TownyUniverse.getDataSource().getResident(cs.getName());
+        res = TownyUniverse.getInstance().getResident(cs.getName());
         nat = res.getTown().getNation();
       }
     }
@@ -870,16 +844,8 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
 	}
     }
     Nation onat;
-    try
-    {
-      onat = TownyUniverse.getDataSource().getNation(sonat);
-    }
-    catch (NotRegisteredException ex)
-    {
-      cs.sendMessage(ChatColor.RED + "That nation doesn't exist!");
-      return true;
-    }
-    if (WarManager.requestPeace(nat, onat, admin)) {
+	  onat = TownyUniverse.getInstance().getNation(sonat);
+	  if (WarManager.requestPeace(nat, onat, admin)) {
       return true;
     }
     if (admin) {
@@ -910,11 +876,11 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
       if (admin)
       {
         res = null;
-        nat = TownyUniverse.getDataSource().getNation(strings[2]);
+        nat = TownyUniverse.getInstance().getNation(strings[2]);
       }
       else
       {
-        res = TownyUniverse.getDataSource().getResident(cs.getName());
+        res = TownyUniverse.getInstance().getResident(cs.getName());
         nat = res.getTown().getNation();
       }
     }
@@ -934,16 +900,8 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
       return true;
     }
     Nation onat;
-    try
-    {
-      onat = TownyUniverse.getDataSource().getNation(sonat);
-    }
-    catch (NotRegisteredException ex)
-    {
-      cs.sendMessage(ChatColor.RED + "That nation doesn't exist!");
-      return true;
-    }
-    if (WarManager.neutral.containsKey(onat))
+	  onat = TownyUniverse.getInstance().getNation(sonat);
+	  if (WarManager.neutral.containsKey(onat))
     {
       cs.sendMessage(ChatColor.RED + "That nation is neutral and cannot enter in a war!");
       return true;
@@ -968,7 +926,7 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
     {
       nat.collect(TownyWars.declareCost);
     }
-    catch (EconomyException ex)
+    catch (Exception ex)
     {
       Logger.getLogger(WarExecutor.class.getName()).log(Level.SEVERE, null, ex);
     }

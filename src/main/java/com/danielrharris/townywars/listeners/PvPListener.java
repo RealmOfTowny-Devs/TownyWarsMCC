@@ -1,5 +1,6 @@
 package com.danielrharris.townywars.listeners;
 
+import com.palmergames.bukkit.towny.TownyUniverse;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -19,7 +20,6 @@ import com.danielrharris.townywars.WarManager;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 public class PvPListener implements Listener{
 	
@@ -148,27 +148,27 @@ public class PvPListener implements Listener{
 		// if we've made it this far, it means that the death should affect Towny
 		// now we know who to credit, so let's adjust Towny to match		  
 		try {
-			Resident resi = TownyUniverse.getDataSource().getResident(playerKiller);
-			Resident otherRes = TownyUniverse.getDataSource().getResident(playerName);
+			Resident resi = TownyUniverse.getInstance().getResident(playerKiller);
+			Resident otherRes = TownyUniverse.getInstance().getResident(playerName);
 			if(resi.hasTown()){
 				Town tdamagerr = resi.getTown();
 				Nation damagerr = tdamagerr.getNation();
 				if(otherRes.hasTown()){
-					Town tdamagedd = TownyUniverse.getDataSource().getResident(playerName).getTown();
+					Town tdamagedd = TownyUniverse.getInstance().getResident(playerName).getTown();
 					Nation damagedd = tdamagedd.getNation();
 			      
 					War war = WarManager.getWarForNation(damagerr);
 					if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName())))
 					{
-						tdamagedd.pay(TownyWars.pKill, "Death cost");
+						tdamagedd.getAccount().withdraw(TownyWars.pKill, "Death cost");
 						tdamagerr.collect(TownyWars.pKill);
 					}
 					if ((war.hasNation(damagedd)) && (!damagerr.getName().equals(damagedd.getName()))) {
 						try
 						{
 							if(tdamagedd.hasResident(playerName)){
-								Resident res = TownyUniverse.getDataSource().getResident(playerName);
-								Resident killer = TownyUniverse.getDataSource().getResident(playerKiller);
+								Resident res = TownyUniverse.getInstance().getResident(playerName);
+								Resident killer = TownyUniverse.getInstance().getResident(playerKiller);
 								String dmessage = "";
 								String kmessage = "";
 								String resName = res.getFormattedName();

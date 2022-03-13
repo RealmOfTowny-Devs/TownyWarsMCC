@@ -1,6 +1,7 @@
 package com.danielrharris.townywars.listeners;
 
 import com.danielrharris.townywars.Title;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.PlayerChangePlotEvent;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.*;
@@ -20,7 +21,7 @@ public class NationWalkEvent implements Listener{
         WorldCoord blockTo = event.getTo();
         WorldCoord blockFrom = event.getFrom();
         try {
-            resident = TownyUniverse.getDataSource().getResident(player.getName());
+            resident = TownyUniverse.getInstance().getResident(player.getName());
         } catch (NotRegisteredException e) {
             e.printStackTrace();
         }

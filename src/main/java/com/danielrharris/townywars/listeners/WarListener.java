@@ -5,6 +5,7 @@ import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.War;
 import com.danielrharris.townywars.WarManager;
 import com.palmergames.bukkit.towny.Towny;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.DeleteNationEvent;
 import com.palmergames.bukkit.towny.event.NationAddTownEvent;
 import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
@@ -14,7 +15,6 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -86,12 +86,12 @@ public class WarListener implements Listener
 		if(war.getRebellion() != null){
 			Rebellion.getAllRebellions().remove(war.getRebellion());
 			if(war.getRebellion().getRebelnation() != nation){
-				TownyUniverse.getDataSource().deleteNation(war.getRebellion().getRebelnation());
+				TownyUniverse.getInstance().getDataSource().deleteNation(war.getRebellion().getRebelnation());
 			}else if(war.getRebellion().getMotherNation() != nation){
 				war.getRebellion().peace();
 			}
 		}	  
-		TownyUniverse.getDataSource().saveNations();
+		TownyUniverse.getInstance().getDataSource().saveNations();
 		try {
 			WarManager.save();
 		} catch (Exception e) {
@@ -105,7 +105,7 @@ public class WarListener implements Listener
 		Player player = event.getPlayer();
 		try
 		{
-			Resident re = TownyUniverse.getDataSource().getResident(player.getName());
+			Resident re = TownyUniverse.getInstance().getResident(player.getName());
 			if(re!=null && re.hasTown()){
 				Town town = re.getTown();
 				if(town!=null && town.hasNation()){

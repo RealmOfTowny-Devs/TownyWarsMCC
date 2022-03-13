@@ -21,7 +21,7 @@ import org.bukkit.material.PistonExtensionMaterial;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.*;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,11 +63,11 @@ public class GriefManager
 	    							blocksBroken = BlockSerialization.fromBase64(listSerial, size);
 	    							Town towny;
 									try {
-										towny = TownyUniverse.getDataSource().getTown(FilenameUtils.removeExtension(town));
+										towny = TownyUniverse.getInstance().getTown(FilenameUtils.removeExtension(town));
 										if(blocksBroken!=null && towny!=null){
 		    								data.put(towny, blocksBroken);
 		    							}
-									} catch (NotRegisteredException e) {
+									} catch (Exception e) {
 										Bukkit.getServer().getLogger().info("Town is no longer a town");
 										townData.delete();
 									}
@@ -151,7 +151,7 @@ public class GriefManager
     		/*if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
     			new DelayedRegenTask(sb).runTaskLater(plugin, delay+20);*/
 
-    		if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
+    		if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
     			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
       			  public void run() {
       				  //Bukkit.getServer().broadcastMessage("Area 1");

@@ -3,6 +3,7 @@ package com.danielrharris.townywars.cmds;
 import com.danielrharris.townywars.SLocation;
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.trades.TradeFile;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;

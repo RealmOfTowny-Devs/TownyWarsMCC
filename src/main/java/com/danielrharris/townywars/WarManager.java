@@ -2,15 +2,13 @@ package com.danielrharris.townywars;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
-import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 import com.palmergames.util.FileMgmt;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,11 +31,96 @@ public class WarManager
   public static Map<String, Double> neutral = new HashMap<String, Double>();
   public static Town townremove;
   //private static final int SAVING_VERSION = 1;
-  
+
+
+    // utility methods
+    /**
+     * Pass a file and it will return it's contents as a string.
+     *
+     * @param file File to read.
+     * @return Contents of file. String will be empty in case of any errors.
+     */
+    public static String convertFileToString(File file) {
+
+        if (file != null && file.exists() && file.canRead() && !file.isDirectory()) {
+            Writer writer = new StringWriter();
+            InputStream is = null;
+
+            char[] buffer = new char[1024];
+            try {
+                is = new FileInputStream(file);
+                Reader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                int n;
+                while ((n = reader.read(buffer)) != -1) {
+                    writer.write(buffer, 0, n);
+                }
+                reader.close();
+            } catch (IOException e) {
+                System.out.println("Exception ");
+            } finally {
+                if (is != null) {
+                    try {
+                        is.close();
+                    } catch (IOException ignore) {
+                    }
+                }
+            }
+            return writer.toString();
+        } else {
+            return "";
+        }
+    }
+
+    //writes a string to a file making all newline codes platform specific
+    public static boolean stringToFile(String source, String FileName) {
+
+        if (source != null) {
+            // Save the string to file (*.yml)
+            try {
+                return stringToFile(source, new File(FileName));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return false;
+
+    }
+
+    /**
+     * Writes the contents of a string to a file.
+     *
+     * @param source String to write.
+     * @param file File to write to.
+     * @return True on success.
+     * @throws IOException
+     */
+    public static boolean stringToFile(String source, File file) throws IOException {
+
+        try {
+
+            OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
+
+            //BufferedWriter out = new BufferedWriter(new FileWriter(FileName));
+
+            source = source.replaceAll("\n", System.getProperty("line.separator"));
+
+            out.write(source);
+            out.close();
+            return true;
+
+        } catch (IOException e) {
+            System.out.println("Exception ");
+            return false;
+        }
+    }
+
+    // War manager
+
   public static void save()
     throws Exception
   {
-	  FileMgmt.CheckYMLExists(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml"));
+	  FileMgmt.checkOrCreateFile("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml");
 	    if(!WarManager.getWars().isEmpty()){
 		    String s = new String("");
 		    
@@ -46,13 +129,13 @@ public class WarManager
 		    
 		    s = s.substring(0, s.length()-1);
 		    
-		    FileMgmt.stringToFile(s, "plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml");
+		    stringToFile(s, "plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml");
 		 } else
-	    	FileMgmt.stringToFile("", "plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml");
+	    	stringToFile("", "plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml");
     
     //save Rebellions
     //tripple space to separate rebellion objects
-    FileMgmt.CheckYMLExists(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml"));
+    FileMgmt.checkOrCreateFile("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml");
     if(!Rebellion.getAllRebellions().isEmpty()){
 	    String s = new String("");
 	    
@@ -61,20 +144,20 @@ public class WarManager
 	    
 	    s = s.substring(0, s.length()-1);
 	    
-	    FileMgmt.stringToFile(s, "plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml");
+	    stringToFile(s, "plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml");
 	 } else
-    	FileMgmt.stringToFile("", "plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml");
+    	stringToFile("", "plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml");
   }
   
   public static void load(File dataFolder)
     throws Exception
   {
 	  	String folders[] = {"plugins" + fileSeparator + "TownyWars"};
-	  	FileMgmt.checkFolders(folders);
+	  	FileMgmt.checkOrCreateFolders(folders);
 	  	
 	  	 //load rebellions
-	    FileMgmt.CheckYMLExists(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml"));
-	    String s = FileMgmt.convertFileToString(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml"));
+	    FileMgmt.checkOrCreateFile("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml");
+	    String s = convertFileToString(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml"));
 	    
 	    if(!s.isEmpty()){
 		    ArrayList<String> slist = new ArrayList<String>();
@@ -87,12 +170,12 @@ public class WarManager
 	    }
 	    
 	    //load wars
-	  	FileMgmt.CheckYMLExists(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml"));
-	    String sw = FileMgmt.convertFileToString(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml"));
+	  	FileMgmt.checkOrCreateFile("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml");
+	    String sw = convertFileToString(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml"));
 	    
 	    if(!sw.isEmpty()){
 		    ArrayList<String> slist = new ArrayList<String>();
-		    
+
 		    for(String temp : sw.split("\n"))
 		    	slist.add(temp);
 		    
@@ -133,8 +216,8 @@ public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellio
       {
         try
         {
-          TownyUniverse.getDataSource().getNation(nat.getName()).addEnemy(onat);
-          TownyUniverse.getDataSource().getNation(onat.getName()).addEnemy(nat);
+          TownyUniverse.getInstance().getDataSource().getNation(nat.getName()).addEnemy(onat);
+          TownyUniverse.getInstance().getDataSource().getNation(onat.getName()).addEnemy(nat);
         }
         catch (AlreadyRegisteredException ex)
         {
@@ -169,8 +252,8 @@ public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellio
       }
     }
     
-    TownyUniverse.getDataSource().saveTowns();
-    TownyUniverse.getDataSource().saveNations();
+    TownyUniverse.getInstance().getDataSource().saveTowns();
+    TownyUniverse.getInstance().getDataSource().saveNations();
     try {
 		WarManager.save();
 	} catch (Exception e) {
@@ -194,7 +277,7 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
         nat.collect(TownyWars.endCost);
         onat.collect(TownyWars.endCost);
       }
-      catch (EconomyException ex)
+      catch (Exception ex)
       {
         Logger.getLogger(WarManager.class.getName()).log(Level.SEVERE, null, ex);
       }
@@ -225,8 +308,8 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
 	
 	try
 	{
-	   TownyUniverse.getDataSource().getNation(winner.getName()).removeEnemy(looser);
-	   TownyUniverse.getDataSource().getNation(looser.getName()).removeEnemy(winner);
+	   TownyUniverse.getInstance().getDataSource().getNation(winner.getName()).removeEnemy(looser);
+	   TownyUniverse.getInstance().getDataSource().getNation(looser.getName()).removeEnemy(winner);
 	    }
 	    catch (NotRegisteredException ex)
 	    {
@@ -247,19 +330,19 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
 		War.broadcast(winner, ChatColor.GREEN + winner.getName() + " won the rebellion and are now free!");
     	rebellion.success();
     	Rebellion.getAllRebellions().remove(rebellion);
-    	TownyUniverse.getDataSource().removeNation(winner);
+    	TownyUniverse.getInstance().getDataSource().removeNation(winner);
         winner.clear();
-        TownyWars.tUniverse.getNationsMap().remove(winner.getName());
+        TownyWars.tUniverse.getNations().remove(winner.getName());
     }
     
     //rebelwar white peace
     if(isRebelWar && peace){
     	if(winner != rebellion.getMotherNation()){
-	    	TownyUniverse.getDataSource().removeNation(winner);
-		    TownyWars.tUniverse.getNationsMap().remove(winner.getName());
+	    	TownyUniverse.getInstance().getDataSource().removeNation(winner);
+		    TownyWars.tUniverse.getNations().remove(winner.getName());
     	} else{
-    		TownyUniverse.getDataSource().removeNation(looser);
-		    TownyWars.tUniverse.getNationsMap().remove(looser.getName());
+    		TownyUniverse.getInstance().getDataSource().removeNation(looser);
+		    TownyWars.tUniverse.getNations().remove(winner.getName());
     	}
     }
     
@@ -270,7 +353,7 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
         try
         {
           WarManager.townremove = t;
-          looser.removeTown(t);
+          looser.getTowns().remove(t);
           winner.addTown(t);
         }
         catch (Exception ex)
@@ -282,19 +365,19 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
     }
     if (!peace && isRebelWar && winner != rebellion.getRebelnation())
     {
-      TownyUniverse.getDataSource().removeNation(looser);
+      TownyUniverse.getInstance().getDataSource().removeNation(looser);
       looser.clear();
-      TownyWars.tUniverse.getNationsMap().remove(looser.getName());
+      TownyWars.tUniverse.getNations().remove(winner.getName());
     }
     Rebellion.getAllRebellions().remove(rebellion);
     
     if(looser.getTowns().size() == 0)
-    	TownyUniverse.getDataSource().removeNation(looser);
+    	TownyUniverse.getInstance().getDataSource().removeNation(looser);
     if(winner.getTowns().size() == 0)
-    	TownyUniverse.getDataSource().removeNation(winner);
+    	TownyUniverse.getInstance().getDataSource().removeNation(winner);
     
-    TownyUniverse.getDataSource().saveTowns();
-    TownyUniverse.getDataSource().saveNations();
+    TownyUniverse.getInstance().getDataSource().saveTowns();
+    TownyUniverse.getInstance().getDataSource().saveNations();
     try {
 		WarManager.save();
 	} catch (Exception e) {
