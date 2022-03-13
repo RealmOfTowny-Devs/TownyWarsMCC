@@ -1,10 +1,10 @@
 package com.danielrharris.townywars;
 
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 //import java.io.DataInputStream;
 //import java.io.DataOutputStream;
@@ -46,21 +46,11 @@ public class War {
 		
 		for(String temp : s.split("   "))
 			slist.add(temp);
-		
-		try {
-			nation1 = TownyUniverse.getDataSource().getNation(slist.get(0));
-		} catch (NotRegisteredException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		try {
-			nation2 = TownyUniverse.getDataSource().getNation(slist.get(1));
-		} catch (NotRegisteredException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+
+		nation1 = TownyUniverse.getInstance().getNation(slist.get(0));
+
+		nation2 = TownyUniverse.getInstance().getNation(slist.get(1));
+
 		nation1points = Integer.parseInt(slist.get(2));
 		
 		nation2points = Integer.parseInt(slist.get(3));
@@ -70,11 +60,8 @@ public class War {
 		for(String temp : slist.get(4).split("  ")){
 			temp2 = temp.split(" ");
 			try {
-				towns.put(TownyUniverse.getDataSource().getTown(temp2[0]), Double.parseDouble(temp2[1]));
+				towns.put(TownyUniverse.getInstance().getTown(temp2[0]), Double.parseDouble(temp2[1]));
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (NotRegisteredException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -211,13 +198,13 @@ public class War {
 				addNationPoint(nation, town);
 				try {	
 						WarManager.townremove = town;
-						nnation.removeTown(town);
+						nnation.getTowns().remove(town);
 				} catch (Exception ex) {
 				}
 				nation.addTown(town);
 				town.setNation(nation);
-				TownyUniverse.getDataSource().saveNation(nation);
-				TownyUniverse.getDataSource().saveNation(nnation);
+				TownyUniverse.getInstance().getDataSource().saveNation(nation);
+				TownyUniverse.getInstance().getDataSource().saveNation(nnation);
 				try {
 					WarManager.save();
 				} catch (Exception e) {
@@ -242,16 +229,16 @@ public class War {
 						boolean endWarTransfersDone = false;
 						for(Rebellion r : Rebellion.getAllRebellions()){
 							if(r.getRebelnation() == winner){
-								winner.getCapital().collect(winner.getHoldingBalance());
-								winner.pay(winner.getHoldingBalance(), "You are disbanded. You don't need money.");
+								winner.getCapital().collect(winner.getAccount().getHoldingBalance());
+								winner.getAccount().withdraw(winner.getAccount().getHoldingBalance(), "You are disbanded. You don't need money.");
 								endWarTransfersDone = true;
 								break;
 							}
 						}
 						
 						if(!endWarTransfersDone){
-							winner.collect(looser.getHoldingBalance());
-							looser.pay(looser.getHoldingBalance(), "Conquered. Tough luck!");
+							winner.collect(looser.getAccount().getHoldingBalance());
+							looser.getAccount().withdraw(looser.getAccount().getHoldingBalance(), "Conquered. Tough luck!");
 						}
 						WarManager.endWar(winner, looser, false);
 

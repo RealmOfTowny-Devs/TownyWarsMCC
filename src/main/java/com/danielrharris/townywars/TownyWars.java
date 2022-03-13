@@ -103,7 +103,7 @@ public class TownyWars
     }
     PluginManager pm = getServer().getPluginManager();
     idConfigFile = new File(getDataFolder(), "ideology.yml");
-    tradeFile =new TradeFile(this);
+    tradeFile = new TradeFile(this);
     gm = new GriefManager(this);
     pm.registerEvents(new GriefListener(this, gm), this);
     pm.registerEvents(new WarListener(this), this);
@@ -114,11 +114,11 @@ public class TownyWars
     getCommand("ideology").setExecutor(this);
     getCommand("townideology").setExecutor(this);
     towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
-    tUniverse = towny.getTownyUniverse();
+    tUniverse = TownyUniverse.getInstance();
     if(Bukkit.getPluginManager().getPlugin("BossBarAPI")!=null){
     	isBossBar = true;
     }
-    for(Town town : TownyUniverse.getDataSource().getTowns()){
+    for(Town town : TownyUniverse.getInstance().getTowns()){
     	town.setAdminEnabledPVP(false);
     	town.setAdminDisabledPVP(false);
     	town.setPVP(false);
@@ -131,7 +131,7 @@ public class TownyWars
       }
     }
 
-    TownyUniverse.getDataSource().saveTowns();
+    TownyUniverse.getInstance().getDataSource().saveTowns();
 
     this.saveDefaultConfig();
 
@@ -196,7 +196,7 @@ public class TownyWars
     	new SaveTask(this.gm).runTaskTimer(plugin, TownyWars.timer, TownyWars.timer);
     }
     try{
-    	for (Resident re : tUniverse.getActiveResidents()){
+    	for (Resident re : tUniverse.getResidents()){
     		if (allTownyWarsResidents.get(re.getName())==null){
     			addTownyWarsResident(re.getName());
     		}
@@ -218,7 +218,7 @@ public class TownyWars
         Player player = (Player)sender;
         try
         {
-            Resident res = TownyUniverse.getDataSource().getResident(player.getName());
+            Resident res = TownyUniverse.getInstance().getResident(player.getName());
             if (res.hasTown())
             {
                 Town t = res.getTown();
@@ -264,7 +264,7 @@ public class TownyWars
     if(cmd.getName().equalsIgnoreCase("townideology")){
         Player player = (Player) sender;
         try {
-            Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
+            Resident resident = TownyUniverse.getInstance().getResident(player.getName());
             if(resident.hasTown()){
                 Town town = resident.getTown();
                 String tname = town.getName();
@@ -309,7 +309,7 @@ public class TownyWars
 	    }
 
 	    // prepare the death record string that will be written to file
-		List<String> deathRecord = Arrays.asList(deathDateString+": "+playerName+" died to "+killerName+" via "+damageCause+"; '"+deathMessage+"'");
+		List<String> deathRecord = Arrays.asList(deathDateString +": "+playerName+" died to "+killerName+" via "+damageCause+"; '"+deathMessage+"'");
 
 
 		// append the death record to the specified file
@@ -345,9 +345,9 @@ public class TownyWars
 	public static boolean atWar(Player p, Location loc){
 		try
 		{
-			if(TownyUniverse.getDataSource().getResident(p.getName())!=null)
+			if(TownyUniverse.getInstance().getResident(p.getName())!=null)
 			{
-				Resident re = TownyUniverse.getDataSource().getResident(p.getName());
+				Resident re = TownyUniverse.getInstance().getResident(p.getName());
 				if(re.getTown()!=null){
 					if(re.getTown().getNation()!=null){
 						Nation nation = re.getTown().getNation();
@@ -359,8 +359,8 @@ public class TownyWars
 						War ww = WarManager.getWarForNation(nation);
 						if (ww != null)
 						{
-							if(TownyUniverse.getTownBlock(loc)!=null){
-								TownBlock townBlock = TownyUniverse.getTownBlock(loc);
+							if(TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(loc))!=null){
+								TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(loc));
 								Town otherTown = townBlock.getTown();
 								if(otherTown!=re.getTown()){
 									if(otherTown.getNation()!=null){

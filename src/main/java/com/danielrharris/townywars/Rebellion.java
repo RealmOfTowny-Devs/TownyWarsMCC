@@ -5,17 +5,16 @@ import java.util.List;
 
 //import main.java.com.danielrharris.townywars.War.MutableInteger;
 
+import com.palmergames.bukkit.towny.TownyUniverse;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
-import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.EmptyNationException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 //Author: Noxer
 public class Rebellion {
@@ -41,17 +40,12 @@ public class Rebellion {
 		
 		for(String temp : s.split("  "))
 			slist.add(temp);
-		
-		try {
-			motherNation = TownyUniverse.getDataSource().getNation(slist.get(0));
-		} catch (NotRegisteredException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+
+		motherNation = TownyUniverse.getInstance().getNation(slist.get(0));
+
 		try {
 			if(!slist.get(1).equals("n u l l"))
-				rebelnation = TownyUniverse.getDataSource().getNation(slist.get(1));
+				rebelnation = TownyUniverse.getInstance().getDataSource().getNation(slist.get(1));
 			else
 				rebelnation = null;
 		} catch (NotRegisteredException e) {
@@ -63,7 +57,7 @@ public class Rebellion {
 		name = slist.get(2);
 			
 			try {
-				leader = TownyUniverse.getDataSource().getTown(slist.get(3));
+				leader = TownyUniverse.getInstance().getDataSource().getTown(slist.get(3));
 			} catch (NotRegisteredException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -71,7 +65,7 @@ public class Rebellion {
 		if(!slist.get(4).equals("e m p t y")){
 			for(String temp : slist.get(4).split(" "))
 				try {
-					originalMotherTowns.add(TownyUniverse.getDataSource().getTown(temp));
+					originalMotherTowns.add(TownyUniverse.getInstance().getDataSource().getTown(temp));
 				} catch (NotRegisteredException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -81,7 +75,7 @@ public class Rebellion {
 		if(!slist.get(5).equals("e m p t y")){
 			for(String temp : slist.get(5).split(" "))
 				try {
-					rebels.add(TownyUniverse.getDataSource().getTown(temp));
+					rebels.add(TownyUniverse.getInstance().getDataSource().getTown(temp));
 				} catch (NotRegisteredException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -106,7 +100,7 @@ public class Rebellion {
 	
 	public void Execute(CommandSender cs){
 		try {
-			TownyUniverse.getDataSource().newNation(name + "-rebels");
+			TownyUniverse.getInstance().getDataSource().newNation(name + "-rebels");
 		} catch (AlreadyRegisteredException e2) {
 			cs.sendMessage(ChatColor.RED + "Error: A nation with the name of your rebellion already exists.");
 			return;
@@ -115,46 +109,20 @@ public class Rebellion {
 			e.printStackTrace();
 		}
 		try {
-			rebelnation = TownyUniverse.getDataSource().getNation(name + "-rebels");
+			rebelnation = TownyUniverse.getInstance().getDataSource().getNation(name + "-rebels");
 		} catch (NotRegisteredException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
-		
-		try {
-			motherNation.removeTown(leader);
-		} catch (NotRegisteredException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (EmptyNationException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			rebelnation.addTown(leader);
-			TownyUniverse.getDataSource().saveTown(leader);
-		} catch (AlreadyRegisteredException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
+
+		motherNation.getTowns().remove(leader);
+		rebelnation.addTown(leader);
+		TownyUniverse.getInstance().getDataSource().saveTown(leader);
+
 		for(Town town : rebels){
-			try {
-				try {
-					motherNation.removeTown(town);
-				} catch (NotRegisteredException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (EmptyNationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				rebelnation.addTown(town);
-				TownyUniverse.getDataSource().saveTown(town);
-			} catch (AlreadyRegisteredException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			motherNation.getTowns().remove(town);
+			rebelnation.addTown(town);
+			TownyUniverse.getInstance().getDataSource().saveTown(town);
 		}
 		for(Town town : motherNation.getTowns()){
 			originalMotherTowns.add(town);
@@ -169,9 +137,9 @@ public class Rebellion {
 		}
 		
 		WarManager.createWar(rebelnation, motherNation, cs, this);
-		TownyUniverse.getDataSource().saveTown(leader);
-		TownyUniverse.getDataSource().saveNation(rebelnation);
-		TownyUniverse.getDataSource().saveNationList();
+		TownyUniverse.getInstance().getDataSource().saveTown(leader);
+		TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
+		TownyUniverse.getInstance().getDataSource().saveAll();
 		try {
 			WarManager.save();
 		} catch (Exception e) {
@@ -193,34 +161,21 @@ public class Rebellion {
 		
 		for(Town town : townsToBeMoved){
 			try {
-				rebelnation.removeTown(town);
+				rebelnation.getTowns().remove(town);
 				town.setNation(null);
 				motherNation.addTown(town);
 			} catch (AlreadyRegisteredException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} catch (NotRegisteredException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (EmptyNationException e) {
-				;
 			}
 		}
 		
 		for(Town town : townsToBeRemoved){
-			try {
-				rebelnation.removeTown(town);
-			} catch (NotRegisteredException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (EmptyNationException e) {
-				//exception WILL be created. Ignore.
-				;
-			}
+			rebelnation.getTowns().remove(town);
 		}
 		
-		TownyUniverse.getDataSource().saveNation(motherNation);
-		TownyUniverse.getDataSource().saveNation(rebelnation);
+		TownyUniverse.getInstance().getDataSource().saveNation(motherNation);
+		TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
 		try {
 			WarManager.save();
 		} catch (Exception e) {
@@ -231,9 +186,9 @@ public class Rebellion {
 	
 	public void peace(){
 		try {
-			motherNation.collect(rebelnation.getHoldingBalance());
-			rebelnation.pay(rebelnation.getHoldingBalance(), "Lost rebellion. Tough luck!");
-		} catch (EconomyException e1) {
+			motherNation.collect(rebelnation.getAccount().getHoldingBalance());
+			rebelnation.getAccount().withdraw(rebelnation.getAccount().getHoldingBalance(), "Lost rebellion. Tough luck!");
+		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
 		
@@ -242,16 +197,12 @@ public class Rebellion {
 			try {
 				WarManager.townremove = town;
 				try {
-					rebelnation.removeTown(town);
-				} catch (EmptyNationException e) {
-					; 
+					rebelnation.getTowns().remove(town);
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 				motherNation.addTown(town);
-			} catch (AlreadyRegisteredException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (NotRegisteredException e) {
-				// TODO Auto-generated catch block
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		
