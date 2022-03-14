@@ -3,6 +3,8 @@ package com.danielrharris.townywars.listeners;
 import java.util.Iterator;
 import java.util.List;
 
+import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.object.WorldCoord;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -18,12 +20,11 @@ import com.danielrharris.townywars.WarManager;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.TownBlock;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 public class Explode {
 	
 	@SuppressWarnings("deprecation")
-	public static void explode(Entity ent, List<Block> blocks, Location center, int DEBRIS_CHANCE){
+	public static void explode(Entity ent, List<Block> blocks, Location center, int DEBRIS_CHANCE) throws NotRegisteredException {
 		
 		float yield = 3.0f;
 		
@@ -42,7 +43,7 @@ public class Explode {
 		while(itr.hasNext()) { //Iterates through blocks
 			Block b = itr.next();
 			TownBlock townBlock = null;
-			townBlock = TownyUniverse.getTownBlock(b.getLocation());
+			townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(b.getLocation()));
 			if(!(b.getState() instanceof InventoryHolder)){
 				b.getDrops().clear();
 			}

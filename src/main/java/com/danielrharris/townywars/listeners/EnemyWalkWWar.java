@@ -2,6 +2,7 @@ package com.danielrharris.townywars.listeners;
 
 import com.danielrharris.townywars.Title;
 import com.danielrharris.townywars.WarManager;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.PlayerChangePlotEvent;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.*;
@@ -16,21 +17,21 @@ import java.util.Objects;
 public class EnemyWalkWWar implements Listener {
 
     @EventHandler
-    public void onEnemyWalk(PlayerChangePlotEvent event) {
+    public void onEnemyWalk(PlayerChangePlotEvent event) throws NotRegisteredException {
         Player player = event.getPlayer();
         Resident resident = null;
         WorldCoord to = event.getTo();
         try {
-            resident = TownyUniverse.getDataSource().getResident(player.getName());
-        } catch (NotRegisteredException e) {
+            resident = TownyUniverse.getInstance().getResident(player.getName());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         assert resident !=null;
         if (!resident.hasTown()) return;
         if (resident.hasTown() && !resident.hasNation()) return;
         if (to == null) return;
-        if (TownyUniverse.getTownBlock(event.getMoveEvent().getTo()) != null) {
-            TownBlock townBlock = TownyUniverse.getTownBlock(event.getMoveEvent().getTo());
+        if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo())) != null) {
+            TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo()));
 
             Town rTown;
             Nation rNation = null;

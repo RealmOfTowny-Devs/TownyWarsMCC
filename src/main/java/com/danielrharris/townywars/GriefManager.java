@@ -146,8 +146,12 @@ public class GriefManager
     		Location l = new Location(Bukkit.getServer().getWorld(sb.world),sb.x,sb.y,sb.z);
     		Block bl = l.getBlock();
     		Material mat = Material.valueOf(sb.mat);
-    		bl.setTypeIdAndData(mat.getId(), sb.data, true);
-    		BlockState blockState = bl.getState();
+
+    		//bl.setTypeIdAndData(mat.getId(), sb.data, true);
+			bl.setType(mat, true);
+			BlockState blockState = bl.getState();
+			blockState.setRawData(sb.data);
+
     		/*if(Utils.isOtherAttachable(mat) || mat.equals(Material.CACTUS) || mat.equals(Material.SUGAR_CANE_BLOCK) || blockState.getData() instanceof PistonExtensionMaterial || blockState instanceof Attachable){
     			new DelayedRegenTask(sb).runTaskLater(plugin, delay+20);*/
 

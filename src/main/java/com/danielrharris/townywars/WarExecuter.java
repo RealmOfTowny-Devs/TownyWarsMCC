@@ -167,7 +167,7 @@ class WarExecutor implements CommandExecutor
 	        	Town town = null;
 	        	double price = 0;
 	        	try {
-					town = TownyUniverse.getDataSource().getResident(p.getName()).getTown();
+					town = TownyUniverse.getInstance().getResident(p.getName()).getTown();
 					if(GriefListener.getGriefedBlocks()!=null){
 						if(!GriefListener.getGriefedBlocks().isEmpty()){
 							for(SBlock b : GriefListener.getGriefedBlocks().get(town)){

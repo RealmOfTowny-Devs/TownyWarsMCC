@@ -15,14 +15,14 @@ import java.util.Objects;
 public class NationWalkEvent implements Listener{
 
     @EventHandler
-    public void onEnter(PlayerChangePlotEvent event) {
+    public void onEnter(PlayerChangePlotEvent event) throws NotRegisteredException {
         Player player = event.getPlayer();
         Resident resident = null;
         WorldCoord blockTo = event.getTo();
         WorldCoord blockFrom = event.getFrom();
         try {
             resident = TownyUniverse.getInstance().getResident(player.getName());
-        } catch (NotRegisteredException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -30,8 +30,8 @@ public class NationWalkEvent implements Listener{
         if (!resident.hasTown()) return;
         if (resident.hasTown() && !resident.hasNation()) return;
         if (blockTo == null) return;
-        if (TownyUniverse.getTownBlock(event.getMoveEvent().getTo()) != null) {
-            TownBlock townBlock = TownyUniverse.getTownBlock(event.getMoveEvent().getTo());
+        if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo())) != null) {
+            TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo()));
 
             Town rTown = null;
             Nation rNation = null;

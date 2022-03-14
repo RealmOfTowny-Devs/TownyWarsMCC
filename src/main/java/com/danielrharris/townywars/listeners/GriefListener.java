@@ -22,7 +22,7 @@ import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.object.PlayerCache.TownBlockStatus;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
-import com.palmergames.bukkit.towny.war.flagwar.TownyWar;
+import com.palmergames.bukkit.towny.TownyWar;
 import com.palmergames.bukkit.towny.war.flagwar.TownyWarConfig;
 import com.palmergames.bukkit.util.BukkitTools;
 
@@ -69,7 +69,7 @@ public class GriefListener implements Listener{
 	//Here's where I'll grab the block break event and make it record broken blocks
 	//during war
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
-	public void onWarTownDamage(BlockBreakEvent event){
+	public void onWarTownDamage(BlockBreakEvent event) throws NotRegisteredException {
 		if(TownyWars.allowGriefing){
 			Block block = event.getBlock();
 			if(TownyWars.worldBlackList!=(null))
@@ -84,7 +84,7 @@ public class GriefListener implements Listener{
 				Player p = event.getPlayer();
 				Entity entity = (Entity) p;				
 				if(TownyWars.atWar(p, block.getLocation())){
-					TownBlock townBlock = TownyUniverse.getTownBlock(block.getLocation());
+					TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()));
 					Town otherTown = null;
 					Nation otherNation = null;
 					Set<SBlock> sBlocks = new HashSet<SBlock>();
@@ -144,7 +144,7 @@ public class GriefListener implements Listener{
 	
 	@SuppressWarnings("unused")
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
-	public void onWarBuild(BlockPlaceEvent event) {
+	public void onWarBuild(BlockPlaceEvent event) throws NotRegisteredException {
 		if(TownyWars.allowGriefing){
 			Block block = event.getBlock();
 			if(event.getPlayer()!=null){		
@@ -152,15 +152,15 @@ public class GriefListener implements Listener{
 				Entity entity = (Entity) p;
 				Resident res = null;
 				try {
-					res = TownyUniverse.getDataSource().getResident(p.getName());
-				} catch (NotRegisteredException e2) {
+					res = TownyUniverse.getInstance().getResident(p.getName());
+				} catch (Exception e2) {
 					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
 				if(TownyWars.atWar(p, block.getLocation())){
 					if(TownyWars.allowRollback){
-						if(TownyUniverse.getTownBlock(block.getLocation())!=null){
-							TownBlock townBlock = TownyUniverse.getTownBlock(block.getLocation());
+						if(TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()))!=null){
+							TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()));
 							Town otherTown = null;
 							Nation otherNation = null;
 							Set<SBlock> sBlocks;
@@ -204,7 +204,7 @@ public class GriefListener implements Listener{
 					Player player = event.getPlayer();
 					WorldCoord worldCoord;
 					try {				
-						TownyWorld world = TownyUniverse.getDataSource().getWorld(block.getWorld().getName());
+						TownyWorld world = TownyUniverse.getInstance().getWorld(block.getWorld().getName());
 						worldCoord = new WorldCoord(world.getName(), Coord.parseCoord(block));
 
 						//Get build permissions (updates if none exist)
@@ -263,10 +263,10 @@ public class GriefListener implements Listener{
 	}
 	
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
-	public void ignoreProtections(EntityExplodeEvent ev) {
+	public void ignoreProtections(EntityExplodeEvent ev) throws NotRegisteredException {
 		Location center = ev.getLocation();
 		TownBlock townBlock = null;
-		townBlock = TownyUniverse.getTownBlock(center);
+		townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(center));
 		if(townBlock!=null){
 			if(TownyWars.allowGriefing){
 				if(TownyWars.warExplosions){
@@ -303,7 +303,7 @@ public class GriefListener implements Listener{
 		if(TownyWars.allowGriefing){
 			if(TownyWars.warExplosions){
 				try{
-					townBlock = TownyUniverse.getTownBlock(center);
+					townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(center));
 					if(townBlock!=null){
 						if(townBlock.hasTown()){
 							if(townBlock.getTown().hasNation()){
