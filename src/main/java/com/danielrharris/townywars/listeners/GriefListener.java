@@ -22,8 +22,7 @@ import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.object.PlayerCache.TownBlockStatus;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
-import com.palmergames.bukkit.towny.TownyWar;
-import com.palmergames.bukkit.towny.war.flagwar.TownyWarConfig;
+import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import com.palmergames.bukkit.util.BukkitTools;
 
 import me.drkmatr1984.BlocksAPI.utils.SBlock;
@@ -208,7 +207,7 @@ public class GriefListener implements Listener{
 						worldCoord = new WorldCoord(world.getName(), Coord.parseCoord(block));
 
 						//Get build permissions (updates if none exist)
-						boolean bBuild = PlayerCacheUtil.getCachePermission(player, block.getLocation(), BukkitTools.getTypeId(block), BukkitTools.getData(block), TownyPermission.ActionType.BUILD);
+						boolean bBuild = PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), TownyPermission.ActionType.BUILD);
 
 						// Allow build if we are permitted
 						if (bBuild)
@@ -223,7 +222,7 @@ public class GriefListener implements Listener{
 						/*
 						 * Flag war
 						 */
-						if (((status == TownBlockStatus.ENEMY) && TownyWarConfig.isAllowingAttacks()) && (event.getBlock().getType() == TownyWarConfig.getFlagBaseMaterial())) {
+						if (((status == TownBlockStatus.ENEMY) && FlagWarConfig.isAllowingAttacks()) && (event.getBlock().getType() == FlagWarConfig.getFlagBaseMaterial())) {
 
 							try {
 								if (TownyWar.callAttackCellEvent(plugin, player, block, worldCoord))
@@ -236,7 +235,7 @@ public class GriefListener implements Listener{
 							event.setCancelled(true);
 
 						} else if (status == TownBlockStatus.WARZONE) {
-							if (!TownyWarConfig.isEditableMaterialInWarZone(block.getType())) {
+							if (!FlagWarConfig.isEditableMaterialInWarZone(block.getType())) {
 								event.setBuild(false);
 								event.setCancelled(true);
 								TownyMessaging.sendErrorMsg(player, String.format(TownySettings.getLangString("msg_err_warzone_cannot_edit_material"), "build", block.getType().toString().toLowerCase()));
@@ -591,11 +590,11 @@ public class GriefListener implements Listener{
 				}
 			}	
 		}
-		if((block.getRelative(BlockFace.UP)).getType().equals(Material.CACTUS) || (block.getRelative(BlockFace.UP)).getType().equals(Material.SUGAR_CANE_BLOCK) || (block.getRelative(BlockFace.UP)).getType().equals(Material.CHORUS_PLANT) || (block.getRelative(BlockFace.UP)).getType().equals(Material.CHORUS_FLOWER)){
+		if((block.getRelative(BlockFace.UP)).getType().equals(Material.CACTUS) || (block.getRelative(BlockFace.UP)).getType().equals(Material.SUGAR_CANE) || (block.getRelative(BlockFace.UP)).getType().equals(Material.CHORUS_PLANT) || (block.getRelative(BlockFace.UP)).getType().equals(Material.CHORUS_FLOWER)){
 			Block up = block.getRelative(BlockFace.UP);
 			do
 			{
-				if(up.getType().equals(Material.CACTUS) || up.getType().equals(Material.SUGAR_CANE_BLOCK) || up.getType().equals(Material.CHORUS_PLANT) || up.getType().equals(Material.CHORUS_FLOWER)){
+				if(up.getType().equals(Material.CACTUS) || up.getType().equals(Material.SUGAR_CANE) || up.getType().equals(Material.CHORUS_PLANT) || up.getType().equals(Material.CHORUS_FLOWER)){
 					check = new SBlock(up);
 					if(!containsBlock(sBlocks, check)){
 						if(entity!=null){
@@ -610,7 +609,7 @@ public class GriefListener implements Listener{
 					}
 				}
 				up = ((up.getLocation()).add(0,1,0)).getBlock();
-			}while(up.getType().equals(Material.CACTUS) || up.getType().equals(Material.SUGAR_CANE_BLOCK) || up.getType().equals(Material.CHORUS_PLANT) || up.getType().equals(Material.CHORUS_FLOWER));
+			}while(up.getType().equals(Material.CACTUS) || up.getType().equals(Material.SUGAR_CANE) || up.getType().equals(Material.CHORUS_PLANT) || up.getType().equals(Material.CHORUS_FLOWER));
 		}
 		return sBlocks;
 	}
