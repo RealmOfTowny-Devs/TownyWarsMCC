@@ -53,37 +53,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>ca.xshade.bukkit.questioner</groupId>
-            <artifactId>Questioner</artifactId>
-            <version>0.6</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>me.drkmatr1984.BlocksAPI</groupId>
-            <artifactId>BlocksAPI</artifactId>
-            <version>0.01</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>me.mrCookieSlime.CSCoreLibPlugin</groupId>
-            <artifactId>CSCoreLib</artifactId>
-            <version>1.5.3</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.inventivetalent</groupId>
-            <artifactId>bossbarapi</artifactId>
-            <version>2.3.8</version>
-            <type>jar</type>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.md-5</groupId>

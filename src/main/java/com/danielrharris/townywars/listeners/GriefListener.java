@@ -5,23 +5,13 @@ import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.War;
 import com.danielrharris.townywars.WarManager;
 import com.danielrharris.townywars.tasks.AttackWarnBarTask;
-import com.palmergames.bukkit.towny.Towny;
-import com.palmergames.bukkit.towny.TownyMessaging;
-import com.palmergames.bukkit.towny.TownySettings;
-import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.*;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
-import com.palmergames.bukkit.towny.object.Coord;
-import com.palmergames.bukkit.towny.object.Nation;
-import com.palmergames.bukkit.towny.object.PlayerCache;
-import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownBlock;
-import com.palmergames.bukkit.towny.object.TownyPermission;
-import com.palmergames.bukkit.towny.object.TownyWorld;
-import com.palmergames.bukkit.towny.object.WorldCoord;
+import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.object.PlayerCache.TownBlockStatus;
-import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
+import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import com.palmergames.bukkit.util.BukkitTools;
 
@@ -202,60 +192,55 @@ public class GriefListener implements Listener{
 
 					Player player = event.getPlayer();
 					WorldCoord worldCoord;
-					try {				
-						TownyWorld world = TownyUniverse.getInstance().getWorld(block.getWorld().getName());
-						worldCoord = new WorldCoord(world.getName(), Coord.parseCoord(block));
+					TownyWorld world = TownyUniverse.getInstance().getWorld(block.getWorld().getName());
+					worldCoord = new WorldCoord(world.getName(), Coord.parseCoord(block));
 
-						//Get build permissions (updates if none exist)
-						boolean bBuild = PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), TownyPermission.ActionType.BUILD);
+					//Get build permissions (updates if none exist)
+					boolean bBuild = PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), TownyPermission.ActionType.BUILD);
 
-						// Allow build if we are permitted
-						if (bBuild)
-							return;
-						
-						/*
-						 * Fetch the players cache
-						 */
-						PlayerCache cache = plugin.getCache(player);
-						TownBlockStatus status = cache.getStatus();
+					// Allow build if we are permitted
+					if (bBuild)
+						return;
 
-						/*
-						 * Flag war
-						 */
-						if (((status == TownBlockStatus.ENEMY) && FlagWarConfig.isAllowingAttacks()) && (event.getBlock().getType() == FlagWarConfig.getFlagBaseMaterial())) {
+					/*
+					 * Fetch the players cache
+					 */
+					PlayerCache cache = plugin.getCache(player);
+					TownBlockStatus status = cache.getStatus();
 
-							try {
-								if (TownyWar.callAttackCellEvent(plugin, player, block, worldCoord))
-									return;
-							} catch (TownyException e) {
-								TownyMessaging.sendErrorMsg(player, e.getMessage());
-							}
+					/*
+					 * Flag war
+					 */
+					if (((status == TownBlockStatus.ENEMY) && FlagWarConfig.isAllowingAttacks()) && (event.getBlock().getType() == FlagWarConfig.getFlagBaseMaterial())) {
 
-							event.setBuild(false);
-							event.setCancelled(true);
-
-						} else if (status == TownBlockStatus.WARZONE) {
-							if (!FlagWarConfig.isEditableMaterialInWarZone(block.getType())) {
-								event.setBuild(false);
-								event.setCancelled(true);
-								TownyMessaging.sendErrorMsg(player, String.format(TownySettings.getLangString("msg_err_warzone_cannot_edit_material"), "build", block.getType().toString().toLowerCase()));
-							}
-							return;
-						} else {
-							event.setBuild(false);
-							event.setCancelled(true);
+						try {
+							if (FlagWar.callAttackCellEvent(plugin, player, block, worldCoord))
+								return;
+						} catch (TownyException e) {
+							TownyMessaging.sendErrorMsg(player, e.getMessage());
 						}
 
-						/* 
-						 * display any error recorded for this plot
-						 */
-						if ((cache.hasBlockErrMsg()) && (event.isCancelled()))
-							TownyMessaging.sendErrorMsg(player, cache.getBlockErrMsg());
+						event.setBuild(false);
+						event.setCancelled(true);
 
-					} catch (NotRegisteredException e1) {
-						TownyMessaging.sendErrorMsg(player, TownySettings.getLangString("msg_err_not_configured"));
+					} else if (status == TownBlockStatus.WARZONE) {
+						if (!FlagWarConfig.isEditableMaterialInWarZone(block.getType())) {
+							event.setBuild(false);
+							event.setCancelled(true);
+							TownyMessaging.sendErrorMsg(player, String.format(Translation.of("msg_err_warzone_cannot_edit_material"), "build", block.getType().toString().toLowerCase()));
+						}
+						return;
+					} else {
+						event.setBuild(false);
 						event.setCancelled(true);
 					}
+
+					/*
+					 * display any error recorded for this plot
+					 */
+					if ((cache.hasBlockErrMsg()) && (event.isCancelled()))
+						TownyMessaging.sendErrorMsg(player, cache.getBlockErrMsg());
+
 				}
 			}
 		}
@@ -290,7 +275,7 @@ public class GriefListener implements Listener{
 	
 	@SuppressWarnings({ "deprecation" })
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
-	public void onExplode(EntityExplodeEvent ev) {
+	public void onExplode(EntityExplodeEvent ev) throws NotRegisteredException {
 		ev.setCancelled(false);
 		List<Block> blocks = ev.blockList();
 		Location center = ev.getLocation();
@@ -359,7 +344,7 @@ public class GriefListener implements Listener{
 						}
 					}
 				} catch (NotRegisteredException e) {
-					if(TownyUniverse.isWilderness(center.getBlock()) && TownySettings.isExplosions() && TownyWars.realisticExplosions){
+					if(TownyAPI.getInstance().isWilderness(center.getBlock()) && TownySettings.isExplosions() && TownyWars.realisticExplosions){
 						if(blocks!=null){
 							Explode.explode(ev.getEntity(), blocks, center, 75);
 						}
@@ -367,7 +352,7 @@ public class GriefListener implements Listener{
 						return;
 					}
 				}
-				if(TownyUniverse.isWilderness(center.getBlock()) && TownySettings.isExplosions() && TownyWars.realisticExplosions){
+				if(TownyAPI.getInstance().isWilderness(center.getBlock()) && TownySettings.isExplosions() && TownyWars.realisticExplosions){
 					if(blocks!=null){
 						Explode.explode(ev.getEntity(), blocks, center, 75);
 					}
