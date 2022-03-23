@@ -7,7 +7,6 @@ import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -49,12 +48,13 @@ public class TradeCMD implements CommandExecutor {
                 }
                 String townName = args[0];
                 try {
-                    Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
-                    Town town = TownyUniverse.getDataSource().getTown(townName);
+                    Resident resident = TownyUniverse.getInstance().getResident(player.getName());
+                    Town town = TownyUniverse.getInstance().getTown(townName);
+                    assert resident != null;
                     Town rTown = resident.getTown();
 
                     if(tc.getConfigurationSection(rTown.getName()) != null) {
-                        if(rTown.hasAssistant(resident) || rTown.getMayor() == resident){
+                        if(rTown.hasResidentWithRank(resident, "Assistant") || rTown.getMayor() == resident){
                             SLocation sPickOff = SLocation.deSerialize(tc.getString(rTown.getName() + ".pickoff"));
                             Location pickoff = sPickOff.toLocation();
                             SLocation sDropOff = SLocation.deSerialize(tc.getString(rTown.getName() + ".dropoff"));
@@ -79,10 +79,10 @@ public class TradeCMD implements CommandExecutor {
                 }
                 if (args[1].equalsIgnoreCase("pickoff")) {
                     try {
-                        Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
+                        Resident resident = TownyUniverse.getInstance().getResident(player.getName());
                         SLocation sPickOff = new SLocation(player.getLocation());
                         String sPickoffLoc = sPickOff.serialize();
-                        if(resident.hasTown() && resident.getTown().getMayor() == resident && resident.getTown().hasAssistant(resident)) {
+                        if(resident.hasTown() && resident.getTown().getMayor() == resident && resident.getTown().hasResidentWithRank(resident, "Assistant")) {
                             tc.set(resident.getTown().getName() + ".pickoff",sPickoffLoc);
                             player.sendMessage("§aSuccessfully set the pick-off location to: §e" + Math.round(sPickOff.getX()) + ":" + Math.round(sPickOff.getY()) + ":" + Math.round(sPickOff.getZ()) + ".");
                         }else {
@@ -94,10 +94,10 @@ public class TradeCMD implements CommandExecutor {
 
                 }else if (args[1].equalsIgnoreCase("dropoff")){
                     try {
-                        Resident resident = TownyUniverse.getDataSource().getResident(player.getName());
+                        Resident resident = TownyUniverse.getInstance().getResident(player.getName());
                         SLocation sDropOff = new SLocation(player.getLocation());
                         String sDropOffLoc = sDropOff.serialize();
-                        if(resident.hasTown() && resident.getTown().getMayor() == resident && resident.getTown().hasAssistant(resident)) {
+                        if(resident.hasTown() && resident.getTown().getMayor() == resident && resident.getTown().hasResidentWithRank(resident, "Assistant")) {
                             tc.set(resident.getTown().getName() + ".dropoff",sDropOffLoc);
                             player.sendMessage("§aSuccessfully set the drop-off location to: §e" + Math.round(sDropOff.getX()) + ":" + Math.round(sDropOff.getY()) + ":" + Math.round(sDropOff.getZ()) + ".");
                         }else {

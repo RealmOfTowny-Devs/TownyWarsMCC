@@ -72,7 +72,7 @@ public class TownyWars
   private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
   private static final Charset utf8 = StandardCharsets.UTF_8;
 
-  private static final String deathsFile="deaths.txt";
+  private static final String deathsFile = "deaths.txt";
 
 
     @Override
@@ -139,7 +139,6 @@ public class TownyWars
 	      try {
 	    	  wallConfigFile.createNewFile();
 		} catch (IOException e) {
-
 			e.printStackTrace();
 		}
     } if (!idConfigFile.exists()) {
@@ -147,17 +146,15 @@ public class TownyWars
       {
           idConfigFile.createNewFile();
       }
-      catch (IOException e)
-      {
+      catch (IOException e) {
           e.printStackTrace();
       }
-  }  idConfig = YamlConfiguration.loadConfiguration(idConfigFile);
-      try
-      {
+  }
+    idConfig = YamlConfiguration.loadConfiguration(idConfigFile);
+    try {
           idConfig.save(idConfigFile);
       }
-      catch (IOException e)
-      {
+    catch (IOException e) {
           e.printStackTrace();
       }
 

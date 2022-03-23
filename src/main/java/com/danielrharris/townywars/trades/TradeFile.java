@@ -1,6 +1,5 @@
 package com.danielrharris.townywars.trades;
 
-import com.sun.org.apache.bcel.internal.generic.GETFIELD;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
