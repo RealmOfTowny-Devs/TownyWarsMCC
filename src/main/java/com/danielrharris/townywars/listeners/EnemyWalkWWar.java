@@ -30,7 +30,7 @@ public class EnemyWalkWWar implements Listener {
         if (!resident.hasTown()) return;
         if (resident.hasTown() && !resident.hasNation()) return;
         if (to == null) return;
-        if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo())) != null) {
+        if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(Objects.requireNonNull(event.getMoveEvent().getTo()))) != null) {
             TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo()));
 
             Town rTown;

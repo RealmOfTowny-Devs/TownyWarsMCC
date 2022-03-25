@@ -216,38 +216,37 @@ public class TownyWars
         try
         {
             Resident res = TownyUniverse.getInstance().getResident(player.getName());
-            if (res.hasTown())
-            {
+            if (res.hasTown()) {
+
                 Town t = res.getTown();
                 String name = t.getName();
-                if (idConfig.contains(name))
-                {
+
+                if (idConfig.contains(name)) {
                     player.sendMessage(ChatColor.RED + "Your town already has an ideology set!");
                     return true;
                 }
-                if (t.getMayor() != res)
-                {
+
+                // cancel t
+                if (t.getMayor() != res) {
                     player.sendMessage(ChatColor.RED + "You cannot set your town's ideology if you are not the mayor!");
                     return true;
                 }
-                if (args.length != 1)
-                {
-                    player.sendMessage(ChatColor.RED + "/ideology <ideology>");
+                // if the user just types in /ideology
+                if (args.length != 1) {
+                    player.sendMessage(ChatColor.RED + "/ideology <ideology> (select one: Economic, Religious or Militaristic)");
                     return true;
                 }
                 String id = args[0].toLowerCase();
-                if ((!id.equals("economic")) && (!id.equals("religious")) && (!id.equals("militaristic")))
-                {
+                if ((!id.equals("economic")) && (!id.equals("religious")) && (!id.equals("militaristic"))) {
                     player.sendMessage(ChatColor.RED + "Valid ideologies are: Economic, Religious, Militaristic");
                     return true;
                 }
                 idConfig.set(t.getName(), id);
-                try
-                {
+
+                try {
                     idConfig.save(idConfigFile);
                 }
-                catch (IOException e)
-                {
+                catch (IOException e) {
                     e.printStackTrace();
                 }
                 player.sendMessage(ChatColor.GREEN + "Ideology set!");
