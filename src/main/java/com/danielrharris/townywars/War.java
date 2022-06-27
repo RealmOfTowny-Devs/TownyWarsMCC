@@ -8,11 +8,7 @@ import com.palmergames.bukkit.towny.object.Town;
 
 //import java.io.DataInputStream;
 //import java.io.DataOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,10 +38,8 @@ public class War {
 	}
 	
 	public War(String s){
-		ArrayList<String> slist = new ArrayList<String>();
-		
-		for(String temp : s.split("   "))
-			slist.add(temp);
+
+		ArrayList<String> slist = new ArrayList<String>(Arrays.asList(s.split("   ")));
 
 		nation1 = TownyUniverse.getInstance().getNation(slist.get(0));
 
@@ -55,7 +49,7 @@ public class War {
 		
 		nation2points = Integer.parseInt(slist.get(3));
 		
-		String temp2[] = {"",""};
+		String[] temp2 = {"",""};
 		
 		for(String temp : slist.get(4).split("  ")){
 			temp2 = temp.split(" ");
@@ -84,24 +78,24 @@ public class War {
 
 	//tripple space separates objects, double space separates list elements, single space separates map pairs
 	public String objectToString(){
-		String s = new String("");
+		StringBuilder s = new StringBuilder(new String(""));
 		
-		s += nation1.getName() + "   ";
-		s += nation2.getName() + "   ";
-		s += nation1points + "   ";
-		s += nation2points + "   ";
+		s.append(nation1.getName()).append("   ");
+		s.append(nation2.getName()).append("   ");
+		s.append(nation1points).append("   ");
+		s.append(nation2points).append("   ");
 		
 		for(Town town : towns.keySet()){
-			s += town.getName() + " ";
-			s += towns.get(town) + "  ";
+			s.append(town.getName()).append(" ");
+			s.append(towns.get(town)).append("  ");
 		}
 		
 		if(rebelwar != null)
-			s += " " + rebelwar.getName();
+			s.append(" ").append(rebelwar.getName());
 		else
-			s += " " + "n u l l";
+			s.append(" " + "n u l l");
 		
-		return s;
+		return s.toString();
 	}
 
 	public void setNation1(Nation nation1) {

@@ -110,9 +110,9 @@ public class TownyWars
     pm.registerEvents(new PvPListener(this), this);
     pm.registerEvents(new NationWalkEvent(),this);
     pm.registerEvents(new EnemyWalkWWar(),this);
-    getCommand("twar").setExecutor(new WarExecutor(this));
-    getCommand("ideology").setExecutor(this);
-    getCommand("townideology").setExecutor(this);
+    Objects.requireNonNull(getCommand("twar")).setExecutor(new WarExecutor(this));
+    Objects.requireNonNull(getCommand("ideology")).setExecutor(this);
+    Objects.requireNonNull(getCommand("townideology")).setExecutor(this);
     towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
     tUniverse = TownyUniverse.getInstance();
     if(Bukkit.getPluginManager().getPlugin("BossBarAPI")!=null){
@@ -172,17 +172,19 @@ public class TownyWars
     allowGriefingS = getConfig().getString("griefing.allow-griefing");
     String allowRollbackS;
     allowRollbackS = getConfig().getString("griefing.allow-rollback");
-    allowGriefing = Boolean.valueOf(allowGriefingS.toUpperCase());
-    allowRollback = Boolean.valueOf(allowRollbackS.toUpperCase());
+      assert allowGriefingS != null;
+      allowGriefing = Boolean.parseBoolean(allowGriefingS.toUpperCase());
+    allowRollback = Boolean.parseBoolean(allowRollbackS.toUpperCase());
     if(allowRollback){
     	timer = ((getConfig().getInt("griefing.save-timer"))*60)*20;
     }
     pBlock = getConfig().getDouble("griefing.per-block-cost");
     pBlockPoints = getConfig().getDouble("griefing.per-block-points");
     String tempExplosions = getConfig().getString("griefing.allow-explosions-war");
-    warExplosions = Boolean.valueOf(tempExplosions.toUpperCase());
+      assert tempExplosions != null;
+      warExplosions = Boolean.parseBoolean(tempExplosions.toUpperCase());
     String realExplosions = getConfig().getString("griefing.explosions.realistic-explosions");
-    realisticExplosions = Boolean.valueOf(realExplosions.toUpperCase());
+    realisticExplosions = Boolean.parseBoolean(realExplosions.toUpperCase());
     debrisChance = getConfig().getInt("griefing.explosions.debris-chance");
     for(String string : (ArrayList<String>) getConfig().getStringList("griefing.worldBlackList")){
     	worldBlackList.add(string.toLowerCase());
@@ -205,17 +207,16 @@ public class TownyWars
     }
 
   } public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
-    if (cmd.getName().equalsIgnoreCase("ideology"))
-    {
-        if (!(sender instanceof Player))
-        {
+    if (cmd.getName().equalsIgnoreCase("ideology")) {
+        if (!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "This command is only usable by players, sorry!");
             return true;
         }
-        Player player = (Player)sender;
-        try
-        {
-            Resident res = TownyUniverse.getInstance().getResident(player.getName());
+        Player player = (Player) sender;
+        try {
+            // retrieve the towny resident:
+            Resident res = TownyUniverse.getInstance().getResident(player.getUniqueId());
+            assert res != null;
             if (res.hasTown()) {
 
                 Town t = res.getTown();
@@ -258,6 +259,10 @@ public class TownyWars
         catch (NotRegisteredException localNotRegisteredException) {}
     }
     if(cmd.getName().equalsIgnoreCase("townideology")){
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "This command is only usable by players, sorry!");
+            return true;
+        }
         Player player = (Player) sender;
         try {
             Resident resident = TownyUniverse.getInstance().getResident(player.getName());
@@ -323,20 +328,18 @@ public class TownyWars
 
   	public Set<Material> convertBanList(List<String> banList2){
   		Set<Material> newBanList = new HashSet<Material>();
-		if(!banList2.equals(null)){
+		if(banList2 != null){
 			for(String s : banList2){
 				Material mat = Material.valueOf(s.toUpperCase());
-				if(!mat.equals(null)){
-					newBanList.add(mat);
-				}
-			}
+                newBanList.add(mat);
+            }
 		}
 		return newBanList;
 	}
 
   	/*
 	 * Takes a player and a location, the player is someone who wants to find out if the location
-	 * interacted with is located in a town that their nation is at war With
+	 * interacted with is located in a town that their nation is at war with
 	 */
 	public static boolean atWar(Player p, Location loc){
 		try
@@ -344,7 +347,8 @@ public class TownyWars
 			if(TownyUniverse.getInstance().getResident(p.getName())!=null)
 			{
 				Resident re = TownyUniverse.getInstance().getResident(p.getName());
-				if(re.getTown()!=null){
+                assert re != null;
+                if(re.getTown()!=null){
 					if(re.getTown().getNation()!=null){
 						Nation nation = re.getTown().getNation();
 						// add the player to the master list if they don't exist in it yet
@@ -375,7 +379,7 @@ public class TownyWars
 					}
 				}
 			}
-		}catch (Exception ex) {
+		} catch (Exception ex) {
 			return false;
 		}
 		return false;

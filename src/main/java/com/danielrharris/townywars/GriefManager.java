@@ -45,10 +45,10 @@ public class GriefManager
 		townDataFolder = new File(plugin.getDataFolder().toString() + "/towndata");
 		if (!townDataFolder.exists()) {
 			Bukkit.getServer().getLogger().info("Directory Doesn't Exist, Creating...");
-			townDataFolder.mkdir();
+			townDataFolder.mkdir(); // folder directory means no reason to edit the result * IGNORE WARNING
 		}
 		File[] listOfFiles = townDataFolder.listFiles();
-	    for (int i = 0; i < listOfFiles.length; i++) {
+	    for (int i = 0; i < Objects.requireNonNull(listOfFiles).length; i++) {
 	    	if (listOfFiles[i].isFile()) {
 	    		String town = listOfFiles[i].getName();
 	    		townData = new File(townDataFolder, (town));
@@ -59,12 +59,13 @@ public class GriefManager
 	    					listSerial = blocks.getString("blocks");
 	    					size = blocks.getInt("size");
 	    					try {
-	    						if(!listSerial.equals("") && !listSerial.equals(null)){
+								assert listSerial != null;
+								if(!listSerial.equals("")){
 	    							blocksBroken = BlockSerialization.fromBase64(listSerial, size);
 	    							Town towny;
 									try {
 										towny = TownyUniverse.getInstance().getTown(FilenameUtils.removeExtension(town));
-										if(blocksBroken!=null && towny!=null){
+										if(towny != null){
 		    								data.put(towny, blocksBroken);
 		    							}
 									} catch (Exception e) {

@@ -62,7 +62,7 @@ public class GriefListener implements Listener{
 		if(TownyWars.allowGriefing){
 			Block block = event.getBlock();
 			if(TownyWars.worldBlackList!=(null))
-				if(TownyWars.worldBlackList.contains(block.getWorld().getName().toString().toLowerCase())){
+				if(TownyWars.worldBlackList.contains(block.getWorld().getName().toLowerCase())){
 					return;
 				}
 			if(TownyWars.blockBlackList!=(null))

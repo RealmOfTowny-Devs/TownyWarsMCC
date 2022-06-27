@@ -50,16 +50,16 @@ public class ShowDPTask extends BukkitRunnable{
 					if(player!=null){								
 						percent = 1.0F;
 						wwar = WarManager.getWarForNation(nation);
-						if(wwar != null && !((Double)(War.getTownMaxPoints(town))).equals(null)){
+						if(wwar != null){
 							try {
 								percent = (float)((wwar.getTownPoints(town)/((Double)War.getTownMaxPoints(town)).intValue()));
 								if(percent!=0f){
-									if(BossBarAPI.hasBar(player)){
+									if(BossBarAPI.hasBar(player)) {
 										BossBarAPI.removeAllBars(player);
 									}
 									String barMessage = "&a&l" + town.getName() + " &r&eDefense points: &b" + d.format(wwar.getTownPoints(town)) + "&f/&3" + ((Double)War.getTownMaxPoints(town)).intValue();
-									final BossBar bossBar = BossBarAPI.addBar(player,
-											new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage)), // Displayed message
+									player.sendMessage(barMessage);
+									final BossBar bossBar = BossBarAPI.addBar(player, new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage)), // Displayed message
 									   BossBarAPI.Color.RED,
 									   BossBarAPI.Style.PROGRESS, 
 									   percent,
@@ -78,15 +78,16 @@ public class ShowDPTask extends BukkitRunnable{
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
-						}else if(!((Double)War.getTownMaxPoints(town)).equals(null)){
+						}else {
+							War.getTownMaxPoints(town);
 							if(BossBarAPI.hasBar(player)){
 								BossBarAPI.removeAllBars(player);
 							}
 							String barMessage = "&a&l" + town.getName() + " &r&eDefense points: &b" + ((Double)War.getTownMaxPoints(town)).intValue() + "&f/&3" + ((Double)War.getTownMaxPoints(town)).intValue();
-							final BossBar bossBar = BossBarAPI.addBar(player,
-									new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage)), // Displayed message
+							player.sendMessage(barMessage);
+							final BossBar bossBar = BossBarAPI.addBar(player, new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage)), // Displayed message
 							   BossBarAPI.Color.RED,
-							   BossBarAPI.Style.PROGRESS, 
+							   BossBarAPI.Style.PROGRESS,
 							   percent,
 							   2000,
 							   5000);
@@ -95,10 +96,10 @@ public class ShowDPTask extends BukkitRunnable{
 								public void run() {
 									if(BossBarAPI.hasBar(player)){
 										BossBarAPI.removeAllBars(player);
-									}											
-								}				
+									}
+								}
 							}.runTaskLater(plugin, 200L);
-						}				
+						}
 					}
 				}
 			}

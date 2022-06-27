@@ -16,3 +16,5 @@ commands:
     usage: Syntax error! Perhaps you meant /twar neutral [nation]
   twar repair:
     permission: townywars.repair
+  twar declare:
+    description: Declare war on another town.
