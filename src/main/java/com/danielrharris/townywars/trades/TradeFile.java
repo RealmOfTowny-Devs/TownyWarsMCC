@@ -13,12 +13,12 @@ public class TradeFile {
     private File file;
     private YamlConfiguration yamlConfiguration;
 
-    public TradeFile(Plugin plugin){
-        if(!plugin.getDataFolder().exists()){
+    public TradeFile(Plugin plugin) {
+        if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdir();
         }
-        this.file = new File(plugin.getDataFolder(),"trades.yml");
-        if(!this.file.exists()){
+        this.file = new File(plugin.getDataFolder(), "trades.yml");
+        if (!this.file.exists()) {
             try {
                 this.file.createNewFile();
             } catch (IOException e) {
@@ -28,20 +28,22 @@ public class TradeFile {
         this.yamlConfiguration = YamlConfiguration.loadConfiguration(this.file);
     }
 
-    public void reload(){
+    public void reload() {
         try {
             this.yamlConfiguration.load(this.file);
         } catch (IOException | InvalidConfigurationException e) {
             e.printStackTrace();
         }
     }
-    public void save(){
+
+    public void save() {
         try {
             this.yamlConfiguration.save(this.file);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
     public FileConfiguration getYamlConfiguration() {
         return yamlConfiguration;
     }

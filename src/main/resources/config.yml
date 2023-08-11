@@ -12,8 +12,8 @@ griefing:
   save-timer: 10
   per-block-points: 0.01
   per-block-cost: 2.0
-  worldBlackList: []
-  blockBlackList: []
+  worldBlackList: [ ]
+  blockBlackList: [ ]
   allow-explosions-war: true
   explosions:
     realistic-explosions: true

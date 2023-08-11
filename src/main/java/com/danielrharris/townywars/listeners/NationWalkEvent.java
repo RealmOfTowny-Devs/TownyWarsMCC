@@ -10,9 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-import java.util.Objects;
-
-public class NationWalkEvent implements Listener{
+public class NationWalkEvent implements Listener {
 
     @EventHandler
     public void onEnter(PlayerChangePlotEvent event) throws NotRegisteredException {
@@ -30,55 +28,58 @@ public class NationWalkEvent implements Listener{
         if (!resident.hasTown()) return;
         if (resident.hasTown() && !resident.hasNation()) return;
         if (blockTo == null) return;
-        if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo())) != null) {
-            TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo()));
 
-            Town rTown = null;
-            Nation rNation = null;
-            try {
-                rTown = resident.getTown();
-                rNation = rTown.getNation();
-            } catch (NotRegisteredException e) {
-                e.printStackTrace();
-            }
-            Town townTo;
+        try {
+            if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo())) != null) {
+                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getMoveEvent().getTo()));
 
-            Nation nationTo;
-            try {
-                townTo = townBlock.getTown();
-                if (!townTo.hasNation()) {
-                    Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + townTo.getName(), "doesn't have a nation.");
+                Town rTown = null;
+                Nation rNation = null;
+                try {
+                    rTown = resident.getTown();
+                    rNation = rTown.getNation();
+                } catch (NotRegisteredException e) {
+                    e.printStackTrace();
                 }
-                assert blockFrom != null;
-                if (blockFrom.getTownyWorld().isClaimable()) {
-                    nationTo = townTo.getNation();
-                    assert rNation != null;
-                    if (rNation.getName().equals(nationTo.getName())) return;
+                Town townTo;
 
-                    if (rNation.hasEnemy(nationTo) && !blockFrom.getTownyWorld().hasTowns()) {
-                        Title.sendTitle(player, 20, 20, 20, ChatColor.RED.toString() + nationTo.getName(), "is your enemy!");
+                Nation nationTo;
+                try {
+                    townTo = townBlock.getTown();
+                    if (!townTo.hasNation()) {
+                        Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + townTo.getName(), "doesn't have a nation.");
                     }
-                    if (rNation.hasAlly(nationTo)) {
-                        Title.sendTitle(player, 20, 20, 20, ChatColor.GREEN.toString() + nationTo.getName(), "is your ally!");
+                    assert blockFrom != null;
+                    if (blockFrom.getTownyWorld().isClaimable()) {
+                        nationTo = townTo.getNation();
+                        assert rNation != null;
+                        if (rNation.getName().equals(nationTo.getName())) return;
+
+                        if (rNation.hasEnemy(nationTo) && !blockFrom.getTownyWorld().hasTowns()) {
+                            Title.sendTitle(player, 20, 20, 20, ChatColor.RED.toString() + nationTo.getName(), "is your enemy!");
+                        }
+                        if (rNation.hasAlly(nationTo)) {
+                            Title.sendTitle(player, 20, 20, 20, ChatColor.GREEN.toString() + nationTo.getName(), "is your ally!");
+                        }
+                        if (!rNation.hasEnemy(nationTo) && !rNation.hasAlly(nationTo)) {
+                            Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + nationTo.getName(), "is neutral with your nation.");
+                        }
                     }
-                    if (!rNation.hasEnemy(nationTo) && !rNation.hasAlly(nationTo)) {
-                        Title.sendTitle(player, 20, 20, 20, ChatColor.WHITE.toString() + nationTo.getName(), "is neutral with your nation.");
-                    }
+
+                } catch (NotRegisteredException e) {
+                    e.printStackTrace();
                 }
-
-            } catch (NotRegisteredException e) {
-                e.printStackTrace();
             }
+        } catch (NotRegisteredException ignored) {
         }
     }
 
 }
 /**
- *
  * TODO:
- *
+ * <p>
  * CHECK IF TOWN IS WILDERNESS, IF SO, STOP.
- *
- *
- if (!townBlock1.hasTown() || townBlock1.getType() == TownBlockType.WILDS) {
+ * <p>
+ * <p>
+ * if (!townBlock1.hasTown() || townBlock1.getType() == TownBlockType.WILDS) {
  **/

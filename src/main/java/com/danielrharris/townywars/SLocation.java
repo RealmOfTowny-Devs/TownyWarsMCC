@@ -1,17 +1,17 @@
 package com.danielrharris.townywars;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.UUID;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.UUID;
 
 public class SLocation implements Serializable {
     private static final long serialVersionUID = -2185982130721731539L;
@@ -30,6 +30,18 @@ public class SLocation implements Serializable {
         pitch = loc.getPitch();
         yaw = loc.getYaw();
         world = loc.getWorld().getUID();
+    }
+
+    public static SLocation deSerialize(String base64) throws IOException {
+        try {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(base64));
+            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
+            SLocation slocation = (SLocation) dataInput.readObject();
+            dataInput.close();
+            return slocation;
+        } catch (ClassNotFoundException | IOException e) {
+            throw new IOException("Unable to decode class type.", e);
+        }
     }
 
     public double getX() {
@@ -69,18 +81,6 @@ public class SLocation implements Serializable {
             return Base64Coder.encodeLines(outputStream.toByteArray());
         } catch (Exception e) {
             throw new IllegalStateException("Unable to save location", e);
-        }
-    }
-
-    public static SLocation deSerialize(String base64) throws IOException {
-        try {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(base64));
-            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-            SLocation slocation = (SLocation)dataInput.readObject();
-            dataInput.close();
-            return slocation;
-        } catch (ClassNotFoundException | IOException e) {
-            throw new IOException("Unable to decode class type.", e);
         }
     }
 

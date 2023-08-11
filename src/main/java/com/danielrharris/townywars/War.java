@@ -1,284 +1,278 @@
 package com.danielrharris.townywars;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-
-//import java.io.DataInputStream;
-//import java.io.DataOutputStream;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-//import main.java.com.danielrharris.townywars.War.MutableInteger;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class War {
-	private Nation nation1, nation2;
-	private int nation1points, nation2points;
-	private Map<Town, Double> towns = new HashMap<Town, Double>();
+    private Nation nation1, nation2;
+    private int nation1points, nation2points;
+    private Map<Town, Double> towns = new HashMap<Town, Double>();
 
-	private Rebellion rebelwar;
+    private Rebellion rebelwar;
 
-	public War(Nation nat, Nation onat, Rebellion rebellion) {
-		nation1 = nat;
-		nation2 = onat;
-		recalculatePoints(nat);
-		recalculatePoints(onat);
-		this.rebelwar = rebellion;
-	}
+    public War(Nation nat, Nation onat, Rebellion rebellion) {
+        nation1 = nat;
+        nation2 = onat;
+        recalculatePoints(nat);
+        recalculatePoints(onat);
+        this.rebelwar = rebellion;
+    }
 
-	public War(Nation nat, Nation onat) {
-		this(nat, onat, null);
-	}
-	
-	public War(String s){
+    public War(Nation nat, Nation onat) {
+        this(nat, onat, null);
+    }
 
-		ArrayList<String> slist = new ArrayList<String>(Arrays.asList(s.split("   ")));
+    public War(String s) {
 
-		nation1 = TownyUniverse.getInstance().getNation(slist.get(0));
+        ArrayList<String> slist = new ArrayList<String>(Arrays.asList(s.split("   ")));
 
-		nation2 = TownyUniverse.getInstance().getNation(slist.get(1));
+        nation1 = TownyUniverse.getInstance().getNation(slist.get(0));
 
-		nation1points = Integer.parseInt(slist.get(2));
-		
-		nation2points = Integer.parseInt(slist.get(3));
-		
-		String[] temp2 = {"",""};
-		
-		for(String temp : slist.get(4).split("  ")){
-			temp2 = temp.split(" ");
-			try {
-				towns.put(TownyUniverse.getInstance().getTown(temp2[0]), Double.parseDouble(temp2[1]));
-			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		if(slist.get(5).equals("n u l l"))
-			rebelwar = null;
-		else
-			try {
-				rebelwar = Rebellion.getRebellionFromName(slist.get(5));
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	}
+        nation2 = TownyUniverse.getInstance().getNation(slist.get(1));
 
-	public Rebellion getRebellion() {
-		return this.rebelwar;
-	}
+        nation1points = Integer.parseInt(slist.get(2));
 
-	//tripple space separates objects, double space separates list elements, single space separates map pairs
-	public String objectToString(){
-		StringBuilder s = new StringBuilder(new String(""));
-		
-		s.append(nation1.getName()).append("   ");
-		s.append(nation2.getName()).append("   ");
-		s.append(nation1points).append("   ");
-		s.append(nation2points).append("   ");
-		
-		for(Town town : towns.keySet()){
-			s.append(town.getName()).append(" ");
-			s.append(towns.get(town)).append("  ");
-		}
-		
-		if(rebelwar != null)
-			s.append(" ").append(rebelwar.getName());
-		else
-			s.append(" " + "n u l l");
-		
-		return s.toString();
-	}
+        nation2points = Integer.parseInt(slist.get(3));
 
-	public void setNation1(Nation nation1) {
-		this.nation1 = nation1;
-	}
+        String[] temp2 = {"", ""};
 
-	public void setNation2(Nation nation2) {
-		this.nation2 = nation2;
-	}
-	
-	public Set<Nation> getNationsInWar() {
-		HashSet<Nation> s = new HashSet<Nation>();
-		s.add(nation1);
-		s.add(nation2);
-		return s;
-	}
-	
-	public void removeTown(Town town, Nation nation){
-		towns.remove(town);
-		if(nation == nation1)
-			nation1points--;
-		else if(nation == nation2)
-			nation2points--;
-	}
-	
-	public Integer getNationPoints(Nation nation) throws Exception {
-		if(nation == nation1)
-			return nation1points;
-		if(nation == nation2)
-			return nation2points;
-		throw(new Exception("Not registred"));
-	}
+        for (String temp : slist.get(4).split("  ")) {
+            temp2 = temp.split(" ");
+            try {
+                towns.put(TownyUniverse.getInstance().getTown(temp2[0]), Double.parseDouble(temp2[1]));
+            } catch (NumberFormatException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
 
-	public double getTownPoints(Town town) throws Exception {
-		return (double)towns.get(town);
-	}
+        if (slist.get(5).equals("n u l l"))
+            rebelwar = null;
+        else
+            try {
+                rebelwar = Rebellion.getRebellionFromName(slist.get(5));
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+    }
 
-	//rewrite
-	public final void recalculatePoints(Nation nat) {
-		if(nat.equals(nation1))
-			nation1points = nat.getNumTowns();
-		else if(nat.equals(nation2))
-			nation2points = nat.getNumTowns();
-		for (Town town : nat.getTowns()) {
-			towns.put(town, getTownMaxPoints(town));
-		}
-	}
-	
-	public void addNewTown(Town town){
-		towns.put(town, getTownMaxPoints(town));
-	}
-	
-	public static double getTownMaxPoints(Town town){
-		return (town.getNumResidents()
-				* TownyWars.pPlayer) + (TownyWars.pPlot
-				* town.getTownBlocks().size());
-	}
+    public static double getTownMaxPoints(Town town) {
+        return (town.getNumResidents()
+                * TownyWars.pPlayer) + (TownyWars.pPlot
+                * town.getTownBlocks().size());
+    }
 
-	public boolean hasNation(Nation onation) {
-		if(onation != nation1 && onation != nation2 && (onation.getName().equals(nation1.getName()) || onation.getName().equals(nation2.getName())))
-				System.out.println("hasNation() error. Please report to Noxer");
-		return (onation.getName().equals(nation1.getName()) || onation.getName().equals(nation2.getName()));
-	}
+    @SuppressWarnings("deprecation")
+    public static void broadcast(Nation n, String message) {
+        for (Resident re : n.getResidents()) {
+            Player plr = Bukkit.getPlayer(re.getName());
+            if (plr != null) {
+                plr.sendMessage(message);
+            }
+        }
+    }
 
-	public Nation getEnemy(Nation onation) throws Exception {
-			if (nation1 == onation) {
-				return nation2;
-			}
-			if (nation2 == onation) {
-				return nation1;
-			}
-		throw new Exception("War.getEnemy: Specified nation is not in war.");
-	}
+    public Rebellion getRebellion() {
+        return this.rebelwar;
+    }
 
-	public void chargeTownPoints(Nation nnation, Town town, double i) {
-		double value = towns.get(town) - i;
-		if(value > 0){
-			towns.replace(town, value);
-		}
-		if (value <= 0) {
-			try {
-				if(nnation.getTowns().size() > 1 && nnation.getCapital() == town){
-					if(nnation.getTowns().get(0) != town){
-						nnation.setCapital(nnation.getTowns().get(0));
-					}else{
-						nnation.setCapital(nnation.getTowns().get(1));
-					}
-				}
-					
-					
-				towns.remove(town);
-				Nation nation = WarManager.getWarForNation(nnation).getEnemy(nnation);
-				removeNationPoint(nnation);
-				addNationPoint(nation, town);
-				try {	
-						WarManager.townremove = town;
-						nnation.getTowns().remove(town);
-				} catch (Exception ex) {
-				}
-				nation.addTown(town);
-				town.setNation(nation);
-				TownyUniverse.getInstance().getDataSource().saveNation(nation);
-				TownyUniverse.getInstance().getDataSource().saveNation(nnation);
-				try {
-					WarManager.save();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				broadcast(
-						nation,
-						ChatColor.GREEN
-								+ town.getName()
-								+ " has been conquered and joined your nation in the war!");
-			} catch (Exception ex) {
-				Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
-						ex);
-			}
-		}
-		try {
-			if (this.getNationPoints(nnation) <= 0) {
-				try {
-						Nation winner = getEnemy(nnation);
-						Nation looser = nnation;
-						boolean endWarTransfersDone = false;
-						for(Rebellion r : Rebellion.getAllRebellions()){
-							if(r.getRebelnation() == winner){
-								winner.getCapital().collect(winner.getAccount().getHoldingBalance());
-								winner.getAccount().withdraw(winner.getAccount().getHoldingBalance(), "You are disbanded. You don't need money.");
-								endWarTransfersDone = true;
-								break;
-							}
-						}
-						
-						if(!endWarTransfersDone){
-							winner.collect(looser.getAccount().getHoldingBalance());
-							looser.getAccount().withdraw(looser.getAccount().getHoldingBalance(), "Conquered. Tough luck!");
-						}
-						WarManager.endWar(winner, looser, false);
+    //tripple space separates objects, double space separates list elements, single space separates map pairs
+    public String objectToString() {
+        StringBuilder s = new StringBuilder(new String(""));
 
-				} catch (Exception ex) {
-					Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
-							ex);
-				}
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		try {
-			WarManager.save();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+        s.append(nation1.getName()).append("   ");
+        s.append(nation2.getName()).append("   ");
+        s.append(nation1points).append("   ");
+        s.append(nation2points).append("   ");
 
-	public void removeNationPoint(Nation nation) {
-		if(nation1 == nation)
-			nation1points--;
-		if(nation2 == nation)
-			nation2points--;
-	}
+        for (Town town : towns.keySet()) {
+            s.append(town.getName()).append(" ");
+            s.append(towns.get(town)).append("  ");
+        }
 
-	public void addNationPoint(Nation nation, Town town) {
-		if(nation1 == nation)
-			nation1points++;
-		if(nation2 == nation)
-			nation2points++;
-		towns.put(town,
-				(town.getNumResidents()
-						* TownyWars.pPlayer + TownyWars.pPlot
-						* town.getTownBlocks().size()));
-	}
+        if (rebelwar != null)
+            s.append(" ").append(rebelwar.getName());
+        else
+            s.append(" " + "n u l l");
 
-	@SuppressWarnings("deprecation")
-	public static void broadcast(Nation n, String message) {
-		for (Resident re : n.getResidents()) {
-			Player plr = Bukkit.getPlayer(re.getName());
-			if (plr != null) {
-				plr.sendMessage(message);
-			}
-		}
-	}
+        return s.toString();
+    }
+
+    public void setNation1(Nation nation1) {
+        this.nation1 = nation1;
+    }
+
+    public void setNation2(Nation nation2) {
+        this.nation2 = nation2;
+    }
+
+    public Set<Nation> getNationsInWar() {
+        HashSet<Nation> s = new HashSet<Nation>();
+        s.add(nation1);
+        s.add(nation2);
+        return s;
+    }
+
+    public void removeTown(Town town, Nation nation) {
+        towns.remove(town);
+        if (nation == nation1)
+            nation1points--;
+        else if (nation == nation2)
+            nation2points--;
+    }
+
+    public Integer getNationPoints(Nation nation) throws Exception {
+        if (nation == nation1)
+            return nation1points;
+        if (nation == nation2)
+            return nation2points;
+        throw (new Exception("Not registred"));
+    }
+
+    public double getTownPoints(Town town) throws Exception {
+        return (double) towns.get(town);
+    }
+
+    //rewrite
+    public final void recalculatePoints(Nation nat) {
+        if (nat.equals(nation1))
+            nation1points = nat.getNumTowns();
+        else if (nat.equals(nation2))
+            nation2points = nat.getNumTowns();
+        for (Town town : nat.getTowns()) {
+            towns.put(town, getTownMaxPoints(town));
+        }
+    }
+
+    public void addNewTown(Town town) {
+        towns.put(town, getTownMaxPoints(town));
+    }
+
+    public boolean hasNation(Nation onation) {
+        if (onation != nation1 && onation != nation2 && (onation.getName().equals(nation1.getName()) || onation.getName().equals(nation2.getName())))
+            System.out.println("hasNation() error. Please report to Noxer");
+        return (onation.getName().equals(nation1.getName()) || onation.getName().equals(nation2.getName()));
+    }
+
+    public Nation getEnemy(Nation onation) throws Exception {
+        if (nation1 == onation) {
+            return nation2;
+        }
+        if (nation2 == onation) {
+            return nation1;
+        }
+        throw new Exception("War.getEnemy: Specified nation is not in war.");
+    }
+
+    public void chargeTownPoints(Nation nnation, Town town, double i) {
+        double value = towns.get(town) - i;
+        if (value > 0) {
+            towns.replace(town, value);
+        }
+        if (value <= 0) {
+            try {
+                if (nnation.getTowns().size() > 1 && nnation.getCapital() == town) {
+                    if (nnation.getTowns().get(0) != town) {
+                        nnation.setCapital(nnation.getTowns().get(0));
+                    } else {
+                        nnation.setCapital(nnation.getTowns().get(1));
+                    }
+                }
+
+
+                towns.remove(town);
+                Nation nation = WarManager.getWarForNation(nnation).getEnemy(nnation);
+                removeNationPoint(nnation);
+                addNationPoint(nation, town);
+                try {
+                    WarManager.townremove = town;
+                    nnation.getTowns().remove(town);
+                } catch (Exception ex) {
+                }
+                nation.addTown(town);
+                town.setNation(nation);
+                TownyUniverse.getInstance().getDataSource().saveNation(nation);
+                TownyUniverse.getInstance().getDataSource().saveNation(nnation);
+                try {
+                    WarManager.save();
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                broadcast(
+                        nation,
+                        ChatColor.GREEN
+                                + town.getName()
+                                + " has been conquered and joined your nation in the war!");
+            } catch (Exception ex) {
+                Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
+                        ex);
+            }
+        }
+        try {
+            if (this.getNationPoints(nnation) <= 0) {
+                try {
+                    Nation winner = getEnemy(nnation);
+                    Nation looser = nnation;
+                    boolean endWarTransfersDone = false;
+                    for (Rebellion r : Rebellion.getAllRebellions()) {
+                        if (r.getRebelnation() == winner) {
+                            winner.getCapital().collect(winner.getAccount().getHoldingBalance());
+                            winner.getAccount().withdraw(winner.getAccount().getHoldingBalance(), "You are disbanded. You don't need money.");
+                            endWarTransfersDone = true;
+                            break;
+                        }
+                    }
+
+                    if (!endWarTransfersDone) {
+                        winner.collect(looser.getAccount().getHoldingBalance());
+                        looser.getAccount().withdraw(looser.getAccount().getHoldingBalance(), "Conquered. Tough luck!");
+                    }
+                    WarManager.endWar(winner, looser, false);
+
+                } catch (Exception ex) {
+                    Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
+                            ex);
+                }
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        try {
+            WarManager.save();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    public void removeNationPoint(Nation nation) {
+        if (nation1 == nation)
+            nation1points--;
+        if (nation2 == nation)
+            nation2points--;
+    }
+
+    public void addNationPoint(Nation nation, Town town) {
+        if (nation1 == nation)
+            nation1points++;
+        if (nation2 == nation)
+            nation2points++;
+        towns.put(town,
+                (town.getNumResidents()
+                        * TownyWars.pPlayer + TownyWars.pPlot
+                        * town.getTownBlocks().size()));
+    }
 }
