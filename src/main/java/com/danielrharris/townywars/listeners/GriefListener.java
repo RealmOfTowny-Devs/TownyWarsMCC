@@ -40,7 +40,7 @@ public class GriefListener implements Listener {
     private static ConcurrentHashMap<Town, Set<SBlock>> sBlocks;
 
     public ConcurrentHashMap<Player, Stack<Location>> pastLocation = new ConcurrentHashMap<>();
-    public int storeLimit = 4;
+    public int storeLimit = 10;
     private final int DEBRIS_CHANCE;
     private TownyWars mplugin = null;
     private GriefManager m;
@@ -52,6 +52,7 @@ public class GriefListener implements Listener {
         sBlocks = this.m.loadData();
 
         new BukkitRunnable() {
+            long timeTrack = System.currentTimeMillis();
             @Override
             public void run() {
                 for(Player target : Bukkit.getOnlinePlayers()) {
@@ -59,23 +60,30 @@ public class GriefListener implements Listener {
                     boolean isWallDetected = isWallDetected(target.getLocation().getBlock());
                     boolean partOfTown = verifyTowny.a();
                     boolean playerInTown = verifyTowny.b();
-                    if (partOfTown || playerInTown) continue;
+
+                    if (!partOfTown || playerInTown) continue;
 
                     if (isWallDetected) {
-                        for(int i = 0; i < storeLimit; i++) {
+                        for(int i = 1; i < storeLimit-1; i++) {
                             if(!pastLocation.containsKey(target)) break;
-                            Block targetPosition = pastLocation.get(target).elementAt(pastLocation.get(target).size()-1-i).getBlock();
-                            if(!isWallDetected(target.getLocation().getBlock()) || i + 1 >= storeLimit) {
-                                Bukkit.getScheduler().runTask(aThis, () -> target.teleport(targetPosition.getLocation()));
+                            if(i >= pastLocation.get(target).size()) break;
+                            Block targetPosition = pastLocation.get(target).elementAt(pastLocation.get(target).size()-i).getBlock();
+                            if(!isWallDetected(targetPosition) || i + 1 >= storeLimit-1) {
+                                Location targetLocation = targetPosition.getLocation();
+                                targetLocation.setDirection(target.getLocation().getDirection());
+                                Bukkit.getScheduler().runTask(aThis, () -> target.teleport(targetLocation));
                                 break;
                             }
                         }
                     }
                     else {
-                        if(!pastLocation.containsKey(target)) pastLocation.put(target, new Stack<>());
-                        Stack<Location> locationStack = pastLocation.get(target);
-                        locationStack.push(target.getLocation());
-                        if(locationStack.size() > storeLimit) locationStack.removeElementAt(0);
+                        if(System.currentTimeMillis()-timeTrack>=500) {
+                            if (!pastLocation.containsKey(target)) pastLocation.put(target, new Stack<>());
+                            Stack<Location> locationStack = pastLocation.get(target);
+                            locationStack.push(target.getLocation());
+                            if (locationStack.size() > storeLimit) locationStack.removeElementAt(0);
+                            timeTrack = System.currentTimeMillis();
+                        }
                     }
                 }
             }
@@ -101,6 +109,8 @@ public class GriefListener implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
     public void onWarTownDamage(BlockBreakEvent event) throws NotRegisteredException {
         if(event.isCancelled()) return;
+        if(isOnlyWallDetected(event.getBlock()) && !isNatural(event.getBlock())) return;
+
         if (TownyWars.allowGriefing) {
             Block block = event.getBlock();
             if (TownyWars.worldBlackList != (null))
@@ -158,8 +168,8 @@ public class GriefListener implements Listener {
                             double points = (Math.round(((double) (sBlocks.size() * TownyWars.pBlockPoints)) * 1e2) / 1e2);
                             wwar.chargeTownPoints(otherNation, otherTown, points);
                             new AttackWarnBarTask(otherTown, mplugin).runTask(mplugin);
-//                            event.setCancelled(true);
-//                            block.breakNaturally();
+                            event.setCancelled(true);
+                            block.breakNaturally();
                         }
                     } catch (NotRegisteredException ignored) {
                     }
@@ -480,7 +490,7 @@ public class GriefListener implements Listener {
         boolean isWallDetected = isWallDetected(event.getBlock());
         boolean partOfTown = verifyTowny.a();
         boolean playerInTown = verifyTowny.b();
-        if (isWallDetected && partOfTown && playerInTown) {
+        if (isWallDetected && playerInTown) {
             Player player = event.getPlayer();
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aYou have built a wall!"));
         }
@@ -508,15 +518,13 @@ public class GriefListener implements Listener {
 
     // first = is block in a town, second = is player part of town
     public Tuple<Boolean, Boolean> townyVerification(Player target, Location location) {
-        if(!location.getBlock().getType().isSolid()) return new Tuple<>(false, false);
         TownBlock townBlock = TownyAPI.getInstance().getTownBlock(location);
         if(townBlock==null) return new Tuple<>(false, false);
         try {
             Town targetTown = townBlock.getTown();
             if(!targetTown.hasResident(target)) return new Tuple<>(true, false);
-            else new Tuple<>(true, true);
+            else return new Tuple<>(true, true);
         } catch (NotRegisteredException ex) { return new Tuple<>(false, false); }
-        return new Tuple<>(false, false);
     }
 
     ConcurrentHashMap<Long, Boolean> blockCache = new ConcurrentHashMap<>();
@@ -579,8 +587,10 @@ public class GriefListener implements Listener {
             return false;
         }
 
-        int width = getWallDimension(block, blockType, 1, 0, 0); // 1, 0, 0 checks horizontally (along x-axis)
-        return width >= 3;
+        int widthX = getWallDimension(block, blockType, 1, 0, 0); // 1, 0, 0 checks horizontally (along x-axis)
+        int widthZ = getWallDimension(block, blockType, 0, 0, 1); // 0, 0, 1 checks horizontally (along z-axis)
+
+        return widthX >= 3 || widthZ >= 3;
     }
 
     private int getWallDimension(Block startBlock, Material type, int dx, int dy, int dz) {

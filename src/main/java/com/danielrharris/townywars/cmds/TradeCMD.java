@@ -3,14 +3,14 @@ package com.danielrharris.townywars.cmds;
 import com.danielrharris.townywars.SLocation;
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.trades.TradeFile;
+import com.palmergames.adventure.text.Component;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.World;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,7 +19,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.io.IOException;
 
@@ -68,13 +70,20 @@ public class TradeCMD {
                             SLocation sDropOff = SLocation.deSerialize(tc.getString(townName + ".dropoff"));
                             Location dropoff = sDropOff.toLocation();
 
+                            final ItemStack stack = player.getInventory().getItemInMainHand();
+                            if(stack.getType().equals(Material.AIR)) {
+                                player.sendMessage("§cCan't trade air!");
+                                return;
+                            }
+                            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+
                             World world = pickoff.getWorld();
                             Horse entity = (Horse) world.spawnEntity(pickoff, EntityType.HORSE);
                             entity.setAI(false);
 
 
                             double totalDistance = pickoff.distance(dropoff);
-                            int speed = 5;
+                            double speed = TownyWars.getInstance().getConfig().getDouble("trade.speed");
                             double distancePerTick = speed / 20.0 * totalDistance; // assuming speed is in blocks per second and server runs at 20 TPS
 
                             // 2. Calculate the Path and Move the Entity
@@ -86,6 +95,19 @@ public class TradeCMD {
                                     double fractionTraveled = traveledDistance / totalDistance;
 
                                     if (fractionTraveled > 1) {
+                                        double reward = TownyWars.getInstance().getConfig().getDouble("trade.reward");
+                                        town.getAccount().deposit(reward,
+                                                "Trade Complete with Town \"" + rTown.getName() +"\"");
+                                        town.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&',
+                                                "&aTrade Complete with Town \"" + rTown.getName() +"\"" +
+                                                        " &b+$"+reward)));
+                                        rTown.getAccount().deposit(reward,
+                                                "Trade Complete with Town \"" + town.getName() +"\"");
+                                        rTown.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&',
+                                                "&aTrade Complete with Town \"" + rTown.getName() +"\""+
+                                                        " &b+$"+reward)));
+                                        entity.getLocation().getWorld().dropItem(entity.getLocation(), stack);
+                                        Bukkit.getScheduler().runTaskLater(TownyWars.getInstance(), entity::remove, 30*20);
                                         this.cancel();
                                         return;
                                     }
@@ -95,6 +117,15 @@ public class TradeCMD {
                                     double z = pickoff.getZ() + fractionTraveled * (dropoff.getZ() - pickoff.getZ());
 
                                     Location nextLocation = new Location(world, x, y, z);
+                                    Vector direction = dropoff.clone().subtract(nextLocation).toVector();
+                                    if (!isPathClear(nextLocation, direction)) {
+                                        // Set the location to the top of the obstacle
+                                        nextLocation.setY(getTopYLevel(nextLocation, direction));
+                                    } else {
+                                        // Descend to the ground level if there's nothing beneath or if path below isn't clear
+                                        double groundY = getGroundYLevel(nextLocation, direction);
+                                        nextLocation.setY(groundY);
+                                    }
 
                                     // 3. Load Chunks
                                     Chunk chunk = nextLocation.getChunk();
@@ -102,8 +133,14 @@ public class TradeCMD {
                                         chunk.load();
                                     }
 
-                                    // 4. Move the Entity
+                                    if(entity.isDead()) {
+                                        entity.getLocation().getWorld().dropItem(entity.getLocation(), stack);
+                                        cancel();
+                                    }
+                                    nextLocation.setDirection(direction);
                                     entity.teleport(nextLocation);
+
+                                    // 4. Move the Entity
 
                                     traveledDistance += distancePerTick;
                                 }
@@ -112,7 +149,7 @@ public class TradeCMD {
                             player.sendMessage("§cYou are neither the §nMayor§c of this town or an §nAssistant§c!");
                         }
                     } else {
-                        player.sendMessage("§cYou haven't set up your §nhorse§c, §npick-off§c and §ndrop-off§c locations!");
+                        player.sendMessage("§cYou haven't set up your §npick-off§c and §ndrop-off§c locations!");
                     }
                 } catch (NotRegisteredException | IOException e) {
                     e.printStackTrace();
@@ -153,25 +190,72 @@ public class TradeCMD {
                         e.printStackTrace();
                     }
 
-                } else if (args[offset+1].equalsIgnoreCase("horse")) {
-                    if (player.isInsideVehicle() && player.getVehicle().getType() == EntityType.HORSE) {
-                        Horse horse = (Horse) player.getVehicle();
-                        if (horse.isTamed() && horse.isCarryingChest()) {
-                            player.sendMessage("§aThat horse is valid to be set as your trading horse! Setting everything up now...");
-                            //todo save the horse to the flat file. @Myekaan.
-                            player.sendMessage("§aThe horse was set!");
-                        } else {
-                            player.sendMessage("§cThe horse isn't tamed or is not carrying a chest!");
-                        }
-                    } else {
-                        player.sendMessage("§cThat's not a horse!");
-                    }
-                }
+                } else player.sendMessage("§cUnknown trade Command!");
 
                 tf.save();
                 break;
         }
     }
+
+    private static boolean isPathClear(Location loc, Vector direction) {
+        World world = loc.getWorld();
+        int baseX = loc.getBlockX();
+        int baseY = loc.getBlockY();
+        int baseZ = loc.getBlockZ();
+        boolean moveAlongX = Math.abs(direction.getX()) > Math.abs(direction.getZ());
+
+        for (int y = baseY; y < baseY + 3; y++) {
+            for (int offset = -1; offset <= 1; offset++) {
+                int checkX = moveAlongX ? baseX + offset : baseX;
+                int checkZ = moveAlongX ? baseZ : baseZ + offset;
+
+                if (world.getBlockAt(checkX, y, checkZ).getType().isSolid()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static double getGroundYLevel(Location location, Vector direction) {
+        double originalY = location.getY();
+        while (location.getY() > 0 && (isBelowClear(location, direction) || location.getBlock().getType() == Material.AIR)) {
+            location.add(0, -1, 0); // Go down
+        }
+
+        // If we reached the bedrock and it's still not clear, place the horse at the original Y-level
+        if (location.getY() <= 0 && (isBelowClear(location, direction) || location.getBlock().getType() == Material.AIR)) {
+            return originalY;
+        }
+
+        return location.getY() + 1;  // +1 to make sure the horse stands on top of the block
+    }
+
+    private static boolean isBelowClear(Location location, Vector direction) {
+        Location checkLocation = location.clone();
+        for (int i = 1; i <= 3; i++) {
+            checkLocation.add(0, -1, 0); // Go down
+            if (!isPathClear(checkLocation, direction)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static double getTopYLevel(Location location, Vector direction) {
+        double originalY = location.getY();
+        while (!isPathClear(location, direction) && location.getY() < location.getWorld().getMaxHeight()) {
+            location.add(0, 1, 0);
+        }
+
+        // If we reached the max height and it's still not clear, keep the horse at the same Y-level
+        if (location.getY() >= location.getWorld().getMaxHeight() && !isPathClear(location, direction)) {
+            return originalY;
+        }
+
+        return location.getY();
+    }
+
 
     private static void sendHelpMenu(Player player) {
         player.sendMessage(new String[]{"§a -- Trade help menu --",

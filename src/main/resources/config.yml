@@ -18,3 +18,6 @@ griefing:
   explosions:
     realistic-explosions: true
     debris-chance: 75
+trade:
+  speed: 0.1
+  reward: 1000

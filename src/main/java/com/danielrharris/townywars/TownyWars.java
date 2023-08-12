@@ -242,7 +242,6 @@ public class TownyWars
             System.out.println("failed to add residents!");
             ex.printStackTrace();
         }
-
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
