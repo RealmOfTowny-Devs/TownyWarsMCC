@@ -1,6 +1,11 @@
+/*
+This code has been written through a collection of developers and was finalized and completed by Carson Rhodes
+
+You may find the majority of the plugin's functionality within the WarExecutor class.  (facilitates war declaration, creation, and management)
+ */
+
 package com.danielrharris.townywars;
 
-import com.danielrharris.townywars.cmds.TradeCMD;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
 import com.danielrharris.townywars.trades.TradeFile;
@@ -151,8 +156,6 @@ public class TownyWars
         pm.registerEvents(new NationWalkEvent(), this);
         pm.registerEvents(new EnemyWalkWWar(), this);
         Objects.requireNonNull(getCommand("twar")).setExecutor(new WarExecutor(this));
-        Objects.requireNonNull(getCommand("ideology")).setExecutor(this);
-        Objects.requireNonNull(getCommand("townideology")).setExecutor(this);
         towny = ((Towny) Bukkit.getPluginManager().getPlugin("Towny"));
         tUniverse = TownyUniverse.getInstance();
         if (Bukkit.getPluginManager().getPlugin("BossBarAPI") != null) {
@@ -242,85 +245,6 @@ public class TownyWars
             System.out.println("failed to add residents!");
             ex.printStackTrace();
         }
-    }
-
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (cmd.getName().equalsIgnoreCase("ideology")) {
-            if (!(sender instanceof Player)) {
-                sender.sendMessage(ChatColor.RED + "This command is only usable by players, sorry!");
-                return true;
-            }
-            Player player = (Player) sender;
-            try {
-                // retrieve the towny resident:
-                Resident res = TownyUniverse.getInstance().getResident(player.getUniqueId());
-                assert res != null;
-                if (res.hasTown()) {
-
-                    Town t = res.getTown();
-                    String name = t.getName();
-
-                    if (idConfig.contains(name)) {
-                        player.sendMessage(ChatColor.RED + "Your town already has an ideology set!");
-                        return true;
-                    }
-
-                    // cancel t
-                    if (t.getMayor() != res) {
-                        player.sendMessage(ChatColor.RED + "You cannot set your town's ideology if you are not the mayor!");
-                        return true;
-                    }
-                    // if the user just types in /ideology
-                    if (args.length != 1) {
-                        player.sendMessage(ChatColor.RED + "/ideology <ideology> (select one: Economic, Religious or Militaristic)");
-                        return true;
-                    }
-                    String id = args[0].toLowerCase();
-                    if ((!id.equals("economic")) && (!id.equals("religious")) && (!id.equals("militaristic"))) {
-                        player.sendMessage(ChatColor.RED + "Valid ideologies are: Economic, Religious, Militaristic");
-                        return true;
-                    }
-                    idConfig.set(t.getName(), id);
-
-                    try {
-                        idConfig.save(idConfigFile);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    player.sendMessage(ChatColor.GREEN + "Ideology set!");
-                    return true;
-                } else {
-                    player.sendMessage(ChatColor.RED.toString() + "You do not have a town!");
-                }
-            } catch (NotRegisteredException localNotRegisteredException) {
-            }
-        }
-        if (cmd.getName().equalsIgnoreCase("townideology")) {
-            if (!(sender instanceof Player)) {
-                sender.sendMessage(ChatColor.RED + "This command is only usable by players, sorry!");
-                return true;
-            }
-            Player player = (Player) sender;
-            try {
-                Resident resident = TownyUniverse.getInstance().getResident(player.getName());
-                if (resident.hasTown()) {
-                    Town town = resident.getTown();
-                    String tname = town.getName();
-                    if (idConfig.contains(tname)) {
-                        player.sendMessage(ChatColor.GREEN.toString() + "Your ideology is: " + ChatColor.DARK_GREEN.toString() + idConfig.getString(tname));
-                        return true;
-                    } else {
-                        player.sendMessage(ChatColor.RED.toString() + "Your town hasn't chosen an ideology.");
-                        return true;
-                    }
-                } else {
-                    player.sendMessage(ChatColor.RED.toString() + "You do not have a town!");
-                }
-            } catch (NotRegisteredException e) {
-                e.printStackTrace();
-            }
-        }
-        return false;
     }
 
     public void addTownyWarsResident(String playerName) {

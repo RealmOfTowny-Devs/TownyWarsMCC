@@ -201,53 +201,104 @@ public class WarManager {
     }
 
     @SuppressWarnings("deprecation")
-    public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellion r) {
-        if ((getWarForNation(nat) != null) || (getWarForNation(onat) != null)) {
-            cs.sendMessage(ChatColor.RED + "Your nation is already at war with another nation!");
-        } else {
-            try {
-                try {
-                    enableExplosions(nat);
-                    enableExplosions(onat);
-                    TownyUniverse.getInstance().getNation(nat.getName()).addEnemy(onat);
-                    TownyUniverse.getInstance().getNation(onat.getName()).addEnemy(nat);
-                } catch (NullPointerException ex) {
-                    Logger.getLogger(WarManager.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            } catch (NullPointerException ex) {
-                Logger.getLogger(WarManager.class.getName()).log(Level.SEVERE, null, ex);
+    public static void createWar(Object declarer, Object declaree, CommandSender cs, Rebellion r) {
+        Nation declaringNation = null;
+        Town declaringTown = null;
+        Nation targetNation = null;
+        Town targetTown = null;
+
+        // Determine type of declarer and declaree
+        if (declarer instanceof Nation) {
+            declaringNation = (Nation) declarer;
+        } else if (declarer instanceof Town) {
+            declaringTown = (Town) declarer;
+        }
+
+        if (declaree instanceof Nation) {
+            targetNation = (Nation) declaree;
+        } else if (declaree instanceof Town) {
+            targetTown = (Town) declaree;
+        }
+
+        // Enable PvP for the involved parties
+        if (declaringTown != null) {
+            declaringTown.setPVP(true);
+        }
+        if (targetTown != null) {
+            targetTown.setPVP(true);
+        }
+        if (declaringNation != null) {
+            for (Town town : declaringNation.getTowns()) {
+                town.setPVP(true);
             }
-            War war = new War(nat, onat, r);
-            activeWars.add(war);
-            for (Resident re : nat.getResidents()) {
-                Player plr = Bukkit.getPlayer(re.getName());
-                if (plr != null) {
-                    plr.sendMessage(ChatColor.RED + "Your nation is now at war with " + onat.getName() + "!");
-                }
-            }
-            for (Resident re : onat.getResidents()) {
-                Player plr = Bukkit.getPlayer(re.getName());
-                if (plr != null) {
-                    plr.sendMessage(ChatColor.RED + "Your nation is now at war with " + nat.getName() + "!");
-                }
-            }
-            for (Town t : nat.getTowns()) {
-                t.setPVP(true);
-            }
-            for (Town t : onat.getTowns()) {
-                t.setPVP(true);
+        }
+        if (targetNation != null) {
+            for (Town town : targetNation.getTowns()) {
+                town.setPVP(true);
             }
         }
 
-        TownyUniverse.getInstance().getDataSource().saveTowns();
-        TownyUniverse.getInstance().getDataSource().saveNations();
-        try {
-            WarManager.save();
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        // Logic for Nation declaring war on Town
+        if (declaringNation != null && targetTown != null) {
+            cs.sendMessage(ChatColor.GREEN + "Nation " + declaringNation.getName() + " has declared war on Town " + targetTown.getName() + "!");
+            // Notify players in the declaring nation
+            for (Resident resident : declaringNation.getResidents()) {
+                Player player = Bukkit.getPlayer(resident.getName());
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "Your nation has declared war on the town " + targetTown.getName() + "!");
+                }
+            }
+            // Notify players in the target town
+            for (Resident resident : targetTown.getResidents()) {
+                Player player = Bukkit.getPlayer(resident.getName());
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "The nation " + declaringNation.getName() + " has declared war on your town!");
+                }
+            }
+            // TODO: You'd typically also do other things here, like setting up war timers, updating data structures, etc.
+
+        }
+        // Logic for Town declaring war on Nation
+        else if (declaringTown != null && targetNation != null) {
+            cs.sendMessage(ChatColor.GREEN + "Town " + declaringTown.getName() + " has declared war on Nation " + targetNation.getName() + "!");
+            // Notify players in the declaring town
+            for (Resident resident : declaringTown.getResidents()) {
+                Player player = Bukkit.getPlayer(resident.getName());
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "Your town has declared war on the nation " + targetNation.getName() + "!");
+                }
+            }
+            // Notify players in the target nation
+            for (Resident resident : targetNation.getResidents()) {
+                Player player = Bukkit.getPlayer(resident.getName());
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "The town " + declaringTown.getName() + " has declared war on your nation!");
+                }
+            }
+            // TODO: Similar war setup logic as above.
+
+        }
+        // Traditional Nation vs. Nation war
+        else if (declaringNation != null && targetNation != null) {
+            cs.sendMessage(ChatColor.GREEN + "Nation " + declaringNation.getName() + " has declared war on Nation " + targetNation.getName() + "!");
+            // Notify players in the declaring nation
+            for (Resident resident : declaringNation.getResidents()) {
+                Player player = Bukkit.getPlayer(resident.getName());
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "Your nation has declared war on the nation " + targetNation.getName() + "!");
+                }
+            }
+            // Notify players in the target nation
+            for (Resident resident : targetNation.getResidents()) {
+                Player player = Bukkit.getPlayer(resident.getName());
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "The nation " + declaringNation.getName() + " has declared war on your nation!");
+                }
+            }
+            // TODO: The original logic for setting up the war, timers, data structures, etc.
         }
     }
+
 
     @SuppressWarnings("deprecation")
     public static boolean requestPeace(Nation nat, Nation onat, boolean admin) {

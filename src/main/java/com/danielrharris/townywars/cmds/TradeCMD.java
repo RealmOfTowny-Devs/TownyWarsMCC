@@ -24,28 +24,22 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class TradeCMD {
 
     private static TradeFile tf = TownyWars.getInstance().getTradeFile();
     private static FileConfiguration tc = tf.getYamlConfiguration();
 
-    public static boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED.toString() + "You cannot use this via the console.");
-            return true;
-        }
-        Player player = (Player) sender;
-        if (args.length == 1) {
-            sendHelpMenu(player);
-        } else {
-            handleArgs(args, player);
-        }
-        return true;
-    }
+    public static void handleArgs(String[] args, Player player) {
+        int offset = 0;
 
-    private static void handleArgs(String[] args, Player player) {
-        int offset = 1;
+        // Check if args length is at least offset+1
+        if (args.length <= offset) {
+            sendHelpMenu(player);
+            return;
+        }
+
         switch (args[offset+0]) {
             case "request":
                 if (args.length < 2 + offset) {
@@ -257,7 +251,7 @@ public class TradeCMD {
     }
 
 
-    private static void sendHelpMenu(Player player) {
+    public static void sendHelpMenu(Player player) {
         player.sendMessage(new String[]{"§a -- Trade help menu --",
                 "§a/twar trade request <townName> - Request a trade with a town. [ASSISTANT,MAYOR]",
                 "§a/twar trade accept <townName> - Accept a trade request.[ASSISTANT,MAYOR]",
@@ -267,6 +261,6 @@ public class TradeCMD {
                 "§aTRADE SET COMMANDS: ",
                 "§a/twar trade set pickoff - Set the pick-off location of your horse.[ASSISTANT,MAYOR]",
                 "§a/twar trade set dropoff - Set the drop-off location of your horse.[ASSISTANT,MAYOR]",
-                "§a/twar trade set horse - Set the horse you are going to use for your trades.[ASSISTANT,MAYOR]"});
+        });
     }
 }

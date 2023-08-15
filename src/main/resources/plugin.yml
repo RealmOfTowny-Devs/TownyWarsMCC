@@ -6,18 +6,25 @@ depend: [ Towny, CoreProtect ]
 softdepend: [ CS-CoreLib, CSCoreLib, BossBarAPI ]
 api-version: 1.13
 commands:
-  ideology:
-    description: Set your ideology
-  townideology:
-    description: Check your ideology
   twar:
-    usage: No permission!
+    description: Main command for TownyWars
+    usage: /<command>
+    aliases: [ twars, townywars ]
+  twar help:
+    description: Display the help page for TownyWars.
+  twar ideology:
+    description: Set your ideology & check your ideology.
   twar trade:
-    description: Send a trade request
+    description: Send a trade request.
+  twar status:
+    description: Displays a list of on-going wars. (you may also check a nations towns and DPs /twar status [nation])
   twar neutral:
+    description: Request from enemy nation's king to end the ongoing war. (REQUIRES YOU TO BE KING/ASSISTANT)
     permission: townywars.neutral
     usage: Syntax error! Perhaps you meant /twar neutral [nation]
   twar repair:
     permission: townywars.repair
   twar declare:
     description: Declare war on another town.
+  twar end:
+    description: Request from enemy nation's king to end the ongoing war. (REQUIRES YOU TO BE KING/ASSISTANT)
