@@ -69,25 +69,25 @@ public class TradeCMD {
                             Location dropoff = sDropOff.toLocation();
 
                             ItemStack stack = null;
-                            SLocation sDropOffChestLoc = SLocation.deSerialize(tc.getString(rTown.getName() + ".dropoffchest"));
-                            if (sDropOffChestLoc != null) {
-                                Location dropOffChestLoc = sDropOffChestLoc.toLocation();
-                                Block chestBlock = dropOffChestLoc.getBlock();
-                                if (chestBlock.getType() == Material.CHEST || chestBlock.getType() == Material.TRAPPED_CHEST) {
+                            SLocation sPickUpChestLoc = SLocation.deSerialize(tc.getString(rTown.getName() + ".pickup"));
+                            if (sPickUpChestLoc != null) {
+                                Location pickUpChestLoc = sPickUpChestLoc.toLocation();
+                                Block chestBlock = pickUpChestLoc.getBlock();
+                                if (chestBlock.getType() == Material.CHEST) {
                                     Chest chest = (Chest) chestBlock.getState();
-                                    Inventory inv = chest.getInventory();
-                                    for (ItemStack item : inv.getContents()) {
+                                    for (ItemStack item : chest.getInventory().getContents()) {
                                         if (item != null && item.getType() != Material.AIR) {
                                             stack = item.clone();
-                                            inv.removeItem(item);
+                                            chest.getInventory().removeItem(item);
                                             break;
                                         }
                                     }
                                 }
                             }
 
+
                             if (stack == null || stack.getType().equals(Material.AIR)) {
-                                player.sendMessage("§cNo items available in the drop-off chest for trading!");
+                                player.sendMessage("§cNo items available in the pickup chest for trading!");
                                 return;
                             }
 
@@ -105,8 +105,83 @@ public class TradeCMD {
 
                                 @Override
                                 public void run() {
-                                    // ... [The code inside this method remains unchanged.]
+                                    double fractionTraveled = traveledDistance / totalDistance;
+
+                                    if (fractionTraveled > 1) {
+                                        double reward = TownyWars.getInstance().getConfig().getDouble("trade.reward");
+                                        town.getAccount().deposit(reward, "Trade Complete with Town \"" + rTown.getName() + "\"");
+                                        town.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&',
+                                                "&aTrade Complete with Town \"" + rTown.getName() + "\"" + " &b+$" + reward)));
+                                        rTown.getAccount().deposit(reward, "Trade Complete with Town \"" + town.getName() + "\"");
+                                        rTown.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&',
+                                                "&aTrade Complete with Town \"" + rTown.getName() + "\"" + " &b+$" + reward)));
+
+                                        // Check the pickup chest location and attempt to add the item
+                                        String pickupLocString = tc.getString(town.getName() + ".pickup");
+                                        if (pickupLocString != null) {
+                                            SLocation sPickUp = null;
+                                            try {
+                                                sPickUp = SLocation.deSerialize(pickupLocString);
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            Location pickupLoc = sPickUp.toLocation();
+                                            Block block = pickupLoc.getBlock();
+                                            if (block.getState() instanceof Chest) {
+                                                Chest chest = (Chest) block.getState();
+                                                if (chest.getBlockInventory().addItem(finalStack).isEmpty()) {
+                                                    player.sendMessage("§aTrade item added to the pickup chest!");
+                                                } else {
+                                                    entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
+                                                    player.sendMessage("§cPickup chest is full, item dropped on ground!");
+                                                }
+                                            } else {
+                                                entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
+                                                player.sendMessage("§cPickup chest no longer exists, item dropped on ground!");
+                                            }
+                                        } else {
+                                            entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
+                                            player.sendMessage("§cNo pickup chest set, item dropped on ground!");
+                                        }
+
+                                        Bukkit.getScheduler().runTaskLater(TownyWars.getInstance(), entity::remove, 30 * 20);
+                                        this.cancel();
+                                        return;
+                                    }
+
+                                    double x = pickoff.getX() + fractionTraveled * (dropoff.getX() - pickoff.getX());
+                                    double y = pickoff.getY() + fractionTraveled * (dropoff.getY() - pickoff.getY());
+                                    double z = pickoff.getZ() + fractionTraveled * (dropoff.getZ() - pickoff.getZ());
+
+                                    Location nextLocation = new Location(world, x, y, z);
+                                    Vector direction = dropoff.clone().subtract(nextLocation).toVector();
+                                    if (!isPathClear(nextLocation, direction)) {
+                                        // Set the location to the top of the obstacle
+                                        nextLocation.setY(getTopYLevel(nextLocation, direction));
+                                    } else {
+                                        // Descend to the ground level if there's nothing beneath or if path below isn't clear
+                                        double groundY = getGroundYLevel(nextLocation, direction);
+                                        nextLocation.setY(groundY);
+                                    }
+
+                                    // 3. Load Chunks
+                                    Chunk chunk = nextLocation.getChunk();
+                                    if (!chunk.isLoaded()) {
+                                        chunk.load();
+                                    }
+
+                                    if (entity.isDead()) {
+                                        entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
+                                        cancel();
+                                    }
+                                    nextLocation.setDirection(direction);
+                                    entity.teleport(nextLocation);
+
+                                    // 4. Move the Entity
+
+                                    traveledDistance += distancePerTick;
                                 }
+
                             }.runTaskTimer(TownyWars.getInstance(), 0L, 1L);
                         } else {
                             player.sendMessage("§cYou need to be either the §nMayor§c or an §nAssistant§c to initiate a trade!");
