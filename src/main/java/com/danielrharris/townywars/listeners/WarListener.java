@@ -17,6 +17,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.Objects;
+
 public class WarListener implements Listener {
     private TownyWars mplugin = null;
 
@@ -27,23 +29,25 @@ public class WarListener implements Listener {
     @EventHandler
     public void onNationDeleteAttempt(PlayerCommandPreprocessEvent event) {
         String command = event.getMessage().toLowerCase();
-        if (command.startsWith("/n") && command.contains("delete")) {
-            for (War w : WarManager.getWars()) {
-                for (Nation n : w.getNationsInWar()) {
-                    if (n.hasResident(event.getPlayer().getName())) {
+        String playerName = event.getPlayer().getName();
+
+        for (War w : WarManager.getWars()) {
+            for (Object o : w.getEntitiesInWar()) {
+                if (o instanceof Town && ((Town) o).hasResident(playerName)) {
+                    if (command.startsWith("/n") && command.contains("delete")) {
+                        event.setCancelled(true);
+                        event.getPlayer().sendMessage(ChatColor.RED + "You cannot delete a town while at war!");
+                        return;
+                    }
+                } else if (o instanceof Nation && ((Nation) o).hasResident(playerName)) {
+                    if (command.startsWith("/n") && command.contains("delete")) {
                         event.setCancelled(true);
                         event.getPlayer().sendMessage(ChatColor.RED + "You cannot delete a nation while at war!");
-                    }
-                }
-            }
-        }
-
-        if (command.startsWith("/n") && command.contains("leave")) {
-            for (War w : WarManager.getWars()) {
-                for (Nation n : w.getNationsInWar()) {
-                    if (n.hasResident(event.getPlayer().getName())) {
+                        return;
+                    } else if (command.startsWith("/n") && command.contains("leave")) {
                         event.setCancelled(true);
                         event.getPlayer().sendMessage(ChatColor.RED + "You cannot leave a nation while at war!");
+                        return;
                     }
                 }
             }
@@ -54,23 +58,28 @@ public class WarListener implements Listener {
     public void onNationDelete(DeleteNationEvent event) {
         Nation nation = null;
         War war = null;
+        String targetNationName = event.getNationName();
+
         for (War w : WarManager.getWars()) {
-            for (Nation n : w.getNationsInWar()) {
-                if (n.getName().equals(event.getNationName())) {
-                    nation = n;
+            for (Object o : w.getEntitiesInWar()) {
+                if (o instanceof Nation && ((Nation) o).getName().equals(targetNationName)) {
+                    nation = (Nation) o;
                     war = w;
                     break;
                 }
             }
+            if (nation != null) break;
         }
+
         if (war == null) {
             for (Rebellion r : Rebellion.getAllRebellions()) {
-                if (r.getMotherNation().getName().equals(event.getNationName())) {
+                if (r.getMotherNation().getName().equals(targetNationName)) {
                     Rebellion.getAllRebellions().remove(r);
                 }
             }
             return;
         }
+
         WarManager.getWars().remove(war);
         if (war.getRebellion() != null) {
             Rebellion.getAllRebellions().remove(war.getRebellion());
@@ -81,12 +90,14 @@ public class WarListener implements Listener {
             }
         }
         TownyUniverse.getInstance().getDataSource().saveNations();
+
         try {
             WarManager.save();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -95,30 +106,47 @@ public class WarListener implements Listener {
             Resident re = TownyUniverse.getInstance().getResident(player.getName());
             if (re != null && re.hasTown()) {
                 Town town = re.getTown();
+                War townWar = WarManager.getWarForTown(town);
+
+                if (townWar != null) {
+                    Object enemy = townWar.getEnemy(town);
+                    if (enemy instanceof Town) {
+                        player.sendMessage(ChatColor.RED + "Warning: Your town is at war with " + ((Town) enemy).getName());
+                    } else if (enemy instanceof Nation) {
+                        player.sendMessage(ChatColor.RED + "Warning: Your town is at war with the nation of " + ((Nation) enemy).getName());
+                    }
+
+                    // Check for peace offers for towns here if you have that functionality
+                }
+
                 if (town != null && town.hasNation()) {
                     Nation nation = town.getNation();
-                    if (nation != null) {
-                        War ww = WarManager.getWarForNation(nation);
-                        if (ww != null) {
-                            player.sendMessage(ChatColor.RED + "Warning: Your nation is at war with " + ww.getEnemy(nation));
-                            if ((WarManager.hasBeenOffered(ww, nation)) && ((nation.hasAssistant(re)) || (re.isKing()))) {
-                                player.sendMessage(ChatColor.GREEN + "The other nation has offered peace!");
-                            }
+                    War nationWar = WarManager.getWarForNation(nation);
+                    if (nationWar != null) {
+                        Object enemy = nationWar.getEnemy(nation);
+                        if (enemy instanceof Town) {
+                            player.sendMessage(ChatColor.RED + "Warning: Your nation is at war with " + ((Town) enemy).getName());
+                        } else if (enemy instanceof Nation) {
+                            player.sendMessage(ChatColor.RED + "Warning: Your nation is at war with the nation of " + ((Nation) enemy).getName());
+                        }
+
+                        if ((WarManager.hasBeenOffered(nationWar, nation)) && ((nation.hasAssistant(re)) || (re.isKing()))) {
+                            player.sendMessage(ChatColor.GREEN + "The other nation has offered peace!");
                         }
                     }
                 }
-            }
-            //Player plr = Bukkit.getPlayer(re.getName());
 
-            // add the player to the master list if they don't exist in it yet
-            if (mplugin.getTownyWarsResident(re.getName()) == null) {
-                mplugin.addTownyWarsResident(re.getName());
-                System.out.println("resident added!");
+                // add the player to the master list if they don't exist in it yet
+                if (mplugin.getTownyWarsResident(re.getName()) == null) {
+                    mplugin.addTownyWarsResident(re.getName());
+                    System.out.println("resident added!");
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
 
     @EventHandler
     public void onResidentLeave(TownRemoveResidentEvent event) {
@@ -133,7 +161,7 @@ public class WarListener implements Listener {
             return;
         }
         try {
-            if (WarManager.getWarForNation(event.getTown().getNation()).getTownPoints(event.getTown()) > TownyWars.pPlayer) {
+            if (Objects.requireNonNull(WarManager.getWarForNation(event.getTown().getNation())).getPoints(event.getTown()) > TownyWars.pPlayer) {
                 war.chargeTownPoints(n, event.getTown(), TownyWars.pPlayer);
             }
         } catch (NotRegisteredException e) {
@@ -170,13 +198,13 @@ public class WarListener implements Listener {
     }
 
     @EventHandler
-    public void onNationAdd(NationAddTownEvent event) {
+    public void onNationAddTown(NationAddTownEvent event) {
         War war = WarManager.getWarForNation(event.getNation());
         if (war == null) {
             return;
         }
         war.addNationPoint(event.getNation(), event.getTown());
-        war.addNewTown(event.getTown());
+        war.addNewTown(event.getTown(), event.getNation());
         try {
             WarManager.save();
         } catch (Exception e) {

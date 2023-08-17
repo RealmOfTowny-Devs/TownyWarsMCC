@@ -80,48 +80,44 @@ public class TownyWars
      * Takes a player and a location, the player is someone who wants to find out if the location
      * interacted with is located in a town that their nation is at war with
      */
+    /**
+     * Takes a player and a location, the player is someone who wants to find out if the location
+     * interacted with is located in a town or nation that their nation or town is at war with
+     */
     public static boolean atWar(Player p, Location loc) {
         try {
-            if (TownyUniverse.getInstance().getResident(p.getName()) != null) {
-                Resident re = TownyUniverse.getInstance().getResident(p.getName());
-                assert re != null;
-                if (re.getTown() != null) {
-                    if (re.getTown().getNation() != null) {
-                        Nation nation = re.getTown().getNation();
-                        // add the player to the master list if they don't exist in it yet
-                        if (plugin.getTownyWarsResident(re.getName()) == null) {
-                            plugin.addTownyWarsResident(re.getName());
-                            System.out.println("resident added!");
-                        }
-                        War ww = WarManager.getWarForNation(nation);
-                        if (ww != null) {
-                            if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(loc)) != null) {
-                                try {
-                                    TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(loc));
-                                    Town otherTown = townBlock.getTown();
-                                    if (otherTown != re.getTown()) {
-                                        if (otherTown.getNation() != null) {
-                                            Nation otherNation = otherTown.getNation();
-                                            if (otherNation != nation) {
-                                                Set<Nation> nationsInWar = ww.getNationsInWar();
-                                                if (nationsInWar.contains(otherNation)) {
-                                                    //nations are at war with each other
-                                                    return true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } catch (NotRegisteredException ex) {return false;}
-                            }
+            Resident re = TownyUniverse.getInstance().getResident(p.getName());
+            if (re != null && re.hasTown() && re.getTown().hasNation()) {
+                Nation playerNation = re.getTown().getNation();
+
+                // Add the player to the master list if they don't exist in it yet
+                if (plugin.getTownyWarsResident(re.getName()) == null) {
+                    plugin.addTownyWarsResident(re.getName());
+                    System.out.println("resident added!");
+                }
+
+                War ww = WarManager.getWarForNation(playerNation);
+                if (ww != null && TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(loc)) != null) {
+                    TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(loc));
+                    Town otherTown = townBlock.getTown();
+
+                    if (!otherTown.equals(re.getTown()) && otherTown.hasNation()) {
+                        Nation otherNation = otherTown.getNation();
+                        Object otherEntity = otherTown.hasNation() ? otherNation : otherTown;
+
+                        if (!otherEntity.equals(playerNation) && ww.getEntitiesInWar().contains(otherEntity)) {
+                            // Player's town/nation is at war with the other town/nation
+                            return true;
                         }
                     }
                 }
             }
-        } catch (Exception ex) {
+        } catch (NotRegisteredException | NullPointerException ex) {
             return false;
         }
         return false;
     }
+
 
     public static TownyWars getInstance() {
         return plugin;
@@ -167,9 +163,14 @@ public class TownyWars
             town.setPVP(false);
         }
         for (War w : WarManager.getWars()) {
-            for (Nation nation : w.getNationsInWar()) {
-                for (Town t : nation.getTowns()) {
-                    t.setPVP(true);
+            for (Object entity : w.getEntitiesInWar()) {
+                if (entity instanceof Nation) {
+                    Nation nation = (Nation) entity;
+                    for (Town t : nation.getTowns()) {
+                        t.setPVP(true);
+                    }
+                } else if (entity instanceof Town) {
+                    ((Town) entity).setPVP(true);
                 }
             }
         }

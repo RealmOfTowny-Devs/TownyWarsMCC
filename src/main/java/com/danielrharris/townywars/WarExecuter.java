@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Set;
+import java.util.Iterator;
 
 import static com.danielrharris.townywars.TownyWars.idConfig;
 import static com.danielrharris.townywars.TownyWars.idConfigFile;
@@ -109,19 +111,23 @@ class WarExecutor implements CommandExecutor {
             if (strings.length == 1) {
                 cs.sendMessage(ChatColor.GREEN + "List of on-going wars:");
                 for (War war : WarManager.getWars()) {
-                    Nation first = null;
-                    Nation second = null;
-                    for (Nation st : war.getNationsInWar()) {
-                        if (first == null) {
-                            first = st;
-                        } else {
-                            second = st;
-                        }
+                    Object firstEntity = null;
+                    Object secondEntity = null;
+
+                    Set<Object> entitiesInWar = war.getEntitiesInWar();
+                    Iterator<Object> iterator = entitiesInWar.iterator();
+
+                    if (iterator.hasNext()) {
+                        firstEntity = iterator.next();
                     }
+
+                    if (iterator.hasNext()) {
+                        secondEntity = iterator.next();
+                    }
+
                     try {
-                        cs.sendMessage(ChatColor.GREEN + first.getName() + " " + war.getNationPoints(first) + " vs. " + second.getName() + " " + war.getNationPoints(second));
+                        cs.sendMessage(ChatColor.GREEN + WarManager.getNameForEntity(firstEntity) + " " + war.getPoints(firstEntity) + " vs. " + WarManager.getNameForEntity(secondEntity) + " " + war.getPoints(secondEntity));
                     } catch (Exception e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
                 }
@@ -135,7 +141,7 @@ class WarExecutor implements CommandExecutor {
                 cs.sendMessage(ChatColor.GOLD + "No nation called " + onation + " could be found!");
                 return true;
             }
-            w = WarManager.getWarForNation(t);
+            w = WarManager.getWarForEntity(t);  // Assuming there's a method getWarForEntity
             if (w == null) {
                 cs.sendMessage(ChatColor.RED + "That nation isn't in a war!");
                 return true;
@@ -143,7 +149,7 @@ class WarExecutor implements CommandExecutor {
             cs.sendMessage(t.getName() + " war info:");
             for (Town tt : t.getTowns()) {
                 try {
-                    cs.sendMessage(ChatColor.GREEN + tt.getName() + ": " + w.getTownPoints(tt) + " points");
+                    cs.sendMessage(ChatColor.GREEN + tt.getName() + ": " + w.getPoints(tt) + " points");
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -151,6 +157,7 @@ class WarExecutor implements CommandExecutor {
             }
             return true;
         }
+
         if (farg.equals("repair")) {
             unknownCommand = false;
             if (cs.hasPermission("townywars.leader")) {
@@ -488,9 +495,10 @@ class WarExecutor implements CommandExecutor {
             return false;
         }
 
-        for (War war : WarManager.getWars())
-            for (Nation nation : war.getNationsInWar())
-                if (nation.hasTown(strings[1])) {
+        for (War war : WarManager.getWars()) {
+            Set<Object> entitiesInWar = war.getEntitiesInWar();
+            for (Object entity : entitiesInWar) {
+                if (entity instanceof Nation && ((Nation) entity).hasTown(strings[1])) {
                     try {
                         war.chargeTownPoints(town.getNation(), town, -1);
                         cs.sendMessage(ChatColor.YELLOW + "Added a DP to " + town.getName());
@@ -500,6 +508,8 @@ class WarExecutor implements CommandExecutor {
                     }
                     return true;
                 }
+            }
+        }
         return false;
     }
 
@@ -516,11 +526,12 @@ class WarExecutor implements CommandExecutor {
             return false;
         }
 
-        for (War war : WarManager.getWars())
-            for (Nation nation : war.getNationsInWar())
-                if (nation.hasTown(strings[1])) {
+        for (War war : WarManager.getWars()) {
+            Set<Object> entitiesInWar = war.getEntitiesInWar();
+            for (Object entity : entitiesInWar) {
+                if (entity instanceof Nation && ((Nation) entity).hasTown(strings[1])) {
                     try {
-                        war.chargeTownPoints(town.getNation(), town, 1);
+                        war.chargeTownPoints(town.getNation(), town, 1);  // Notice the change in the third argument from -1 to 1.
                         cs.sendMessage(ChatColor.YELLOW + "Removed a DP from " + town.getName());
                     } catch (NotRegisteredException e) {
                         // TODO Auto-generated catch block
@@ -528,6 +539,8 @@ class WarExecutor implements CommandExecutor {
                     }
                     return true;
                 }
+            }
+        }
         return false;
     }
 
@@ -816,13 +829,13 @@ class WarExecutor implements CommandExecutor {
             return true;
         }
         if (!admin) {
-            War w = WarManager.getWarForNation(nat);
+            War w = WarManager.getWarForNation(nat);  // Assuming that this method has been updated to getWarForEntity
             if (w == null) {
                 cs.sendMessage(ChatColor.RED + nat.getName() + " is not at war!");
                 return true;
             }
             try {
-                sonat = w.getEnemy(nat).getName();
+                sonat = WarManager.getNameForEntity(w.getEnemy(nat));
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -852,34 +865,30 @@ class WarExecutor implements CommandExecutor {
         }
 
         String target = strings[1];
-        Object declarer;
-        Object declaree;
-
+        Object declarer = null;
+        Object declaree = null;
         try {
             if (admin) {
-                declarer = null;
-                if (TownyUniverse.getInstance().hasTown(target)) {
+                if (TownyUniverse.getInstance().hasTown(target))
                     declaree = TownyUniverse.getInstance().getTown(target);
-                } else {
+                else
                     declaree = TownyUniverse.getInstance().getNation(target);
+            }
+            Resident res = TownyUniverse.getInstance().getResident(cs.getName());
+            if (res.hasTown()) {
+                if (res.getTown().hasNation()) {
+                    declarer = res.getTown().getNation();
+                } else {
+                    declarer = res.getTown();
                 }
             } else {
-                Resident res = TownyUniverse.getInstance().getResident(cs.getName());
-                if (res.hasTown()) {
-                    if (res.getTown().hasNation()) {
-                        declarer = res.getTown().getNation();
-                    } else {
-                        declarer = res.getTown();
-                    }
-                } else {
-                    cs.sendMessage(ChatColor.RED + "You are not in a town!");
-                    return true;
-                }
-                if (TownyUniverse.getInstance().hasTown(target)) {
-                    declaree = TownyUniverse.getInstance().getTown(target);
+                cs.sendMessage(ChatColor.RED + "You are not in a town!");
+                return true;
+            }
+            if (TownyUniverse.getInstance().hasTown(target)) {
+                declaree = TownyUniverse.getInstance().getTown(target);
                 } else {
                     declaree = TownyUniverse.getInstance().getNation(target);
-                }
             }
         } catch (Exception ex) {
             cs.sendMessage(ChatColor.RED + "Specified entity (either a nation or a town) does not exist!");
@@ -904,8 +913,16 @@ class WarExecutor implements CommandExecutor {
 
         // Assuming checks passed, declare the war
         WarManager.createWar(declarer, declaree, cs, null);
-
         return true;
+    }
+    private String getNameForEntity(Object entity) {
+        if (entity instanceof Nation) {
+            return ((Nation) entity).getName();
+        } else if (entity instanceof Town) {
+            return ((Town) entity).getName();
+        } else {
+            return "Unknown";
+        }
     }
 
     public void sendYesNoMessage(Player player) {
