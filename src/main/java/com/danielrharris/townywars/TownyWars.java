@@ -125,7 +125,7 @@ public class TownyWars
 
     @Override
     public void onDisable() {
-        gm.saveData(GriefListener.getGriefedBlocks());
+        gm.saveData(GriefManager.getGriefedBlocks());
         try {
             WarManager.save();
         } catch (Exception ex) {

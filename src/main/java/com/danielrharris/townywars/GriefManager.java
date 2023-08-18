@@ -32,6 +32,8 @@ public class GriefManager {
     private File townData;
     private FileConfiguration blocks;
 
+    private static ConcurrentHashMap<Town, Set<SBlock>> sBlocks = new ConcurrentHashMap<>();
+
     public GriefManager(TownyWars plugin) {
         this.plugin = plugin;
     }
@@ -84,6 +86,29 @@ public class GriefManager {
             }
         }
         return data;
+    }
+    public static ConcurrentHashMap<Town, Set<SBlock>> getGriefedBlocks() {
+        return sBlocks;
+    }
+    public static void setGriefedBlocks(ConcurrentHashMap<Town, Set<SBlock>> blocks) {
+        sBlocks = blocks;
+    }
+
+    public static void removeTownGriefedBlocks(Town town) {
+        sBlocks.remove(town);
+    }
+    public static boolean containsBlock(Set<SBlock> sBlocks, SBlock sb) {
+        if (sb == null || sBlocks == null) {
+            return false;
+        }
+
+        for (SBlock s : sBlocks) {
+            if (sb.getLocation().equals(s.getLocation())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void saveData(ConcurrentHashMap<Town, Set<SBlock>> Sblocks) {
@@ -142,7 +167,7 @@ public class GriefManager {
 
     @SuppressWarnings({"deprecation"})
     public void rollbackBlocks(Town town) {
-        Set<SBlock> sBlocks = GriefListener.getGriefedBlocks().get(town);
+        Set<SBlock> sBlocks = GriefManager.getGriefedBlocks().get(town);
         townDataFolder = new File(plugin.getDataFolder().toString() + "/towndata");
         townData = new File(townDataFolder, (town.getName().toLowerCase() + ".yml"));
         int delay = 1;
@@ -176,7 +201,7 @@ public class GriefManager {
             }
             delay++;
         }
-        GriefListener.removeTownGriefedBlocks(town);
+        GriefManager.removeTownGriefedBlocks(town);
         if (townData.exists()) {
             townData.delete();
         }
