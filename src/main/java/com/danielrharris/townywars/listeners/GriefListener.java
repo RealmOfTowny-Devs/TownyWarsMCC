@@ -472,41 +472,30 @@ public class GriefListener implements Listener {
         } catch (NotRegisteredException ex) { return new Tuple<>(false, false); }
     }
 
-    ConcurrentHashMap<Long, Boolean> blockCache = new ConcurrentHashMap<>();
-    public boolean isWallDetected(Block block) {
-        int count = 0;
-        int maxCount = 384;
-        boolean checked = false;
-        while (count <= maxCount) {
-            if (block.getY() + count <= 300) {
-                Block targetAbove = block.getWorld().getBlockAt(block.getX(), block.getY() + count, block.getZ());
-                if (isValidWallBlock(targetAbove)) return true;
-                checked = true;
-            }
-
-            if (block.getY() - count >= -64) {
-                Block targetBelow = block.getWorld().getBlockAt(block.getX(), block.getY() - count, block.getZ());
-                if (isValidWallBlock(targetBelow)) return true;
-                checked = true;
-            }
-
-            if(!checked) return false;
-            count += 2;
-        }
-        return false;
-    }
-
-    private boolean isValidWallBlock(Block block) {
-        return block.getType().isSolid() && !block.getType().isTransparent() && !isNatural(block) && isOnlyWallDetected(block);
-    }
-
     public void checkCache(Block target) {
-        long hash = generateBlockHash(target.getLocation());
-        if(!blockCache.containsKey(hash)) {
-            List<String[]> log = TownyWars.coreProtectAPI.blockLookup(target, 2592000);
-            blockCache.put(hash, log.isEmpty());
+        long hash = generateBlockHash(target.getLocation());  // Assuming we're using a new hash function, or an identifier.
+
+        // If the blockCache doesn't contain the info about this block.
+        if (!blockCache.containsKey(hash)) {
+
+            // Get the snapshot for the block's plot.
+            WorldCoord worldCoord = WorldCoord.parseWorldCoord(target.getLocation());
+            PlotBlockData snapshot = TownyRegenAPI.getPlotChunkSnapshot(worldCoord);
+            if (snapshot != null) {
+
+                // Check if the block in the snapshot matches the state of the block in the world.
+                // "isNatural" checks the block's state in the snapshot.
+                boolean isBlockNatural = isNatural(target, snapshot);
+
+                // Cache the result.
+                blockCache.put(hash, isBlockNatural);
+            } else {
+                // If there's no snapshot, we could either default to considering the block "natural", or another default.
+                blockCache.put(hash, true); // Setting as true by default, change based on your requirements.
+            }
         }
     }
+
 
     public boolean isOnlyWallDetected(Block block) {
         Material blockType = block.getType();
