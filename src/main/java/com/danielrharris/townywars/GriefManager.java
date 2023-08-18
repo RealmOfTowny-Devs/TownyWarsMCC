@@ -136,6 +136,10 @@ public class GriefManager {
         }
     }
 
+    public static String serializeBlock(Block block) {
+        return block.getType().toString() + "@" + block.getLocation().toString();
+    }
+
     @SuppressWarnings({"deprecation"})
     public void rollbackBlocks(Town town) {
         Set<SBlock> sBlocks = GriefListener.getGriefedBlocks().get(town);

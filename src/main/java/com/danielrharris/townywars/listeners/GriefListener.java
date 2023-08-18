@@ -7,6 +7,8 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.object.PlayerCache.TownBlockStatus;
+import com.palmergames.bukkit.towny.regen.PlotBlockData;
+import com.palmergames.bukkit.towny.regen.TownyRegenAPI;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
@@ -18,6 +20,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,51 +36,52 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GriefListener implements Listener {
 
     private static ConcurrentHashMap<Town, Set<SBlock>> sBlocks;
-
-    public ConcurrentHashMap<Player, Stack<Location>> pastLocation = new ConcurrentHashMap<>();
-    public int storeLimit = 10;
-    private final int DEBRIS_CHANCE;
-    private TownyWars mplugin = null;
+    private TownyWars mplugin;
+    private double DEBRIS_CHANCE;
     private GriefManager m;
+    private WallManager wallManager = new WallManager(); // Create a new instance or pass it in as required.
 
     public GriefListener(TownyWars aThis, GriefManager m) {
         this.mplugin = aThis;
         this.DEBRIS_CHANCE = TownyWars.debrisChance;
         this.m = m;
         sBlocks = this.m.loadData();
+        final int storeLimit = 10; // You can set this to an appropriate value
+        final Map<Player, Stack<Location>> pastLocation = new HashMap<>();
 
         new BukkitRunnable() {
             long timeTrack = System.currentTimeMillis();
+
             @Override
             public void run() {
-                for(Player target : Bukkit.getOnlinePlayers()) {
+                for (Player target : Bukkit.getOnlinePlayers()) {
                     Tuple<Boolean, Boolean> verifyTowny = townyVerification(target, target.getLocation());
-                    boolean isWallDetected = isWallDetected(target.getLocation().getBlock());
+                    boolean isWallDetected = wallManager.isWallDetected(target.getLocation().getBlock());
                     boolean partOfTown = verifyTowny.a();
                     boolean playerInTown = verifyTowny.b();
 
                     if (!partOfTown || playerInTown) continue;
 
                     if (isWallDetected) {
-                        for(int i = 1; i < storeLimit-1; i++) {
-                            if(!pastLocation.containsKey(target)) break;
-                            if(i >= pastLocation.get(target).size()) break;
-                            Block targetPosition = pastLocation.get(target).elementAt(pastLocation.get(target).size()-i).getBlock();
-                            if(!isWallDetected(targetPosition) || i + 1 >= storeLimit-1) {
+                        for (int i = 1; i < storeLimit - 1; i++) {
+                            if (!pastLocation.containsKey(target)) break;
+                            if (i >= pastLocation.get(target).size()) break;
+                            Block targetPosition = pastLocation.get(target).elementAt(pastLocation.get(target).size() - i).getBlock();
+                            if (!wallManager.isWallDetected(targetPosition) || i + 1 >= storeLimit - 1) {
                                 Location targetLocation = targetPosition.getLocation();
                                 targetLocation.setDirection(target.getLocation().getDirection());
                                 Bukkit.getScheduler().runTask(aThis, () -> target.teleport(targetLocation));
                                 break;
                             }
                         }
-                    }
-                    else {
-                        if(System.currentTimeMillis()-timeTrack>=500) {
+                    } else {
+                        if (System.currentTimeMillis() - timeTrack >= 500) {
                             if (!pastLocation.containsKey(target)) pastLocation.put(target, new Stack<>());
                             Stack<Location> locationStack = pastLocation.get(target);
                             locationStack.push(target.getLocation());
@@ -88,20 +92,7 @@ public class GriefListener implements Listener {
                 }
             }
         }.runTaskTimerAsynchronously(aThis, 0, 0);
-    }
 
-    public static ConcurrentHashMap<Town, Set<SBlock>> getGriefedBlocks() {
-        return GriefListener.sBlocks;
-    }
-
-    public static void setGriefedBlocks(ConcurrentHashMap<Town, Set<SBlock>> sBlocks) {
-        GriefListener.sBlocks = sBlocks;
-    }
-
-    public static void removeTownGriefedBlocks(Town town) {
-        ConcurrentHashMap<Town, Set<SBlock>> blocks = getGriefedBlocks();
-        blocks.remove(town);
-        setGriefedBlocks(blocks);
     }
 
     //Here's where I'll grab the block break event and make it record broken blocks
@@ -113,70 +104,56 @@ public class GriefListener implements Listener {
 
         if (TownyWars.allowGriefing) {
             Block block = event.getBlock();
-            if (TownyWars.worldBlackList != (null))
-                if (TownyWars.worldBlackList.contains(block.getWorld().getName().toLowerCase())) {
-                    return;
-                }
-            if (TownyWars.blockBlackList != (null))
-                if (TownyWars.blockBlackList.contains(block.getType())) {
-                    return;
-                }
+            if (TownyWars.worldBlackList != null && TownyWars.worldBlackList.contains(block.getWorld().getName().toLowerCase())) {
+                return;
+            }
+            if (TownyWars.blockBlackList != null && TownyWars.blockBlackList.contains(block.getType())) {
+                return;
+            }
+
             if (event.getPlayer() != null) {
                 Player p = event.getPlayer();
-                Entity entity = (Entity) p;
                 if (TownyWars.atWar(p, block.getLocation())) {
                     try {
                         TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()));
-                        Town otherTown = null;
-                        Nation otherNation = null;
-                        Set<SBlock> sBlocks = new HashSet<SBlock>();
-                        try {
-                            if (townBlock != null) {
-                                otherTown = townBlock.getTown();
-                                otherNation = otherTown.getNation();
+                        if (townBlock != null) {
+                            // Save a snapshot of the block before it gets broken.
+                            PlotBlockData snapshot = new PlotBlockData(townBlock);
+                            TownyRegenAPI.addPlotChunkSnapshot(snapshot);
+
+                            Town otherTown = townBlock.getTown();
+                            Nation otherNation = otherTown.getNation();
+                            Set<SBlock> sBlocks = getAttachedBlocks(block, new HashSet<SBlock>(), p);
+
+                            SBlock check = new SBlock(block);
+                            if (!WallManager.containsBlock(WallManager.getGriefedBlocks().get(otherTown), check) && block.getType() != Material.TNT) {
+                                sBlocks.add(new SBlock(block, p));
                             }
-                        } catch (NotRegisteredException e) {
-                            e.printStackTrace();
-                            p.sendMessage("An error has occurred. Please get an Admin to check the logs.");
-                            return;
-                        }
-                        sBlocks = getAttachedBlocks(block, sBlocks, entity);
-                        SBlock check = new SBlock(block);
-                        if (!containsBlock(GriefListener.sBlocks.get(otherTown), check) && block.getType() != Material.TNT) {
-                            if (entity != null) {
-                                sBlocks.add(new SBlock(block, entity));
-                            } else {
-                                sBlocks.add(check);
-                            }
-                        }
-                        if (TownyWars.allowRollback) {
-                            WeakReference<Set<SBlock>> temp = new WeakReference<Set<SBlock>>(GriefListener.sBlocks.get(otherTown));
-                            Set<SBlock> j = new HashSet<SBlock>();
-                            for (SBlock s : sBlocks) {
-                                if (temp.get() != null && !(temp.get().isEmpty())) {
-                                    temp.get().add(s);
-                                } else {
-                                    j.add(s);
-                                    temp = new WeakReference<Set<SBlock>>(j);
+
+                            if (TownyWars.allowRollback) {
+                                Set<SBlock> temp = WallManager.getGriefedBlocks().get(otherTown);
+                                if (temp == null) {
+                                    temp = new HashSet<SBlock>();
                                 }
+                                temp.addAll(sBlocks);
+                                WallManager.getGriefedBlocks().put(otherTown, temp);
                             }
-                            GriefListener.sBlocks.put(otherTown, temp.get());
+
+                            if (otherNation != null) {
+                                War wwar = WarManager.getWarForNation(otherNation);
+                                double points = Math.round(((double) sBlocks.size() * TownyWars.pBlockPoints) * 1e2) / 1e2;
+                                wwar.chargeTownPoints(otherNation, otherTown, points);
+                                new AttackWarnBarTask(otherTown, mplugin).runTask(mplugin);
+                                event.setCancelled(true);
+                                block.breakNaturally();
+                            }
                         }
-                        //griefing is allowed and so is the rollback feature, so lets record the blocks and add them to the list
-                        if (otherNation != null && otherTown != null) {
-                            War wwar = WarManager.getWarForNation(otherNation);
-                            double points = (Math.round(((double) (sBlocks.size() * TownyWars.pBlockPoints)) * 1e2) / 1e2);
-                            wwar.chargeTownPoints(otherNation, otherTown, points);
-                            new AttackWarnBarTask(otherTown, mplugin).runTask(mplugin);
-                            event.setCancelled(true);
-                            block.breakNaturally();
-                        }
-                    } catch (NotRegisteredException ignored) {
-                    }
+                    } catch (NotRegisteredException ignored) {}
                 }
             }
         }
     }
+
 
 //    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 //    public void suppressTownyBuildEvent(BlockPlaceEvent event) {
@@ -321,152 +298,110 @@ public class GriefListener implements Listener {
 	}
 	*/
 
+    /**
+     * This event listener reacts to the BlockPlaceEvent, specifically when a player places a block during a war in Towny.
+     *
+     * Main functionality:
+     * 1. If the town is at war, it captures a snapshot of the block data (for potential rollbacks later).
+     * 2. It checks if the player has the required permissions to place blocks, considering Towny's rules.
+     * 3. It verifies if the block being placed is part of a flag war, and reacts accordingly.
+     * 4. If the player does not have permissions, or the block is restricted in a warzone, the event is cancelled.
+     * 5. Errors and messages are communicated to the player to inform them about any restrictions.
+     *
+     * Note: The snapshot capturing is offloaded to an asynchronous task to prevent potential lag in the main server thread.
+     */
     @SuppressWarnings("unused")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
     public void onWarBuild(BlockPlaceEvent event) throws NotRegisteredException {
         if (TownyWars.allowGriefing) {
             Block block = event.getBlock();
-            if (event.getPlayer() != null) {
-                Player p = event.getPlayer();
-                Entity entity = (Entity) p;
-                Resident res = null;
+            Player p = event.getPlayer();
+
+            if (p != null && TownyWars.atWar(p, block.getLocation())) {
                 try {
-                    res = TownyUniverse.getInstance().getResident(p.getName());
-                } catch (Exception e2) {
-                    // TODO Auto-generated catch block
-                    e2.printStackTrace();
+                    TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()));
+                    if (townBlock != null) {
+                        // Capture the snapshot before the block is placed using Towny's snapshot system
+                        CompletableFuture<PlotBlockData> futureSnapshot = TownyRegenAPI.createPlotSnapshot(townBlock);
+                        futureSnapshot.thenAccept(snapshot -> {
+                            Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), () -> TownyRegenAPI.addPlotChunkSnapshot(snapshot));
+                        });
+                    }
+                } catch (NotRegisteredException ignored) {
+                    return;
                 }
-                if (TownyWars.atWar(p, block.getLocation())) {
-                    if (TownyWars.allowRollback) {
-                        try {
-                            if (TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation())) != null) {
-                                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()));
-                                Town otherTown = null;
-                                Nation otherNation = null;
-                                Set<SBlock> sBlocks;
-                                try {
-                                    otherTown = townBlock.getTown();
-                                    otherNation = otherTown.getNation();
-                                } catch (NotRegisteredException e) {
-                                    e.printStackTrace();
-                                    p.sendMessage("An error has occurred. Please get an Admin to check the logs.");
-                                }
-                                if (GriefListener.sBlocks.get(otherTown) == null) {
-                                    sBlocks = new HashSet<SBlock>();
-                                } else {
-                                    sBlocks = GriefListener.sBlocks.get(otherTown);
-                                }
-                                SBlock sb;
-                                if (entity != null) {
-                                    sb = new SBlock(block, entity);
-                                } else {
-                                    sb = new SBlock(block);
-                                }
-                                sb.mat = "AIR";
-                                if (!containsBlock(sBlocks, sb)) {
-                                    sBlocks.add(sb);
-                                }
-                                GriefListener.sBlocks.put(otherTown, sBlocks);
-                            }
-                        } catch (NotRegisteredException ignored) {
+
+                event.setBuild(true);
+                event.setCancelled(false);
+
+            } else {
+                Towny plugin = TownyWars.towny;
+                if (plugin.isError()) {
+                    event.setCancelled(true);
+                    return;
+                }
+
+                Player player = event.getPlayer();
+                TownyWorld world = TownyUniverse.getInstance().getWorld(block.getWorld().getName());
+                WorldCoord worldCoord = new WorldCoord(world.getName(), Coord.parseCoord(block));
+
+                // Get build permissions (updates if none exist)
+                boolean bBuild = PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), TownyPermission.ActionType.BUILD);
+
+                // Allow build if we are permitted
+                if (bBuild) return;
+
+                PlayerCache cache = plugin.getCache(player);
+                TownBlockStatus status = cache.getStatus();
+
+                // Flag war
+                if (status == TownBlockStatus.ENEMY && FlagWarConfig.isAllowingAttacks() && event.getBlock().getType() == FlagWarConfig.getFlagBaseMaterial()) {
+                    try {
+                        if (FlagWar.callAttackCellEvent(plugin, player, block, worldCoord))
                             return;
-                        }
-
+                    } catch (TownyException e) {
+                        TownyMessaging.sendErrorMsg(player, e.getMessage());
                     }
-                    event.setBuild(true);
-                    event.setCancelled(false);
+
+                    event.setBuild(false);
+                    event.setCancelled(true);
+                } else if (status == TownBlockStatus.WARZONE) {
+                    if (!FlagWarConfig.isEditableMaterialInWarZone(block.getType())) {
+                        event.setBuild(false);
+                        event.setCancelled(true);
+                        TownyMessaging.sendErrorMsg(player, String.format(Translation.of("msg_err_warzone_cannot_edit_material"), "build", block.getType().toString().toLowerCase()));
+                    }
+                    return;
                 } else {
-                    event.setBuild(true);
-                    event.setCancelled(false);
-                    Towny plugin = TownyWars.towny;
-                    if (plugin.isError()) {
-                        System.out.println("place cancelled 0");
-                        event.setCancelled(true);
-                        return;
-                    }
-
-                    Player player = event.getPlayer();
-                    WorldCoord worldCoord;
-                    TownyWorld world = TownyUniverse.getInstance().getWorld(block.getWorld().getName());
-                    worldCoord = new WorldCoord(world.getName(), Coord.parseCoord(block));
-
-                    //Get build permissions (updates if none exist)
-                    boolean bBuild = PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), TownyPermission.ActionType.BUILD);
-
-                    // Allow build if we are permitted
-                    if (bBuild)
-                        return;
-
-                    /*
-                     * Fetch the players cache
-                     */
-                    PlayerCache cache = plugin.getCache(player);
-                    TownBlockStatus status = cache.getStatus();
-
-                    /*
-                     * Flag war
-                     */
-                    if (((status == TownBlockStatus.ENEMY) && FlagWarConfig.isAllowingAttacks()) && (event.getBlock().getType() == FlagWarConfig.getFlagBaseMaterial())) {
-
-                        try {
-                            if (FlagWar.callAttackCellEvent(plugin, player, block, worldCoord))
-                                return;
-                        } catch (TownyException e) {
-                            TownyMessaging.sendErrorMsg(player, e.getMessage());
-                        }
-
-                        event.setBuild(false);
-                        System.out.println("place cancelled 0");
-                        event.setCancelled(true);
-
-                    } else if (status == TownBlockStatus.WARZONE) {
-                        if (!FlagWarConfig.isEditableMaterialInWarZone(block.getType())) {
-                            event.setBuild(false);
-                            System.out.println("place cancelled 1");
-                            event.setCancelled(true);
-                            TownyMessaging.sendErrorMsg(player, String.format(Translation.of("msg_err_warzone_cannot_edit_material"), "build", block.getType().toString().toLowerCase()));
-                        }
-                        return;
-                    } else {
-                        System.out.println("place cancelled 2");
-                        event.setBuild(false);
-                        event.setCancelled(true);
-                    }
-
-                    /*
-                     * display any error recorded for this plot
-                     */
-                    if ((cache.hasBlockErrMsg()) && (event.isCancelled()))
-                        TownyMessaging.sendErrorMsg(player, cache.getBlockErrMsg());
-
+                    event.setBuild(false);
+                    event.setCancelled(true);
                 }
+
+                // Display any error recorded for this plot
+                if (cache.hasBlockErrMsg() && event.isCancelled())
+                    TownyMessaging.sendErrorMsg(player, cache.getBlockErrMsg());
             }
         }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = false)
-    public void ignoreProtections(EntityExplodeEvent ev) throws NotRegisteredException {
+    public void ignoreProtections(EntityExplodeEvent ev) {
         Location center = ev.getLocation();
         TownBlock townBlock = null;
         try {
             townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(center));
-            if (townBlock != null) {
-                if (TownyWars.allowGriefing) {
-                    if (TownyWars.warExplosions) {
-                        if (townBlock.hasTown()) {
-                            try {
-                                if (townBlock.getTown().hasNation()) {
-                                    Nation nation = townBlock.getTown().getNation();
-                                    if (WarManager.getWarForNation(nation) != null) {
-                                        ev.setCancelled(true);
-                                    }
-                                }
-                            } catch (NotRegisteredException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            }
-                        }
+            if (townBlock != null && TownyWars.allowGriefing && TownyWars.warExplosions && townBlock.hasTown()) {
+                if (townBlock.getTown().hasNation()) {
+                    Nation nation = townBlock.getTown().getNation();
+                    if (WarManager.getWarForNation(nation) != null) {
+                        // Take a snapshot before the explosion is cancelled
+                        CompletableFuture<PlotBlockData> futureSnapshot = TownyRegenAPI.createPlotSnapshot(townBlock);
+                        futureSnapshot.thenAccept(snapshot -> {
+                            Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), () -> TownyRegenAPI.addPlotChunkSnapshot(snapshot));
+                        });
 
+                        // Cancel the explosion
+                        ev.setCancelled(true);
                     }
                 }
             }
@@ -480,40 +415,50 @@ public class GriefListener implements Listener {
         boolean isWallDetected = isWallDetected(event.getBlock());
         boolean partOfTown = verifyTowny.a();
         boolean playerInTown = verifyTowny.b();
-        if(isWallDetected &&  partOfTown && !playerInTown) event.setCancelled(true);
-    }
 
+        if(isWallDetected && partOfTown && !playerInTown) {
+            try {
+                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getBlock().getLocation()));
+                if (townBlock != null) {
+                    // Capture a snapshot before the block is broken
+                    PlotBlockData snapshot = new PlotBlockData(townBlock);
 
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
-        Tuple<Boolean, Boolean> verifyTowny = townyVerification(event.getPlayer(), event.getBlock().getLocation());
-        boolean isWallDetected = isWallDetected(event.getBlock());
-        boolean partOfTown = verifyTowny.a();
-        boolean playerInTown = verifyTowny.b();
-        if (isWallDetected && playerInTown) {
-            Player player = event.getPlayer();
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aYou have built a wall!"));
-        }
-        else if (isWallDetected && partOfTown) {
-            event.setBuild(false);
+                    // Save the snapshot asynchronously to prevent potential lag on the main server thread
+                    Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), snapshot::save);
+                }
+            } catch (NotRegisteredException ignored) {
+                return;
+            }
+
+            // Cancel the block break event
             event.setCancelled(true);
         }
     }
 
-//    public boolean isNatural(Block target) {
-//        int hash = target.getLocation().toString().hashCode();
-//        checkCache(target);
-//        return blockCache.get(hash);
-//    }
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void blockBreak(BlockBreakEvent event) {
+        Tuple<Boolean, Boolean> verifyTowny = townyVerification(event.getPlayer(), event.getBlock().getLocation());
+        boolean isWallDetected = isWallDetected(event.getBlock());
+        boolean partOfTown = verifyTowny.a();
+        boolean playerInTown = verifyTowny.b();
 
-    public long generateBlockHash(Location location) {
-        return location.getWorld().getUID().getLeastSignificantBits() ^ (location.getBlockX() * 31 + location.getBlockY() * 127 + location.getBlockZ() * 8191);
-    }
+        if(isWallDetected && partOfTown && !playerInTown) {
+            try {
+                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getBlock().getLocation()));
+                if (townBlock != null) {
+                    // Capture a snapshot before the block is broken
+                    PlotBlockData snapshot = new PlotBlockData(townBlock);
 
-    public boolean isNatural(Block target) {
-        long hash = generateBlockHash(target.getLocation());
-        checkCache(target);  // Assuming checkCache populates the cache for this block.
-        return blockCache.get(hash);
+                    // Save the snapshot asynchronously to prevent potential lag on the main server thread
+                    Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), snapshot::save);
+                }
+            } catch (NotRegisteredException ignored) {
+                return;
+            }
+
+            // Cancel the block break event
+            event.setCancelled(true);
+        }
     }
 
     // first = is block in a town, second = is player part of town
@@ -528,22 +473,6 @@ public class GriefListener implements Listener {
     }
 
     ConcurrentHashMap<Long, Boolean> blockCache = new ConcurrentHashMap<>();
-//    public boolean isWallDetected(Block block) {
-//        int count = 0;
-//        while(true) {
-//            if(count>=384) return false;
-//            count+=2;
-//            Block target = block.getWorld().getBlockAt(block.getX(), block.getY() + count, block.getZ());
-//            if(target.getType().isSolid() && !isNatural(target) && isOnlyWallDetected(target)) return true;
-//
-//            if(block.getY()-count>=-64) {
-//                Block subTarget = block.getWorld().getBlockAt(block.getX(), block.getY() - count, block.getZ());
-//                if (subTarget.getType().isSolid() && !isNatural(subTarget) && isOnlyWallDetected(subTarget))
-//                    return true;
-//            }
-//        }
-//    }
-
     public boolean isWallDetected(Block block) {
         int count = 0;
         int maxCount = 384;
