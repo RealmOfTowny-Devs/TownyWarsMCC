@@ -34,6 +34,10 @@ import org.bukkit.material.Attachable;
 import org.bukkit.material.Vine;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -46,13 +50,11 @@ public class GriefListener implements Listener {
 
     private TownyWars mplugin;
     private double DEBRIS_CHANCE;
-    private GriefManager m;
-    private WallManager wallManager = new WallManager(); // Create a new instance or pass it in as required.
+    private final File townyWarsDataDir = new File(TownyWars.getInstance().getDataFolder(), "snapshots");
 
     public GriefListener(TownyWars aThis, GriefManager m) {
         this.mplugin = aThis;
         this.DEBRIS_CHANCE = TownyWars.debrisChance;
-        this.m = m;
         final int storeLimit = 10; // You can set this to an appropriate value
         final Map<Player, Stack<Location>> pastLocation = new HashMap<>();
 
@@ -414,31 +416,6 @@ public class GriefListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void blockBreak(BlockBreakEvent event) {
-        Tuple<Boolean, Boolean> verifyTowny = townyVerification(event.getPlayer(), event.getBlock().getLocation());
-        boolean isWallDetected = isWallDetected(event.getBlock());
-        boolean partOfTown = verifyTowny.a();
-        boolean playerInTown = verifyTowny.b();
-
-        if(isWallDetected && partOfTown && !playerInTown) {
-            try {
-                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getBlock().getLocation()));
-                if (townBlock != null) {
-                    // Capture a snapshot before the block is broken
-                    PlotBlockData snapshot = new PlotBlockData(townBlock);
-
-                    // Save the snapshot asynchronously to prevent potential lag on the main server thread
-                    Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), snapshot::save);
-                }
-            } catch (NotRegisteredException ignored) {
-                return;
-            }
-
-            // Cancel the block break event
-            event.setCancelled(true);
-        }
-    }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void blockBreak(BlockBreakEvent event) {
@@ -454,8 +431,14 @@ public class GriefListener implements Listener {
                     // Capture a snapshot before the block is broken
                     PlotBlockData snapshot = new PlotBlockData(townBlock);
 
-                    // Save the snapshot asynchronously to prevent potential lag on the main server thread
-                    Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), snapshot::save);
+                    // Asynchronously save the snapshot
+                    Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), () -> {
+                        try {
+                            saveSnapshot(snapshot, townBlock.getName());
+                        } catch (IOException e) {
+                            e.printStackTrace(); // You might want to handle this better.
+                        }
+                    });
                 }
             } catch (NotRegisteredException ignored) {
                 return;
@@ -465,6 +448,20 @@ public class GriefListener implements Listener {
             event.setCancelled(true);
         }
     }
+
+    private void saveSnapshot(PlotBlockData snapshot, String blockName) throws IOException {
+        if (!townyWarsDataDir.exists()) {
+            townyWarsDataDir.mkdirs();
+        }
+
+        File snapshotFile = new File(townyWarsDataDir, blockName + ".dat");
+        try (FileOutputStream fileOut = new FileOutputStream(snapshotFile);
+             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut)) {
+            objectOut.writeObject(snapshot);
+        }
+    }
+
+
     @SuppressWarnings({"deprecation"})
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onExplode(EntityExplodeEvent ev) throws NotRegisteredException {

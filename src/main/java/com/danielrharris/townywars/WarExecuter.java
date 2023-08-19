@@ -63,48 +63,62 @@ class WarExecutor implements CommandExecutor {
             cs.sendMessage(ChatColor.GREEN + "Plugin reloaded!");
         }
         if (farg.equals("help")) {
-            Player p;
-            Resident res;
-            cs.sendMessage(ChatColor.GREEN + "Towny Wars Help:");
-            cs.sendMessage(ChatColor.AQUA + "/twar - " + ChatColor.YELLOW + "Displays the TownyWars configuration information");
-            cs.sendMessage(ChatColor.AQUA + "/twar trade - " + ChatColor.YELLOW + "Displays Trade help menu");
-            cs.sendMessage(ChatColor.AQUA + "/twar help - " + ChatColor.YELLOW + "Displays the TownyWars help page");
-            cs.sendMessage(ChatColor.AQUA + "/twar status - " + ChatColor.YELLOW + "Displays a list of on-going wars");
-            cs.sendMessage(ChatColor.AQUA + "/twar status [nation] - " + ChatColor.YELLOW + "Displays a list of the nation's towns and their defense points");
+            cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
+            cs.sendMessage(ChatColor.BLUE + " Towny Wars " + ChatColor.WHITE + "Help");
+            cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
+
+            // General Commands
+            cs.sendMessage(ChatColor.GOLD + "General Commands");
+            cs.sendMessage(ChatColor.WHITE + "/twar " + ChatColor.GRAY + "- Displays the TownyWars configuration information");
+            cs.sendMessage(ChatColor.WHITE + "/twar trade " + ChatColor.GRAY + "- Displays Trade help menu");
+            cs.sendMessage(ChatColor.WHITE + "/twar help " + ChatColor.GRAY + "- Displays the TownyWars help page");
+            cs.sendMessage(ChatColor.WHITE + "/twar status " + ChatColor.GRAY + "- Displays a list of on-going wars");
+            cs.sendMessage(ChatColor.WHITE + "/twar status [nation] " + ChatColor.GRAY + "- Displays a nation's towns and their defense points");
+            cs.sendMessage(ChatColor.WHITE + "/twar showtowndp " + ChatColor.GRAY + "- Shows your town's current defense points");
+            cs.sendMessage(ChatColor.WHITE + "/twar showtownmaxdp " + ChatColor.GRAY + "- Shows your town's max defense points");
+
+            // Leader Commands
             if (cs.hasPermission("townywars.leader")) {
-                cs.sendMessage(ChatColor.AQUA + "/twar repair - " + ChatColor.YELLOW + "Allows you to repair war grief by paying money from town bank");
+                cs.sendMessage(ChatColor.GOLD + "Leader Commands");
+                cs.sendMessage(ChatColor.WHITE + "/twar repair " + ChatColor.GRAY + "- Repair war grief using town bank funds");
+                cs.sendMessage(ChatColor.WHITE + "/twar declare [nation] " + ChatColor.GRAY + "- Declare war on another nation");
+                cs.sendMessage(ChatColor.WHITE + "/twar end " + ChatColor.GRAY + "- Request war termination (KING/ASSISTANT only)");
+                cs.sendMessage(ChatColor.WHITE + "/twar ideology [ideology] " + ChatColor.GRAY + "- Set town ideology (Economic, Religious, Militaristic)");
             }
-            cs.sendMessage(ChatColor.AQUA + "/twar showtowndp - " + ChatColor.YELLOW + "Shows your towns current defense points.");
-            cs.sendMessage(ChatColor.AQUA + "/twar showtownmaxdp - " + ChatColor.YELLOW + "Shows your towns max defense points.");
-            if (cs.hasPermission("townywars.leader")) {
-                cs.sendMessage(ChatColor.AQUA + "/twar declare [nation] - " + ChatColor.YELLOW + "Starts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT)");
-                cs.sendMessage(ChatColor.AQUA + "/twar end - " + ChatColor.YELLOW + "Request from enemy nations king to end the ongoing war. (REQUIRES YOU TO BE A KING/ASSISTANT)");
-                cs.sendMessage(ChatColor.AQUA + "/twar ideology [ideology] - " + ChatColor.YELLOW + "(select one: Economic, Religious or Militaristic) (REQUIRES YOU TO BE A KING/ASSISTANT)");
-            }
+
+            // Rebellion Commands
             if (cs instanceof Player) {
-                p = (Player) cs;
+                Player p = (Player) cs;
                 try {
-                    res = TownyUniverse.getInstance().getResident(p.getName());
+                    Resident res = TownyUniverse.getInstance().getResident(p.getName());
                     if (res.getTown().getNation().getCapital() != res.getTown()) {
-                        cs.sendMessage(ChatColor.AQUA + "/twar createrebellion [name] - " + ChatColor.YELLOW + "Creates a (secret) rebellion within your nation.");
-                        cs.sendMessage(ChatColor.AQUA + "/twar joinrebellion [name] - " + ChatColor.YELLOW + "Joins a rebellion within your nation using the name.");
-                        cs.sendMessage(ChatColor.AQUA + "/twar leaverebellion - " + ChatColor.YELLOW + "Leaves your current rebellion.");
-                        cs.sendMessage(ChatColor.AQUA + "/twar showrebellion - " + ChatColor.YELLOW + "Shows your current rebellion and its members.");
-                        cs.sendMessage(ChatColor.AQUA + "/twar executerebellion - " + ChatColor.YELLOW + "Executes your rebellion and you go to war with your nation (requires to be leader of rebellion).");
+                        cs.sendMessage(ChatColor.GOLD + "Rebellion Commands");
+                        cs.sendMessage(ChatColor.WHITE + "/twar createrebellion [name] " + ChatColor.GRAY + "- Create a rebellion");
+                        cs.sendMessage(ChatColor.WHITE + "/twar joinrebellion [name] " + ChatColor.GRAY + "- Join a rebellion");
+                        cs.sendMessage(ChatColor.WHITE + "/twar leaverebellion " + ChatColor.GRAY + "- Leave a rebellion");
+                        cs.sendMessage(ChatColor.WHITE + "/twar showrebellion " + ChatColor.GRAY + "- View your rebellion");
+                        cs.sendMessage(ChatColor.WHITE + "/twar executerebellion " + ChatColor.GRAY + "- Start rebellion war");
                     }
                 } catch (Exception e) {
                     return true;
                 }
             }
+
+            // Admin Commands
             if (cs.hasPermission("townywars.admin")) {
-                cs.sendMessage(ChatColor.AQUA + "/twar reload - " + ChatColor.YELLOW + "Reload the plugin");
-                cs.sendMessage(ChatColor.AQUA + "/twar astart [nation] [nation] - " + ChatColor.YELLOW + "Forces two nations to go to war");
-                cs.sendMessage(ChatColor.AQUA + "/twar aend [nation] [nation] - " + ChatColor.YELLOW + "Forces two nations to stop a war");
-                cs.sendMessage(ChatColor.AQUA + "/twar aaddtowndp [town] - " + ChatColor.YELLOW + "Adds a DP to the town");
-                cs.sendMessage(ChatColor.AQUA + "/twar aremovetowndp [town] - " + ChatColor.YELLOW + "Removes a DP from the town");
+                cs.sendMessage(ChatColor.GOLD + "Admin Commands");
+                cs.sendMessage(ChatColor.WHITE + "/twar reload " + ChatColor.GRAY + "- Reload the plugin");
+                cs.sendMessage(ChatColor.WHITE + "/twar astart [nation] [nation] " + ChatColor.GRAY + "- Force nations into war");
+                cs.sendMessage(ChatColor.WHITE + "/twar aend [nation] [nation] " + ChatColor.GRAY + "- Force end war between nations");
+                cs.sendMessage(ChatColor.WHITE + "/twar aaddtowndp [town] " + ChatColor.GRAY + "- Add DP to town");
+                cs.sendMessage(ChatColor.WHITE + "/twar aremovetowndp [town] " + ChatColor.GRAY + "- Remove DP from town");
             }
+
+            cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
+
             return true;
         }
+
         War w;
         if (farg.equals("status")) {
             unknownCommand = false;
@@ -168,9 +182,9 @@ class WarExecutor implements CommandExecutor {
                     double price = 0;
                     try {
                         town = TownyUniverse.getInstance().getResident(p.getName()).getTown();
-                        if (GriefListener.getGriefedBlocks() != null) {
-                            if (!GriefListener.getGriefedBlocks().isEmpty()) {
-                                for (SBlock b : GriefListener.getGriefedBlocks().get(town)) {
+                        if (GriefManager.getGriefedBlocks() != null) {
+                            if (!GriefManager.getGriefedBlocks().isEmpty()) {
+                                for (SBlock b : GriefManager.getGriefedBlocks().get(town)) {
                                     if (b.getType() != Material.AIR && !Utils.isOtherAttachable(b.getType())) {
                                         numBlocks++;
                                     }
@@ -189,20 +203,20 @@ class WarExecutor implements CommandExecutor {
                                 p.sendMessage(ChatColor.GREEN + "Price to Repair " + town.getName() + ChatColor.WHITE + ": $" + ChatColor.YELLOW + d.format(price));
                                 p.sendMessage("   " + ChatColor.MAGIC + "l" + ChatColor.RESET + "  " + ChatColor.BOLD + ChatColor.GOLD + "Repair?" + ChatColor.RESET + "  " + ChatColor.MAGIC + "l");
                                 sendYesNoMessage(p);
-                            } else if (numBlocks == 0 && GriefListener.getGriefedBlocks().get(town) != null && GriefListener.getGriefedBlocks().get(town).size() > 0) {
+                            } else if (numBlocks == 0 && GriefManager.getGriefedBlocks().get(town) != null && GriefManager.getGriefedBlocks().get(town).size() > 0) {
                                 p.sendMessage(ChatColor.GREEN + "Price to Repair " + town.getName() + ChatColor.WHITE + ": " + ChatColor.YELLOW + "FREE!");
                                 p.sendMessage("   " + ChatColor.MAGIC + "l" + ChatColor.RESET + "  " + ChatColor.BOLD + ChatColor.GOLD + "Repair?" + ChatColor.RESET + "  " + ChatColor.MAGIC + "l");
                                 sendYesNoMessage(p);
                                 //rollback block places only (free)
-                            } else if ((numBlocks == 0 && GriefListener.getGriefedBlocks().get(town) == null) || (numBlocks == 0 && GriefListener.getGriefedBlocks().get(town) != null && GriefListener.getGriefedBlocks().get(town).isEmpty())) {
+                            } else if ((numBlocks == 0 && GriefManager.getGriefedBlocks().get(town) == null) || (numBlocks == 0 && GriefManager.getGriefedBlocks().get(town) != null && GriefManager.getGriefedBlocks().get(town).isEmpty())) {
                                 p.sendMessage(ChatColor.GREEN + "Nothing to Repair");
                             }
                         }
                     }
                     if (strings.length == 2) {
                         if (town != null) {
-                            if (GriefListener.getGriefedBlocks().get(town) != null) {
-                                if (!GriefListener.getGriefedBlocks().get(town).isEmpty()) {
+                            if (GriefManager.getGriefedBlocks().get(town) != null) {
+                                if (!GriefManager.getGriefedBlocks().get(town).isEmpty()) {
                                     String response = ChatColor.stripColor(strings[1]).toLowerCase();
                                     if (response.equals("yes")) {
                                         try {

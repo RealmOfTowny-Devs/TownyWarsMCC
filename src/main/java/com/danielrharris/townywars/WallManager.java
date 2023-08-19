@@ -1,6 +1,9 @@
 package com.danielrharris.townywars;
 
+import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.regen.PlotBlockData;
 import com.palmergames.bukkit.towny.regen.TownyRegenAPI;
@@ -47,10 +50,19 @@ public class WallManager {
         return snapshot.getBlockList().contains(serializedTarget);
     }
 
-    private boolean isValidWallBlock(Block block) {
-        // Assuming you are passing PlotBlockData snapshot to the isNatural method
-        PlotBlockData snapshot = /* retrieve snapshot for the block's location */;
+    public static boolean isValidWallBlock(Block block) {
+        // Retrieve the snapshot for the block's location
+        PlotBlockData snapshot = getSnapshotForBlockLocation(block.getLocation());
+
         return block.getType().isSolid() && !block.getType().isTransparent() && !isNatural(block, snapshot) && isOnlyWallDetected(block);
+    }
+
+    private static PlotBlockData getSnapshotForBlockLocation(Location location) {
+        // This is a placeholder. You'll need to implement the logic to retrieve the snapshot.
+        // This could involve looking up a cache or deserializing a file from disk.
+
+        // For now, I'll return null to avoid compile errors, but you'll want to replace this with actual logic.
+        return null;
     }
 
     public void checkCache(Block target) {
@@ -59,9 +71,20 @@ public class WallManager {
         // If the blockCache doesn't contain the info about this block.
         if (!blockCache.containsKey(hash)) {
 
-            // Get the snapshot for the block's plot.
+            // Convert block's location to WorldCoord
             WorldCoord worldCoord = WorldCoord.parseWorldCoord(target.getLocation());
-            PlotBlockData snapshot = TownyRegenAPI.getPlotChunkSnapshot(worldCoord);
+
+            // Convert WorldCoord to TownBlock
+            TownBlock townBlock;
+            try {
+                townBlock = TownyUniverse.getInstance().getTownBlock(worldCoord);
+            } catch (NotRegisteredException e) {
+                blockCache.put(hash, true);  // Handle exception by caching block as "natural" (or another default if preferred)
+                return;
+            }
+
+            // Get the snapshot using the TownBlock
+            PlotBlockData snapshot = TownyRegenAPI.getPlotChunkSnapshot(townBlock);
             if (snapshot != null) {
 
                 // Check if the block in the snapshot matches the state of the block in the world.
@@ -71,12 +94,13 @@ public class WallManager {
                 // Cache the result.
                 blockCache.put(hash, isBlockNatural);
             } else {
-                // If there's no snapshot, we could either default to considering the block "natural", or another default.
-                blockCache.put(hash, true); // Setting as true by default, change based on your requirements.
+                // If there's no snapshot, default to considering the block "natural".
+                blockCache.put(hash, true);
             }
         }
     }
-    private int getWallDimension(Block startBlock, Material type, int dx, int dy, int dz) {
+
+    private static int getWallDimension(Block startBlock, Material type, int dx, int dy, int dz) {
         int dimension = 1;  // Start with the current block
         for (int i = 1; i < 3; i++) {  // Start from 1 because we've already counted the current block
             // Check in the positive direction

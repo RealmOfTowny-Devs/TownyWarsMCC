@@ -16,9 +16,9 @@ public class SaveTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        if (GriefListener.getGriefedBlocks() != null) {
-            if (!GriefListener.getGriefedBlocks().isEmpty()) {
-                this.manager.saveData(GriefListener.getGriefedBlocks());
+        if (GriefManager.getGriefedBlocks() != null) {
+            if (!GriefManager.getGriefedBlocks().isEmpty()) {
+                this.manager.saveData(GriefManager.getGriefedBlocks());
                 Bukkit.getLogger().info(ChatColor.translateAlternateColorCodes('&', "&7[&2TownyWars&7] &eSaving Data..."));
             }
         }
