@@ -66,7 +66,6 @@ public class TownyWars
     public static YamlConfiguration idConfig = null;
     public static Set<Material> blockBlackList;
     public static boolean isBossBar = false;
-    public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
     public static List<String> messagedPlayers = new ArrayList<String>();
     public static CoreProtectAPI coreProtectAPI;
     private static TownyWars plugin;
@@ -75,6 +74,7 @@ public class TownyWars
     private ArrayList<String> blockStringBlackList;
     private GriefManager gm;
     private TradeFile tradeFile;
+    private WallManager wallManager;
 
     /*
      * Takes a player and a location, the player is someone who wants to find out if the location
@@ -145,6 +145,7 @@ public class TownyWars
         idConfigFile = new File(getDataFolder(), "ideology.yml");
         tradeFile = new TradeFile(this);
         gm = new GriefManager(this);
+        this.wallManager = new WallManager(this);
         coreProtectAPI = ((CoreProtect) getServer().getPluginManager().getPlugin("CoreProtect")).getAPI();
         pm.registerEvents(new GriefListener(this, gm), this);
         pm.registerEvents(new WarListener(this), this);
@@ -251,6 +252,10 @@ public class TownyWars
     public void addTownyWarsResident(String playerName) {
         TownyWarsResident newPlayer = new TownyWarsResident(playerName);
         allTownyWarsResidents.put(playerName, newPlayer);
+    }
+
+    public WallManager getWallManager(){
+        return this.wallManager;
     }
 
     public TownyWarsResident getTownyWarsResident(String playerName) {
