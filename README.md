@@ -2,9 +2,18 @@
 
 ## Index
 
-###  * Copyright Information
+Basic Overview
+
+Copyright Information
 
 ###  * Basic Overview
+
+Create wars with other towns! Declare war on other nations! Start the conquest!
+
+Trading
+Walls
+Wars
+Grief Regeneration
 
 ## COPYRIGHT INFORMATION
 
