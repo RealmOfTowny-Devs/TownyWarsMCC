@@ -16,19 +16,16 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-//import java.io.DataInputStream;
-//import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-//import main.java.com.danielrharris.townywars.War.MutableInteger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -98,6 +95,13 @@ public class War implements Serializable {
 	    return Base64.getEncoder().encodeToString(baos.toByteArray()); 
 	}
 	
+	public List<WarParticipant> getWarParticipants(){
+		List<WarParticipant> list = new ArrayList<WarParticipant>();
+		list.add(participant1);
+		list.add(participant2);
+		return list;
+	}
+	
 	public Rebellion getRebellion() {
 		return this.rebelwar;
 	}
@@ -107,6 +111,16 @@ public class War implements Serializable {
 			return participant1.getPoints();
 		}else if (participant2.getName().equalsIgnoreCase(participant)) {
 			return participant2.getPoints();
+		}else {
+			throw new ParticipantNotFoundException("Participant " + participant + " cannot be found!");
+		}
+	}
+	
+	public int getParticipantMaxPoints(String participant) throws ParticipantNotFoundException {
+		if(participant1.getName().equalsIgnoreCase(participant)) {
+			return participant1.getMaxPoints();
+		}else if (participant2.getName().equalsIgnoreCase(participant)) {
+			return participant2.getMaxPoints();
 		}else {
 			throw new ParticipantNotFoundException("Participant " + participant + " cannot be found!");
 		}
@@ -159,7 +173,7 @@ public class War implements Serializable {
 	    throw new Exception("War.getEnemy: Specified participant is not in war.");
 	}
 	
-	
+	/*
 	public void chargeTownPoints(Town town, double i) {
 		double value = towns.get(town) - i;
 		if(value > 0){
@@ -320,9 +334,20 @@ public class War implements Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
+	}*/
 
+	
+	//charge town points. Write mini functions to handle each scenario and charge these points!!!
 	///// MAAAAAKKKEEEE THIS WORK
+	
+	public void chargeTownPoints(Town town, int points) {
+		
+	}
+	
+	//must also charge participant points if charging town points when town is either without nation or when charging a nation's overall points 
+	public void chargePoints(WarParticipant participant, int points) {
+		
+	}
 	
 	public void chargePoints(String township, int points) {
 		if(TownyUniverse.getInstance().hasTown(township)) {

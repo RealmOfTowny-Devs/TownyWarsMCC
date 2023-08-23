@@ -3,7 +3,9 @@ package com.danielrharris.townywars;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
 import com.danielrharris.townywars.warObjects.War;
+import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.palmergames.bukkit.towny.Towny;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -73,7 +75,6 @@ public class TownyWars
   @Override
   public void onDisable()
   {
-	gm.saveData(GriefListener.getGriefedBlocks());
     try
     {
       WarManager.save();  
@@ -105,18 +106,15 @@ public class TownyWars
     pm.registerEvents(new EnemyWalkWWar(),this);
     getCommand("twar").setExecutor(new WarExecutor(this));
     towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
-    tUniverse = towny.getTownyUniverse();
-    if(Bukkit.getPluginManager().getPlugin("BossBarAPI")!=null){
-    	isBossBar = true;
-    }
-    for(Town town : TownyUniverse.getDataSource().getTowns()){
+    tUniverse = TownyUniverse.getInstance();
+    for(Town town : tUniverse.getTowns()){
     	town.setAdminEnabledPVP(false);
     	town.setAdminDisabledPVP(false);
     	town.setPVP(false);
     }
     for (War w : WarManager.getWars()) {
-      for (Nation nation : w.getNationsInWar()) {
-          for (Town t : nation.getTowns()) {
+      for (WarParticipant p : w.getWarParticipants()) {
+          for (Town t : p.getTownsList()) {
             t.setPVP(true);
           }
       }

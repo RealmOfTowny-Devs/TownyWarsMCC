@@ -10,7 +10,7 @@ import net.md_5.bungee.api.ChatColor;
 public class SaveTask extends BukkitRunnable{
 	
 	private GriefManager manager;
-	
+	///////////// This just needs reworked to Use Townies Snapshot system
 	public SaveTask(GriefManager manager){
 		this.manager = manager;
 	}
