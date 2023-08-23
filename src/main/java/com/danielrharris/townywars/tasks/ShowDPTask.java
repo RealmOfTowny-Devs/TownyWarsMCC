@@ -9,8 +9,8 @@ import org.inventivetalent.bossbar.BossBar;
 import org.inventivetalent.bossbar.BossBarAPI;
 
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.War;
 import com.danielrharris.townywars.WarManager;
+import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;

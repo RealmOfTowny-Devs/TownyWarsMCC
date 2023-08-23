@@ -1,5 +1,6 @@
-package com.danielrharris.townywars;
+package com.danielrharris.townywars.warObjects;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +9,7 @@ import java.util.List;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import com.danielrharris.townywars.WarManager;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.EmptyNationException;
@@ -18,7 +20,7 @@ import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
 
 //Author: Noxer
-public class Rebellion {
+public class Rebellion implements Serializable{
 
 	private static ArrayList<Rebellion> allRebellions = new ArrayList<Rebellion>();
 	private Nation motherNation;

@@ -2,6 +2,7 @@ package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
+import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.object.*;
 import org.bukkit.Bukkit;

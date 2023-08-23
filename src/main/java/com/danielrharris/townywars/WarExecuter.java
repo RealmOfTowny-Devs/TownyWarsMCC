@@ -2,6 +2,8 @@ package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.listeners.GriefListener;
 import com.danielrharris.townywars.tasks.ShowDPTask;
+import com.danielrharris.townywars.warObjects.Rebellion;
+import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;

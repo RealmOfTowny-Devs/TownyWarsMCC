@@ -5,14 +5,16 @@ import java.text.DecimalFormat;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
+import org.bukkit.entity.Boss;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.inventivetalent.bossbar.BossBar;
-import org.inventivetalent.bossbar.BossBarAPI;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.War;
 import com.danielrharris.townywars.WarManager;
+import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
@@ -24,10 +26,11 @@ import net.md_5.bungee.api.chat.TextComponent;
 public class AttackWarnBarTask extends BukkitRunnable{
 	
 	private float percent;
-	private Town town;
+	private Town town = null;
 	private Nation nation = null;
 	private TownyWars plugin;
 	private DecimalFormat d = new DecimalFormat("#.00");
+	private BossBar bossBar;
 	
 	public AttackWarnBarTask(Town town, TownyWars plugin){
 		this.town = town;
@@ -40,9 +43,9 @@ public class AttackWarnBarTask extends BukkitRunnable{
 			e.printStackTrace();
 		}
 		this.plugin = plugin;
+		
 	}
 	
-	@SuppressWarnings({ "deprecation", "unused" })
 	@Override
 	public void run() {
 		War wwar = null;
@@ -53,33 +56,72 @@ public class AttackWarnBarTask extends BukkitRunnable{
 					if(player!=null){								
 						percent = 1.0F;
 						wwar = WarManager.getWarForNation(nation);
-						if(wwar != null && !((Double)(War.getTownMaxPoints(town))).equals(null)){
+						if(wwar != null && !((Integer)(wwar.getParticipantMaxPoints(nation.getName()))).equals(null)){
 							try {
-								percent = (float)((wwar.getTownPoints(town)/((Double)War.getTownMaxPoints(town)).intValue()));
+								percent = (float)(wwar.getParticipantPoints(nation.getName())/wwar.getParticipantMaxPoints(nation.getName()));
 								if(TownyWars.isBossBar){
 									if(percent!=0f){
-										if(BossBarAPI.hasBar(player)){
-											BossBarAPI.removeAllBars(player);
-										}
-										String barMessage = "&c&l" + town.getName() + " &r&4&ois Under Attack! &r&4(&fBar is Actual TPs&4)";
-										final BossBar bossBar = BossBarAPI.addBar(player,
-												new TextComponent(net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage)), // Displayed message
-										   BossBarAPI.Color.RED,
-										   BossBarAPI.Style.PROGRESS, 
-										   percent,
-										   2000,
-										   5000);
+										String barMessage = "&c&l" + nation.getName() + " &r&4&ois Under Attack! &r&4(&fBar is Actual NPs&4)";
+										bossBar = Bukkit.createBossBar(
+												net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage),
+									            BarColor.RED,
+									            BarStyle.SEGMENTED_20);
+										bossBar.setProgress(percent);		
+										bossBar.addPlayer(player);
+										bossBar.setVisible(true);
 										new BukkitRunnable(){
 											@Override
 											public void run() {
-												if(BossBarAPI.hasBar(player)){
-													BossBarAPI.removeAllBars(player);
-												}											
+												if(bossBar!=null)
+													if(bossBar.getPlayers().contains(player)){
+														bossBar.removePlayer(player);
+													}											
 											}				
 										}.runTaskLater(plugin, 140L);
 									}
 								}else{
-									sendAttackMessage(player, wwar, town);
+									sendAttackMessage(player, wwar, nation.getName());
+								}
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}				
+					}
+				}
+			}
+		}else if(town!=null) {
+			for(Resident r : town.getResidents()){
+				if(r.getName()!=null){
+					final Player player = Bukkit.getServer().getPlayer(r.getName());
+					if(player!=null){								
+						percent = 1.0F;
+						wwar = WarManager.getWarForTown(town);
+						if(wwar != null && !((Integer)(wwar.getParticipantMaxPoints(town.getName()))).equals(null)){
+							try {
+								percent = (float)(wwar.getParticipantPoints(town.getName())/wwar.getParticipantMaxPoints(town.getName()));
+								if(TownyWars.isBossBar){
+									if(percent!=0f){
+										String barMessage = "&c&l" + town.getName() + " &r&4&ois Under Attack! &r&4(&fBar is Actual TPs&4)";
+										bossBar = Bukkit.createBossBar(
+												net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', barMessage),
+									            BarColor.RED,
+									            BarStyle.SEGMENTED_20);
+										bossBar.setProgress(percent);		
+										bossBar.addPlayer(player);
+										bossBar.setVisible(true);
+										new BukkitRunnable(){
+											@Override
+											public void run() {
+												if(bossBar!=null)
+													if(bossBar.getPlayers().contains(player)){
+														bossBar.removePlayer(player);
+													}											
+											}				
+										}.runTaskLater(plugin, 140L);
+									}
+								}else{
+									sendAttackMessage(player, wwar, town.getName());
 								}
 							} catch (Exception e) {
 								// TODO Auto-generated catch block
@@ -90,23 +132,23 @@ public class AttackWarnBarTask extends BukkitRunnable{
 				}
 			}
 		}	
-	}
+	} 
 	
-	public void sendAttackMessage(Player player, War wwar, Town town){
+	public void sendAttackMessage(Player player, War wwar, String participant){
 		String points = "";
 		final String name = player.getName();
 		
 		if (TownyWars.messagedPlayers.contains(name))
 		{
 			try {
-				points = ChatColor.RED + "" + ChatColor.BOLD + town.getName() + ChatColor.DARK_RED + " is Under Attack!";
+				points = ChatColor.RED + "" + ChatColor.BOLD + participant + ChatColor.DARK_RED + " is Under Attack!";
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			try {
 				new FancyMessage("                     ")
-				.then(d.format(((Double)wwar.getTownPoints(town))))
+				.then(d.format((wwar.getParticipantPoints(participant))))
 				    .color(ChatColor.YELLOW)
 				    .tooltip(points)
 				    .command("/twar showtowndp")
@@ -132,7 +174,7 @@ public class AttackWarnBarTask extends BukkitRunnable{
 				  }
 				}, 3 * 60 * 20);
 			try {
-				points = ChatColor.YELLOW + d.format(((Double)wwar.getTownPoints(town))) + ChatColor.WHITE + " Town Points Left";
+				points = ChatColor.YELLOW + d.format((wwar.getParticipantPoints(participant))) + ChatColor.WHITE + " Points Left";
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -145,8 +187,8 @@ public class AttackWarnBarTask extends BukkitRunnable{
 			.then(town.getName())
 				.color(ChatColor.RED)
 				.style(ChatColor.BOLD)
-				.tooltip("Click to Travel to " + ChatColor.GREEN + town.getName())
-				.command("/t spawn " + town.getName())
+				.tooltip("Click to Travel to " + ChatColor.GREEN + participant)
+				.command("/t spawn " + participant)
 			.then(" is Under Attack!")
 			    .color(ChatColor.DARK_RED)
 			    .style(ChatColor.ITALIC)

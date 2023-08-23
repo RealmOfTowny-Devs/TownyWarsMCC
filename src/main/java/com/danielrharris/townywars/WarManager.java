@@ -1,5 +1,7 @@
 package com.danielrharris.townywars;
 
+import com.danielrharris.townywars.warObjects.Rebellion;
+import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;

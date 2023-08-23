@@ -36,63 +36,33 @@
         <repository>
             <id>inventive-repo</id>
             <url>https://repo.inventivetalent.org/content/groups/public/</url>
-        </repository> 
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
     <!-- Dependencies -->
     <dependencies>
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
-            <version>1.9.2-R0.1-SNAPSHOT</version>
-            <type>jar</type>
-            <scope>provided</scope>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.18.2-R0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>craftbukkit</artifactId>
-            <version>1.9.2-R0.1-SNAPSHOT</version>
-            <type>jar</type>
-            <scope>provided</scope>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot</artifactId>
+            <version>1.18.2-R0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.palmergames.bukkit.towny</groupId>
+            <groupId>com.github.LlmDl</groupId>
             <artifactId>Towny</artifactId>
-            <version>0.90.0.0</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>ca.xshade.bukkit.questioner</groupId>
-            <artifactId>Questioner</artifactId>
-            <version>0.6</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>me.drkmatr1984.BlocksAPI</groupId>
-            <artifactId>BlocksAPI</artifactId>
-            <version>0.01</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>me.mrCookieSlime.CSCoreLibPlugin</groupId>
-            <artifactId>CSCoreLib</artifactId>
-            <version>1.5.3</version>
-            <type>jar</type>
-            <scope>provided</scope>
+            <version>0.99.5.13</version>
         </dependency>
         <dependency>
             <groupId>mkremins</groupId>
             <artifactId>fanciful</artifactId>
-            <version>0.3.3-SNAPSHOT</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.inventivetalent</groupId>
-            <artifactId>bossbarapi</artifactId>
-            <version>2.3.8</version>
+            <version>0.4.0-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
@@ -142,7 +112,6 @@
                                 <includes>
                                     <include>mkremins:fanciful</include>
                                     <include>net.md-5:bungeecord-chat</include>
-                                    <include>me.drkmatr1984.BlocksAPI:BlocksAPI</include>
                                 </includes>
                             </artifactSet>
                         </configuration>

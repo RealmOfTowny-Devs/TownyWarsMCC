@@ -1,9 +1,9 @@
 package com.danielrharris.townywars.listeners;
 
-import com.danielrharris.townywars.Rebellion;
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.War;
 import com.danielrharris.townywars.WarManager;
+import com.danielrharris.townywars.warObjects.Rebellion;
+import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.event.DeleteNationEvent;
 import com.palmergames.bukkit.towny.event.NationAddTownEvent;
