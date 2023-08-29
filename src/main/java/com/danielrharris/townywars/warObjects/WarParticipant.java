@@ -88,7 +88,7 @@ public class WarParticipant implements Serializable{
     
     public static int getTownMaxPoints(Town town){
 		double d = (town.getNumResidents()
-				* TownyWars.getConfigInstance().pPlayer) + (TownyWars.getConfigInstance().pPlot
+				* TownyWars.getInstance().getConfigInstance().pPlayer) + (TownyWars.getInstance().getConfigInstance().pPlot
 				* town.getTownBlocks().size());
 		return Math.round((float)d);
 	}

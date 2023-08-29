@@ -1,4 +1,4 @@
-package com.danielharris.townywars.util;
+package com.danielrharris.townywars.util;
 
 import java.util.ArrayList;
 import java.util.HashSet;

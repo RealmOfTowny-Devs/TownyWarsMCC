@@ -7,6 +7,7 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
+import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.WarManager;
 import com.danielrharris.townywars.warObjects.WarParticipant.TownOrNationNotFoundException;
 import com.palmergames.bukkit.towny.TownyUniverse;
@@ -46,7 +47,7 @@ public class War implements Serializable {
 		this.participant1 = participant1;
 		this.participant2 = participant2;
 		this.rebelwar = rebellion;
-		this.setWarUUID(UUID.randomUUID());
+		this.setUuid(UUID.randomUUID());
 	}
 
 	public War(Nation nat, Nation onat) throws Exception {
@@ -67,24 +68,6 @@ public class War implements Serializable {
 	
 	public War(Nation nat, Nation onat, Rebellion rebellion) throws Exception {
 		this(WarParticipant.createWarParticipant(nat), WarParticipant.createWarParticipant(onat), rebellion);
-	}
-	
-	/** Read the object from Base64 string. */
-	public static War decodeWar(String s) throws IOException, ClassNotFoundException {
-	    byte [] data = Base64.getDecoder().decode( s );
-	    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
-	    War o  = (War) ois.readObject();
-	    ois.close();
-	    return o;
-	}
-
-	/** Write the object to a Base64 string. */
-	public String encodeWarToString() throws IOException {
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    ObjectOutputStream oos = new ObjectOutputStream( baos );
-	    oos.writeObject( this );
-	    oos.close();
-	    return Base64.getEncoder().encodeToString(baos.toByteArray()); 
 	}
 	
 	public List<WarParticipant> getWarParticipants(){
@@ -201,7 +184,7 @@ public class War implements Serializable {
 	///// MAAAAAKKKEEEE THIS WORK
 	
 	public void chargeTownPoints(WarParticipant participant, Town town, int points) {
-		WarParticipant enemy = WarManager.getWarForParticipant(participant).getEnemy(participant);
+		WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
 		int value = getTownPoints(town) - points;
 		if(value > 0){
 			participant.setTownPoints(town, value);
@@ -224,7 +207,7 @@ public class War implements Serializable {
 							participant.removeTown(town);
 							enemy.addNewTown(town);
 							try {
-								WarManager.save();
+								TownyWars.getInstance().getWarManager().save();
 							} catch (Exception e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -299,7 +282,7 @@ public class War implements Serializable {
 						if(loser.getType().equalsIgnoreCase("nation")) {
 							Nation winnerNation = TownyUniverse.getInstance().getNation(winner.getUuid());
 							if(winnerNation!=null) {
-								for(Rebellion r : Rebellion.getAllRebellions()){
+								for(Rebellion r : TownyWars.getInstance().getWarManager().getActiveRebellions()){
 									if(r.getRebelnation() == winnerNation){
 										winnerNation.getCapital().collect(winnerNation.getAccount().getHoldingBalance());
 										winnerNation.pay(winnerNation.getAccount().getHoldingBalance(), "You are disbanded. You don't need money.");
@@ -313,7 +296,7 @@ public class War implements Serializable {
 							winner.collect(loser.getHoldingBalance());
 							looser.pay(looser.getHoldingBalance(), "Conquered. Tough luck!");
 						}
-						WarManager.endWar(winner, loser, false);
+						TownyWars.getInstance().getWarManager().endWar(winner, loser, false);
 
 				} catch (Exception ex) {
 					Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
@@ -326,7 +309,7 @@ public class War implements Serializable {
 		}
 		
 		try {
-			WarManager.save();
+			TownyWars.getInstance().getWarManager().save();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -433,12 +416,30 @@ public class War implements Serializable {
 		return null;
 	}
 
-	public UUID getWarUUID() {
+	public UUID getUuid() {
 		return warUUID;
 	}
 
-	public void setWarUUID(UUID warUUID) {
+	public void setUuid(UUID warUUID) {
 		this.warUUID = warUUID;
+	}
+	
+	/** Read the object from Base64 string. */
+	public static War decodeWar(String s) throws IOException, ClassNotFoundException {
+	    byte [] data = Base64.getDecoder().decode( s );
+	    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+	    War o  = (War) ois.readObject();
+	    ois.close();
+	    return o;
+	}
+
+	/** Write the object to a Base64 string. */
+	public String encodeWar() throws IOException {
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    ObjectOutputStream oos = new ObjectOutputStream( baos );
+	    oos.writeObject( this );
+	    oos.close();
+	    return Base64.getEncoder().encodeToString(baos.toByteArray()); 
 	}
 
 	@SuppressWarnings("serial")

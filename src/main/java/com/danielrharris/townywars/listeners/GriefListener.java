@@ -1,10 +1,10 @@
 package com.danielrharris.townywars.listeners;
 
-import com.danielharris.townywars.util.Utils;
 import com.danielrharris.townywars.GriefManager;
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.WarManager;
 import com.danielrharris.townywars.tasks.AttackWarnBarTask;
+import com.danielrharris.townywars.util.Utils;
 import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyMessaging;

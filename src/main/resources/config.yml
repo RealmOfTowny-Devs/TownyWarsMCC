@@ -3,6 +3,9 @@
 ## in languages subfolder without .yml you intend to use.
 ## If you develop another language file please send it to me!
 language: en
+## The message prefix when thre plugin sends messages and also
+## for console messages
+messagePrefix: "&8[&bTowny&eWars&8]&r"
 pper-player: 2.0
 pper-plot: 1.0
 pper-player-kill: 1.0
@@ -30,11 +33,9 @@ Storage:
   mysql:
     host: 127.0.0.1
     port: 3306
-    database: MinevoltGems
-    table: minecraft
+    database: TownyWars
     username: root
     password: example
     useSSL: false   
-  ## Save interval for File based storage, in minutes
-  file:
-    save-interval: 5
+  ## Save interval for saving data in minutes
+  save-interval: 5

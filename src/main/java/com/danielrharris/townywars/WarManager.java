@@ -32,114 +32,62 @@ import org.bukkit.plugin.Plugin;
 public class WarManager
 {
 
-  private Set<War> activeWars;
-  private Set<Rebellion> allRebellions;
-  private Set<String> requestedPeace;
-  private  Map<String, Double> neutral;
-  public Town townremove;
-  private TownyWars townywars;
-  private YMLFile ymlfile;
-  private SQLite sqlite;
-  //private static final int SAVING_VERSION = 1;
+	private Set<War> activeWars;
+	private Set<Rebellion> activeRebellions;
+	private Set<String> requestedPeace;
+	private  Map<String, Double> neutral;
+	public Town townremove;
+	private TownyWars townywars;
+	private YMLFile ymlfile;
+	private SQLite sqlite;
+	private MySQL mysql;
+	//private static final int SAVING_VERSION = 1;
   
-  public WarManager(TownyWars townywars) {
-	  this.townywars = townywars;
-	  activeWars = new HashSet<War>();
-	  allRebellions = new ArrayList<Rebellion>();
-	  requestedPeace = new HashSet<String>();
-	  neutral = new HashMap<String, Double>();
-  }
+	public WarManager(TownyWars townywars) {
+		this.townywars = townywars;
+		activeWars = new HashSet<War>();
+		activeRebellions = new HashSet<Rebellion>();
+		requestedPeace = new HashSet<String>();
+		neutral = new HashMap<String, Double>();
+	}
   
-  public void save()
-    throws Exception
-  {
-	  switch (TownyWars.getConfigInstance().method) {
-	    case file:
-	      this.file = new YMLFile(this);
-	      this.file.initLists();
-	      fileSave.runTaskTimerAsynchronously((Plugin)this, (MinevoltGems.config.interval * 60 * 20), (MinevoltGems.config.interval * 60 * 20));
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eFile"));
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bInterval: &e" + MinevoltGems.config.interval));
-	      break;
-	    case mysql:
-	      this.sql = new MySQL(this);
-	      this.sql.connect();
-	      GemsAPI.createTable(this.sql);
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eMySQL"));
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bMySQL Successfully Connected"));
-	      break;
-	    case sqlite:
-	        this.sqlite = new SQLite(this);
-	        this.sqlite.connect();
-	        GemsAPI.createTable(this.sql);
-	        Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eMySQL"));
-	        Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bMySQL Successfully Connected"));
-	        break;
-	    default:
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &cStorageMethod must be file or mysql"));
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aDefaulting to &eFile"));
-	      this.file = new YMLFile(this);
-	      this.file.initLists();
-	      fileSave.runTaskTimerAsynchronously((Plugin)this, (MinevoltGems.config.interval * 60 * 20), (MinevoltGems.config.interval * 60 * 20));
-	      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bInterval: &e" + MinevoltGems.config.interval));
-	      break;
-	    }
-  }
+	public void save() throws Exception {
+		switch (this.townywars.getConfigInstance().method) {
+    		case file:
+    			this.ymlfile.saveWars(activeWars);
+    			this.ymlfile.saveRebellions(activeRebellions);
+    		case mysql:
+    		    this.mysql.saveWars(activeWars);
+                this.mysql.saveRebellions(activeRebellions);
+    		case sqlite:
+    			this.sqlite.saveWars(activeWars);
+    			this.sqlite.saveRebellions(activeRebellions);
+    		default:
+    			this.ymlfile.saveWars(activeWars);
+    			this.ymlfile.saveRebellions(activeRebellions);
+		}
+	}
   
-  	public void load() throws Exception
-  	{
-  		switch (this.townywars.getTWConfig().method) {
+  	public void load() throws Exception {
+  		switch (this.townywars.getConfigInstance().method) {
 	    	case file:
 	      	    this.ymlfile = new YMLFile(townywars);
-	      	    ymlfile.initialize();
-	      	    activeWars = ymlfile.getActiveWars();
-	      	    allRebellions = ymlfile.getActiveRebellions();
+	      	    activeWars = ymlfile.loadWars();
+	      	    activeRebellions = ymlfile.loadRebellions();
 	    	case mysql:
-	    		
-	      
+	    		this.mysql = new MySQL(townywars);
+	    		activeWars = mysql.loadWars();
+	    		activeRebellions = mysql.loadRebellions();
 	    	case sqlite:
 	            this.sqlite = new SQLite(townywars);
-	            sqlite.initialize();
-	            activeWars = sqlite.getActiveWars();
-	            allRebellions = sqlite.getActiveRebellions();
+	            activeWars = sqlite.loadWars();
+	            activeRebellions = sqlite.loadRebellions();
 	    	default:
 	    		this.ymlfile = new YMLFile(townywars);
-	      	    ymlfile.initialize();
-	      	    activeWars = ymlfile.getActiveWars();
-	      	    allRebellions = ymlfile.getActiveRebellions();
-  		}
-	    /*
-	  	String folders[] = {"plugins" + fileSeparator + "TownyWars"};
-	  	FileMgmt.checkFolders(folders);
-	  	
-	  	 //load rebellions
-	    FileMgmt.CheckYMLExists(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml"));
-	    String s = FileMgmt.convertFileToString(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "rebellions.yml"));
-	    
-	    if(!s.isEmpty()){
-		    ArrayList<String> slist = new ArrayList<String>();
-		    
-		    for(String temp : s.split("\n"))
-		    	slist.add(temp);
-		    
-		    for(String s2 : slist)
-		    	Rebellion.getAllRebellions().add(new Rebellion(s2));
-	    }
-	    
-	    //load wars
-	  	FileMgmt.CheckYMLExists(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml"));
-	    String sw = FileMgmt.convertFileToString(new File("plugins" + fileSeparator + "TownyWars" + fileSeparator + "activeWars.yml"));
-	    
-	    if(!sw.isEmpty()){
-		    ArrayList<String> slist = new ArrayList<String>();
-		    
-		    for(String temp : sw.split("\n"))
-		    	slist.add(temp);
-		    
-		    for(String s2 : slist)
-		    	WarManager.getWars().add(new War(s2));
-	    }*/
-  }
+	      	    activeWars = ymlfile.loadWars();
+	      	    activeRebellions = ymlfile.loadRebellions();
+  		}	    
+  	}
   
   public Set<War> getWars()
   {
@@ -193,12 +141,12 @@ public class WarManager
         return null;
     }
   
-  public static void createWar(Nation nat, Nation onat, CommandSender cs){
+  public void createWar(Nation nat, Nation onat, CommandSender cs){
 	  createWar(nat, onat, cs, null);
   }
   
   @SuppressWarnings("deprecation")
-public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellion r)
+public void createWar(Nation nat, Nation onat, CommandSender cs, Rebellion r)
   { 
     if ((getWarForNation(nat) != null) || (getWarForNation(onat) != null))
     {
@@ -257,7 +205,7 @@ public static void createWar(Nation nat, Nation onat, CommandSender cs, Rebellio
   }
   
   @SuppressWarnings("deprecation")
-public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
+public boolean requestPeace(Nation nat, Nation onat, boolean admin)
   {
 	  
     if ((admin) || (requestedPeace.contains(onat.getName())))
@@ -295,7 +243,7 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
     return false;
   }
   
-  public static void endWar(WarParticipant winner, WarParticipant looser, boolean peace)
+  public void endWar(WarParticipant winner, WarParticipant looser, boolean peace)
   {
 	boolean isRebelWar = WarManager.getWarForParticipant(winner).getRebellion() != null;
 	Rebellion rebellion = WarManager.getWarForParticipant(winner).getRebellion();
@@ -381,7 +329,7 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
 	}
   }
   
-    public static boolean hasBeenOffered(War ww, Nation nation)
+    public boolean hasBeenOffered(War ww, Nation nation)
     {
         try {
 		    return requestedPeace.contains(ww.getEnemy(nation));
@@ -392,16 +340,16 @@ public static boolean requestPeace(Nation nat, Nation onat, boolean admin)
         return false;
     }
 
-    public static ArrayList<Rebellion> getAllRebellions() {
-	    return allRebellions;
+    public Set<Rebellion> getActiveRebellions() {
+	    return activeRebellions;
     }
 
-    public static void setAllRebellions(ArrayList<Rebellion> allRebellions) {
-	    WarManager.allRebellions = allRebellions;
+    public void setActiveRebellions(Set<Rebellion> allRebellions) {
+	    activeRebellions = allRebellions;
     }
     
-    public static Rebellion getRebellionFromName(String s) throws Exception{
-		for(Rebellion r : allRebellions)
+    public Rebellion getRebellionFromName(String s) throws Exception{
+		for(Rebellion r : activeRebellions)
 			if(r.getName().equals(s))
 				return r;
 		throw(new Exception("Rebellion not found!"));

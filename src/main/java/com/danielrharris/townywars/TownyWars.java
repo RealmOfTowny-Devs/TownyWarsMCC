@@ -8,9 +8,6 @@ import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
-
-import me.drkmatr1984.MinevoltGems.GemsConfig;
-
 import com.danielrharris.townywars.storage.MySQL;
 import com.danielrharris.townywars.storage.SQLite;
 import com.danielrharris.townywars.storage.YMLFile;
@@ -45,7 +42,7 @@ public class TownyWars extends JavaPlugin
     private static TownyWars plugin;
     private TownyWarsConfig config;
     private GriefManager gm;
-    private WarManager warManager;
+    private static WarManager warManager;
     File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
     public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
     public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
@@ -59,9 +56,9 @@ public class TownyWars extends JavaPlugin
     @Override
     public void onEnable()
     {
-	  	this.plugin = this;
-        this.config = new TownyWarsConfig(this.plugin);
-        this.warManager = new WarManager(this.plugin);
+	  	TownyWars.plugin = this;
+        this.config = new TownyWarsConfig(TownyWars.plugin);
+        warManager = new WarManager(TownyWars.plugin);
 	  	try
 	  	{
 	  		warManager.load();
@@ -123,7 +120,7 @@ public class TownyWars extends JavaPlugin
 	  
     try
     {
-      WarManager.save();  
+      warManager.save();  
     }
     catch (Exception ex)
     {
@@ -171,6 +168,8 @@ public class TownyWars extends JavaPlugin
 		return 0;
 	}
   	
+  
+    // This will need rewritten to use WarParticipants and the new WarManager
   	/*
 	 * Takes a player and a location, the player is someone who wants to find out if the location
 	 * interacted with is located in a town that their nation is at war With
@@ -178,9 +177,9 @@ public class TownyWars extends JavaPlugin
 	public static boolean atWar(Player p, Location loc){
 		try
 		{
-			if(TownyUniverse.getDataSource().getResident(p.getName())!=null)
+			if(TownyUniverse.getInstance().getResident(p.getName())!=null)
 			{
-				Resident re = TownyUniverse.getDataSource().getResident(p.getName());
+				Resident re = TownyUniverse.getInstance().getResident(p.getName());
 				if(re.getTown()!=null){
 					if(re.getTown().getNation()!=null){
 						Nation nation = re.getTown().getNation();
@@ -189,11 +188,12 @@ public class TownyWars extends JavaPlugin
 							plugin.addTownyWarsResident(re.getName());
 							System.out.println("resident added!");
 						}
-						War ww = WarManager.getWarForNation(nation);
+						War ww = warManager.getWarForNation(nation);
 						if (ww != null)
 						{
-							if(TownyUniverse.getTownBlock(loc)!=null){
-								TownBlock townBlock = TownyUniverse.getTownBlock(loc);
+							WorldCoord wc = WorldCoord.parseWorldCoord(loc);
+							if(TownyUniverse.getInstance().getTownBlock(wc)!=null){
+								TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(wc);
 								Town otherTown = townBlock.getTown();
 								if(otherTown!=re.getTown()){
 									if(otherTown.getNation()!=null){
@@ -222,7 +222,11 @@ public class TownyWars extends JavaPlugin
 		return plugin;
 	}
 	
-	public TownyWarsConfig getTWConfig() {
+	public WarManager getWarManager(){
+		return warManager;
+	}
+	
+	public TownyWarsConfig getConfigInstance() {
 	    return config;
 	}
 }

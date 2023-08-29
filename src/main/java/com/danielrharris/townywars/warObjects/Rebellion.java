@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.WarManager;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -43,7 +44,7 @@ public class Rebellion implements Serializable{
 		this.name = n;
 		this.setUuid(UUID.randomUUID());
 		this.leader = l;
-		WarManager.getAllRebellions().add(this);
+		TownyWars.getInstance().getWarManager().getActiveRebellions().add(this);
 	}
 	
 	public Town getLeader() {
@@ -81,12 +82,12 @@ public class Rebellion implements Serializable{
 			e.printStackTrace();
 		}
 		
-		WarManager.createWar(rebelnation, motherNation, cs, this);
+		TownyWars.getInstance().getWarManager().createWar(rebelnation, motherNation, cs, this);
 		TownyUniverse.getInstance().getDataSource().saveTown(leader);
 		TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
 		TownyUniverse.getInstance().getDataSource().saveNations();
 		try {
-			WarManager.save();
+			TownyWars.getInstance().getWarManager().save();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -125,7 +126,7 @@ public class Rebellion implements Serializable{
 		TownyUniverse.getInstance().getDataSource().saveNation(motherNation);
 		TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
 		try {
-			WarManager.save();
+			TownyWars.getInstance().getWarManager().save();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -138,12 +139,12 @@ public class Rebellion implements Serializable{
 		
 		ArrayList<Town> l = new ArrayList<Town>(rebelnation.getTowns());
 		for(Town town : l) {
-			WarManager.townremove = town;
+			TownyWars.getInstance().getWarManager().townremove = town;
 			War.removeTownFromNationAndAddToAnotherNation(town, rebelnation, motherNation);
 		}
 		
 		try {
-			WarManager.save();
+			TownyWars.getInstance().getWarManager().save();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

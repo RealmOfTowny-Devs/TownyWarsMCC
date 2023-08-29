@@ -15,17 +15,11 @@ import com.danielrharris.townywars.TownyWars;
 
 public class TownyWarsConfig {
   private TownyWars plugin = null;
-  
   private File fileConfig = null;
-  
   public String language = "en";
-  
-  public String pr = "&8[&bMine&evolt&aGems&8]&r";
-  
+  public String pr = "&8[&bTowny&eWars&8]&r";
   private File dataFolder;
-  
   private FileConfiguration config;
-  
   public double pPlayer;
   public double pPlot;
   public double pKill;
@@ -45,24 +39,14 @@ public class TownyWarsConfig {
   public ArrayList<String> worldBlackList;
   private ArrayList<String> blockStringBlackList;
   public Set<Material> blockBlackList;
-  public boolean isBossBar = false;
-  
+  public boolean isBossBar = false; 
   public StorageMethod method;
-  
   public String host = "127.0.0.1";
-  
   public String port = "3306";
-  
-  public String database = "MinevoltGems";
-  
-  public String table = "minecraft";
-  
+  public String database = "TownyWars";
   public String username = "root";
-  
   public String password = "example";
-  
   public boolean useSSL = false;
-  
   public int interval = 5;
   
   public TownyWarsConfig(Plugin plugin) {
@@ -79,6 +63,7 @@ public class TownyWarsConfig {
   
   public void loadConfig() {
 	  this.config = YamlConfiguration.loadConfiguration(fileConfig);
+	  this.pr = this.config.getString("messagePrefix");
 	  this.language = this.config.getString("language");
 	  pPlayer = this.config.getDouble("pper-player");
 	  pPlot = this.config.getDouble("pper-plot");
@@ -117,13 +102,11 @@ public class TownyWarsConfig {
 	      this.host = this.config.getString("Storage.mysql.host");
 	      this.port = this.config.getString("Storage.mysql.port");
 	      this.database = this.config.getString("Storage.mysql.database");
-	      this.table = this.config.getString("Storage.mysql.table");
 	      this.username = this.config.getString("Storage.mysql.username");
 	      this.password = this.config.getString("Storage.mysql.password");
 	      this.useSSL = Boolean.valueOf(this.config.getString("Storage.mysql.useSSL").toUpperCase()).booleanValue();
-	  } else {
-	      this.interval = this.config.getInt("Storage.file.save-interval");
 	  }
+	  this.interval = this.config.getInt("Storage.save-interval");
   }
   
   public FileConfiguration getGemsConfig() {
