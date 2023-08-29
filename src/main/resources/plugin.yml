@@ -1,9 +1,8 @@
 name: TownyWars
-version: 1.1.5
+version: 2.0.0
 authors: [DanielRHarris]
 main: com.danielrharris.townywars.TownyWars
 depend: [Towny]
-softdepend: [CS-CoreLib, CSCoreLib, BossBarAPI]
 commands:
   twar:
     usage: No permission!

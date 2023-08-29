@@ -2,6 +2,7 @@ package com.danielrharris.townywars.warObjects;
 
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
@@ -402,9 +403,11 @@ public class War implements Serializable {
 				TownyUniverse.getInstance().getDataSource().saveNation(n);
 			}			
 			nation.addTown(townToAdd);
+			nation.setKing(town.getMayor());
+            nation.setCapital(town);
 			TownyUniverse.getInstance().getDataSource().saveTown(townToAdd);
 			TownyUniverse.getInstance().getDataSource().saveNation(nation);
-		} catch (AlreadyRegisteredException | NotRegisteredException e) {
+		} catch (TownyException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

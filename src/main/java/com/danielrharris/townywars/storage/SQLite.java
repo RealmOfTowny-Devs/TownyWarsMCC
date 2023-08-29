@@ -1,101 +1,85 @@
 package com.danielrharris.townywars.storage;
 
-import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.logging.Level;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
 
 import com.danielrharris.townywars.TownyWars;
+import com.danielrharris.townywars.warObjects.Rebellion;
+import com.danielrharris.townywars.warObjects.War;
+import com.zp4rker.localdb.Column;
+import com.zp4rker.localdb.DataType;
+import com.zp4rker.localdb.Database;
+import com.zp4rker.localdb.Table;
 
-
-public class SQLite extends SQLiteDatabase{
-    private File saveFile;    
-    private File dataFolder;
-    private String fileName;
+public class SQLite {
+	
+	private TownyWars plugin;
+	private Database database;
+	private Set<War> activeWars;
+    private Set<Rebellion> activeRebellions;
+	
+	public SQLite(TownyWars plugin) {
+		this.plugin = plugin;
+		initialize();
+	}
+	
+	public void initialize() {
+		Column uuid = new Column("uuid", DataType.STRING, 64);
+		Column base64 = new Column("base64", DataType.STRING, 64);
+		// Create the table
+		Table warsTable = new Table("wars", Arrays.asList(uuid, base64));
+		// Create the database
+		database = new Database(this.plugin, "wars", warsTable, "TownyWars/data");
+		Column rebeluuid = new Column("uuid", DataType.STRING, 64);
+		Column rebelbase64 = new Column("base64", DataType.STRING, 64);
+		// Create the table
+		Table rebellionsTable = new Table("rebellions", Arrays.asList(rebeluuid, rebelbase64));
+		// Create the database
+		database.addTable(rebellionsTable);
+	}
+	
+	public void loadWars() {
+		for(Table table : database.getTables()) {
+			if(table.getName().equalsIgnoreCase("wars")) {
+				for(Column column : table.getColumns()) {
+					try {
+						War w = War.decodeWar((String)column.getValue());
+						activeWars.add(w);
+					} catch (ClassNotFoundException | IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+	
+    public void saveWars() {
+		
+	}
+	
+    public void loadRebellions() {
+		
+	}
+	
+    public void saveRebellions() {
+		
+	}
     
-    public SQLite(TownyWars instance, String fileName){
-        super(instance);
-        this.dataFolder = new File(this.plugin.getDataFolder().toString() + "/data");
-        this.fileName = fileName;
-    }
+    public Set<War> getActiveWars() {
+		return activeWars;
+	}
 
-    public String SQLiteCreateTokensTableWars = "CREATE TABLE IF NOT EXISTS wars (" + // make sure to put your table name in here too.
-            "`uuid` varchar(32) NOT NULL," + // This creates the different colums you will save data too. varchar(32) Is a string, int = integer
-            "`base64` varchar(64) NOT NULL," + 
-            ");";
+	public void setActiveWars(Set<War> activeWars) {
+		this.activeWars = activeWars;
+	}
 
-    public String SQLiteCreateTokensTableRebellions = "CREATE TABLE IF NOT EXISTS rebellions (" + // make sure to put your table name in here too.
-            "`uuid` varchar(32) NOT NULL," + // This creates the different colums you will save data too. varchar(32) Is a string, int = integer
-            "`base64` varchar(64) NOT NULL," + 
-            ");";
-    
-    // SQL creation stuff, You can leave the blow stuff untouched.
-    public Connection getSQLConnection() {   	
-    	if (!this.dataFolder.exists())
-    	      this.dataFolder.mkdir(); 
-        if(saveFile == null) {
-        	this.saveFile = new File(this.dataFolder, fileName); 
-        }
-        if (!this.saveFile.exists())
-            this.plugin.saveResource("data/" + fileName, false); 
-        
-        try {
-            if(connection!=null&&!connection.isClosed()){
-                return connection;
-            }
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + saveFile);
-            return connection;
-        } catch (SQLException ex) {
-            plugin.getLogger().log(Level.SEVERE,"SQLite exception on initialize", ex);
-        } catch (ClassNotFoundException ex) {
-            plugin.getLogger().log(Level.SEVERE, "You need the SQLite JBDC library. Google it. Put it in /lib folder.");
-        }
-        return null;
-    }
+	public Set<Rebellion> getActiveRebellions() {
+		return activeRebellions;
+	}
 
-    public void load() {
-        connection = getSQLConnection();
-        try {
-            Statement s = connection.createStatement();
-            s.executeUpdate(SQLiteCreateTokensTableWars);
-            s.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        try {
-            Statement s = connection.createStatement();
-            s.executeUpdate(SQLiteCreateTokensTableRebellions);
-            s.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        initialize();
-    }
-    
-    public static class Error {
-        public static void execute(TownyWars plugin, Exception ex){
-            plugin.getLogger().log(Level.SEVERE, "Couldn't execute MySQL statement: ", ex);
-        }
-        public static void close(TownyWars plugin, Exception ex){
-            plugin.getLogger().log(Level.SEVERE, "Failed to close MySQL connection: ", ex);
-        }
-    }
-    
-    public static class Errors {
-        public static String sqlConnectionExecute(){
-            return "Couldn't execute MySQL statement: ";
-        }
-        public static String sqlConnectionClose(){
-            return "Failed to close MySQL connection: ";
-        }
-        public static String noSQLConnection(){
-            return "Unable to retreive MYSQL connection: ";
-        }
-        public static String noTableFound(){
-            return "Database Error: No Table Found";
-        }
-    }
+	public void setActiveRebellions(Set<Rebellion> activeRebellions) {
+		this.activeRebellions = activeRebellions;
+	}
 }

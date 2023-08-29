@@ -42,8 +42,7 @@ public class AttackWarnBarTask extends BukkitRunnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		this.plugin = plugin;
-		
+		this.plugin = plugin;	
 	}
 	
 	@Override
@@ -59,7 +58,7 @@ public class AttackWarnBarTask extends BukkitRunnable{
 						if(wwar != null && !((Integer)(wwar.getParticipantMaxPoints(nation.getName()))).equals(null)){
 							try {
 								percent = (float)(wwar.getParticipantPoints(nation.getName())/wwar.getParticipantMaxPoints(nation.getName()));
-								if(TownyWars.isBossBar){
+								if(TownyWars.getConfigInstance().isBossBar){
 									if(percent!=0f){
 										String barMessage = "&c&l" + nation.getName() + " &r&4&ois Under Attack! &r&4(&fBar is Actual NPs&4)";
 										bossBar = Bukkit.createBossBar(

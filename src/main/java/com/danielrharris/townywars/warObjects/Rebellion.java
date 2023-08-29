@@ -182,7 +182,7 @@ public class Rebellion implements Serializable{
 	}
 	
 	/** Read the object from Base64 string. */
-	public static Rebellion decodeFromString(String s) throws IOException, ClassNotFoundException {	                                                       
+	public static Rebellion decodeRebellion(String s) throws IOException, ClassNotFoundException {	                                                       
 	    byte [] data = Base64.getDecoder().decode( s );
 	    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
 	    Rebellion o  = (Rebellion) ois.readObject();
@@ -191,7 +191,7 @@ public class Rebellion implements Serializable{
 	}
 
 	/** Write the object to a Base64 string. */
-	public String encodeToString() throws IOException {
+	public String encodeRebellion() throws IOException {
 	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	    ObjectOutputStream oos = new ObjectOutputStream( baos );
 	    oos.writeObject( this );

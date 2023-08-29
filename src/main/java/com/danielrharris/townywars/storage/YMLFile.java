@@ -16,7 +16,9 @@ public class YMLFile {
     private File warFile;  
     private File dataFolder;
     private FileConfiguration war;
-    private Set<War> activeWars = new HashSet<War>();
+    private File rebellionFile;
+    private FileConfiguration rebel;
+    private Set<War> activeWars;
     private Set<Rebellion> activeRebellions;
   
     private Plugin plugin;
@@ -26,9 +28,10 @@ public class YMLFile {
         this.dataFolder = new File(this.plugin.getDataFolder().toString() + "/data");
     }
   
-    public void initLists() {
+    public void initialize() {
         saveDefaultFiles();
         loadWars();
+        loadRebellions();
         //Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aFile storage successfully initialized!"));
     }
   
@@ -39,6 +42,10 @@ public class YMLFile {
            this.warFile = new File(this.dataFolder, "activeWars.yml"); 
         if (!this.warFile.exists())
            this.plugin.saveResource("data/activeWars.yml", false); 
+        if (this.rebellionFile == null)
+            this.rebellionFile = new File(this.dataFolder, "activeRebellions.yml"); 
+         if (!this.rebellionFile.exists())
+            this.plugin.saveResource("data/activeRebellions.yml", false);
     }
   
     public void loadWars() {
@@ -78,6 +85,44 @@ public class YMLFile {
             e.printStackTrace();
         } 
     }
+    
+    public void loadRebellions() {
+        this.activeRebellions = new HashSet<Rebellion>();
+        this.rebel = (FileConfiguration)YamlConfiguration.loadConfiguration(this.warFile);
+        if (this.rebel.getKeys(false) != null)
+            for (String s : this.rebel.getKeys(false)) {	  
+		        try {
+			        Rebellion r = Rebellion.decodeRebellion(this.rebel.getString(s));
+			        this.activeRebellions.add(r);
+		        } catch (ClassNotFoundException | IOException e) {
+		        	e.printStackTrace();
+		        }
+            }
+    }
+    
+    public void saveRebellions() {
+        if (this.activeRebellions != null && !this.activeRebellions.isEmpty())
+            for (Rebellion r : activeRebellions) {
+            	try {
+					this.rebel.set(r.getUuid().toString(), r.encodeRebellion());
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+            } 
+        if (this.rebellionFile.exists())
+            this.rebellionFile.delete(); 
+        try {
+            this.rebel.save(this.rebellionFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        try {
+            this.rebellionFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
   
     public Set<War> getActiveWars(){
 	    return activeWars;
@@ -85,5 +130,13 @@ public class YMLFile {
     
     public void setActiveWars(Set<War> wars){
     	this.activeWars = wars;
+    }
+    
+    public Set<Rebellion> getActiveRebellions(){
+	    return activeRebellions;
+    }
+    
+    public void setActiveRebellions(Set<Rebellion> rebellions){
+    	this.activeRebellions = rebellions;
     }
 }

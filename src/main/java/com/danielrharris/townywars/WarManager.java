@@ -32,15 +32,25 @@ import org.bukkit.plugin.Plugin;
 public class WarManager
 {
 
-  private static String fileSeparator = System.getProperty("file.separator");
-  private static Set<War> activeWars = new HashSet<War>();
-  private static ArrayList<Rebellion> allRebellions = new ArrayList<Rebellion>();
-  private static Set<String> requestedPeace = new HashSet<String>();
-  public static Map<String, Double> neutral = new HashMap<String, Double>();
-  public static Town townremove;
+  private Set<War> activeWars;
+  private Set<Rebellion> allRebellions;
+  private Set<String> requestedPeace;
+  private  Map<String, Double> neutral;
+  public Town townremove;
+  private TownyWars townywars;
+  private YMLFile ymlfile;
+  private SQLite sqlite;
   //private static final int SAVING_VERSION = 1;
   
-  public static void save()
+  public WarManager(TownyWars townywars) {
+	  this.townywars = townywars;
+	  activeWars = new HashSet<War>();
+	  allRebellions = new ArrayList<Rebellion>();
+	  requestedPeace = new HashSet<String>();
+	  neutral = new HashMap<String, Double>();
+  }
+  
+  public void save()
     throws Exception
   {
 	  switch (TownyWars.getConfigInstance().method) {
@@ -76,19 +86,28 @@ public class WarManager
 	    }
   }
   
-  public static void load(File dataFolder)
-    throws Exception
-  {
-	  switch (TownyWars.getConfigInstance().method) {
-	    case file:
-	      //build load methods for these
-	    case mysql:
+  	public void load() throws Exception
+  	{
+  		switch (this.townywars.getTWConfig().method) {
+	    	case file:
+	      	    this.ymlfile = new YMLFile(townywars);
+	      	    ymlfile.initialize();
+	      	    activeWars = ymlfile.getActiveWars();
+	      	    allRebellions = ymlfile.getActiveRebellions();
+	    	case mysql:
+	    		
 	      
-	    case sqlite:
-	        
-	    default:
-	      //defaults to file
-	    }
+	    	case sqlite:
+	            this.sqlite = new SQLite(townywars);
+	            sqlite.initialize();
+	            activeWars = sqlite.getActiveWars();
+	            allRebellions = sqlite.getActiveRebellions();
+	    	default:
+	    		this.ymlfile = new YMLFile(townywars);
+	      	    ymlfile.initialize();
+	      	    activeWars = ymlfile.getActiveWars();
+	      	    allRebellions = ymlfile.getActiveRebellions();
+  		}
 	    /*
 	  	String folders[] = {"plugins" + fileSeparator + "TownyWars"};
 	  	FileMgmt.checkFolders(folders);
@@ -122,12 +141,12 @@ public class WarManager
 	    }*/
   }
   
-  public static Set<War> getWars()
+  public Set<War> getWars()
   {
     return activeWars;
   }
   
-  public static War getWarForParticipant(WarParticipant part)
+  public War getWarForParticipant(WarParticipant part)
   {
     for (War w : activeWars) {
         if(w.getWarParticipants().contains(part)) {
@@ -137,7 +156,7 @@ public class WarManager
     return null;
   }
   
-    public static War getWarForNation(Nation nation)
+    public War getWarForNation(Nation nation)
     {
         for (War w : activeWars) {
     	    for(WarParticipant part : w.getWarParticipants()) {
@@ -160,7 +179,7 @@ public class WarManager
         return null;
     }
   
-    public static War getWarForTown(Town town)
+    public War getWarForTown(Town town)
     {
         for (War w : activeWars) {
     	    for(WarParticipant part : w.getWarParticipants()) {

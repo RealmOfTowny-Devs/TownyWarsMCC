@@ -38,35 +38,89 @@ import java.util.logging.Logger;
 
 //import main.java.com.danielrharris.townywars.War.MutableInteger;
 
-public class TownyWars
-  extends JavaPlugin
+public class TownyWars extends JavaPlugin
 {
-  public static TownyUniverse tUniverse;
-  public static Towny towny;
-  private static TownyWars plugin;
-  private static TownyWarsConfig config;
-  private MySQL sql; 
-  private YMLFile file;
-  private SQLite sqlite;
-  private GriefManager gm;
-  
-  File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
-  
-  public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
-  
-  public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
-  
-  public static List<String> messagedPlayers = new ArrayList<String>();
-  
-  //set up the date conversion spec and the character set for file writing
-  private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
-  private static final Charset utf8 = StandardCharsets.UTF_8;
+    private TownyUniverse tUniverse;
+    private Towny towny;
+    private static TownyWars plugin;
+    private TownyWarsConfig config;
+    private GriefManager gm;
+    private WarManager warManager;
+    File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
+    public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
+    public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
+    public static List<String> messagedPlayers = new ArrayList<String>();
+    //set up the date conversion spec and the character set for file writing
+    private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
+    private static final Charset utf8 = StandardCharsets.UTF_8;
 	
-  private static final String deathsFile="deaths.txt";
+    private static final String deathsFile="deaths.txt";
 
+    @Override
+    public void onEnable()
+    {
+	  	this.plugin = this;
+        this.config = new TownyWarsConfig(this.plugin);
+        this.warManager = new WarManager(this.plugin);
+	  	try
+	  	{
+	  		warManager.load();
+	  	}
+        catch (Exception ex)
+        {
+        	Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
+        }
+	  	PluginManager pm = getServer().getPluginManager();
+	  	gm = new GriefManager(this);
+	  	pm.registerEvents(new GriefListener(this, gm), this);
+	  	pm.registerEvents(new WarListener(this), this);
+	  	pm.registerEvents(new PvPListener(this), this);
+	  	pm.registerEvents(new NationWalkEvent(),this);
+	  	pm.registerEvents(new EnemyWalkWWar(),this);
+	  	getCommand("twar").setExecutor(new WarExecutor(this));
+	  	towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
+	  	tUniverse = TownyUniverse.getInstance();
+	  	for(Town town : tUniverse.getTowns()){
+	  		town.setAdminEnabledPVP(false);
+	  		town.setAdminDisabledPVP(false);
+	  		town.setPVP(false);
+	  	}
+	  	for (War w : warManager.getWars()) {
+	  		for (WarParticipant p : w.getWarParticipants()) {
+	  			for (Town t : p.getTownsList()) {
+	  				t.setPVP(true);
+	  			}
+	  		}
+	  	}
+    
+	  	tUniverse.getDataSource().saveTowns();
+    
+	  	if(!(wallConfigFile.exists())){
+	  		try {
+	  			wallConfigFile.createNewFile();
+	  			YamlConfiguration wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
+	  		}catch (IOException e) {
+	  				e.printStackTrace();
+	  		}
+	  	}  
+    
+	  	try{
+	  		for (Resident re : tUniverse.getResidents()){
+	  			if (allTownyWarsResidents.get(re.getName())==null){
+	  				addTownyWarsResident(re.getName());
+	  			}
+	  		}
+	  	}catch (Exception ex)
+	  	{
+	  		System.out.println("failed to add residents!");
+	  		ex.printStackTrace();
+	  	}   
+    }
+  
   @Override
   public void onDisable()
   {
+	  
     try
     {
       WarManager.save();  
@@ -75,99 +129,6 @@ public class TownyWars
     {
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
-  }
-  
-  @Override
-  public void onEnable()
-  {
-	plugin = this;
-    try
-    {
-      WarManager.load(getDataFolder());
-    }
-    catch (Exception ex)
-    {
-      Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    PluginManager pm = getServer().getPluginManager();
-    gm = new GriefManager(this);
-    pm.registerEvents(new GriefListener(this, gm), this);
-    pm.registerEvents(new WarListener(this), this);
-    pm.registerEvents(new PvPListener(this), this);
-    pm.registerEvents(new NationWalkEvent(),this);
-    pm.registerEvents(new EnemyWalkWWar(),this);
-    getCommand("twar").setExecutor(new WarExecutor(this));
-    towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
-    tUniverse = TownyUniverse.getInstance();
-    for(Town town : tUniverse.getTowns()){
-    	town.setAdminEnabledPVP(false);
-    	town.setAdminDisabledPVP(false);
-    	town.setPVP(false);
-    }
-    for (War w : WarManager.getWars()) {
-      for (WarParticipant p : w.getWarParticipants()) {
-          for (Town t : p.getTownsList()) {
-            t.setPVP(true);
-          }
-      }
-    }
-    
-    tUniverse.getDataSource().saveTowns();
-    
-    switch (TownyWars.config.method) {
-    case file:
-      this.file = new YMLFile(this);
-      this.file.initLists();
-      fileSave.runTaskTimerAsynchronously((Plugin)this, (MinevoltGems.config.interval * 60 * 20), (MinevoltGems.config.interval * 60 * 20));
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eFile"));
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bInterval: &e" + MinevoltGems.config.interval));
-      break;
-    case mysql:
-      this.sql = new MySQL(this);
-      this.sql.connect();
-      GemsAPI.createTable(this.sql);
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eMySQL"));
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bMySQL Successfully Connected"));
-      break;
-    case sqlite:
-        this.sqlite = new SQLite(this);
-        this.sqlite.connect();
-        GemsAPI.createTable(this.sql);
-        Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eMySQL"));
-        Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bMySQL Successfully Connected"));
-        break;
-    default:
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &cStorageMethod must be file or mysql"));
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aDefaulting to &eFile"));
-      this.file = new YMLFile(this);
-      this.file.initLists();
-      fileSave.runTaskTimerAsynchronously((Plugin)this, (MinevoltGems.config.interval * 60 * 20), (MinevoltGems.config.interval * 60 * 20));
-      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bInterval: &e" + MinevoltGems.config.interval));
-      break;
-    }
-    
-    if(!(wallConfigFile.exists())){
-	      try {
-	    	  wallConfigFile.createNewFile();
-		} catch (IOException e) {
-			
-			e.printStackTrace();
-		}
-    }
-     
-    YamlConfiguration wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
-    
-    try{
-    	for (Resident re : tUniverse.getResidents()){
-    		if (allTownyWarsResidents.get(re.getName())==null){
-    			addTownyWarsResident(re.getName());
-    		}
-    	}
-    }catch (Exception ex)
-    {
-        System.out.println("failed to add residents!");
-        ex.printStackTrace();
-    }   
   }
   
   public void addTownyWarsResident(String playerName){
@@ -261,7 +222,7 @@ public class TownyWars
 		return plugin;
 	}
 	
-	public static TownyWarsConfig getConfigInstance() {
+	public TownyWarsConfig getTWConfig() {
 	    return config;
 	}
 }
