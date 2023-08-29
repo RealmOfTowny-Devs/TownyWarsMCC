@@ -1,4 +1,4 @@
-package net.amoebaman.util;
+package com.danielharris.townywars.util;
 
 import java.util.ArrayList;
 import java.util.HashSet;

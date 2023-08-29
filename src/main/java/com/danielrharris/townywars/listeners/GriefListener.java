@@ -1,5 +1,6 @@
 package com.danielrharris.townywars.listeners;
 
+import com.danielharris.townywars.util.Utils;
 import com.danielrharris.townywars.GriefManager;
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.WarManager;
@@ -23,8 +24,6 @@ import com.palmergames.bukkit.towny.object.PlayerCache.TownBlockStatus;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
 import com.palmergames.bukkit.util.BukkitTools;
-
-import net.amoebaman.util.Utils;
 
 import java.lang.ref.WeakReference;
 import java.util.HashSet;

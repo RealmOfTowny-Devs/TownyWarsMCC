@@ -1,5 +1,6 @@
 package com.danielrharris.townywars;
 
+import com.danielrharris.townywars.config.TownyWarsConfig;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.tasks.SaveTask;
 import com.danielrharris.townywars.warObjects.War;
@@ -7,12 +8,19 @@ import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
+
+import me.drkmatr1984.MinevoltGems.GemsConfig;
+
+import com.danielrharris.townywars.storage.MySQL;
+import com.danielrharris.townywars.storage.SQLite;
+import com.danielrharris.townywars.storage.YMLFile;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,27 +43,11 @@ public class TownyWars
 {
   public static TownyUniverse tUniverse;
   public static Towny towny;
-  public static double pPlayer;
-  public static double pPlot;
-  public static double pKill;
-  public static double pKillPoints;
-  public static double pMayorKill;
-  public static double pKingKill;
-  public static double pBlock;
-  public static double pBlockPoints;
-  public static double declareCost;
-  public static double endCost;
-  public static boolean allowGriefing;
-  public static boolean allowRollback;
-  public static int timer;
-  public static boolean warExplosions;
-  public static boolean realisticExplosions;
-  public static int debrisChance;
-  public static ArrayList<String> worldBlackList;
-  private ArrayList<String> blockStringBlackList;
-  public static Set<Material> blockBlackList;
-  public static boolean isBossBar = false;
   private static TownyWars plugin;
+  private static TownyWarsConfig config;
+  private MySQL sql; 
+  private YMLFile file;
+  private SQLite sqlite;
   private GriefManager gm;
   
   File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
@@ -120,9 +112,39 @@ public class TownyWars
       }
     }
     
-    TownyUniverse.getDataSource().saveTowns();
+    tUniverse.getDataSource().saveTowns();
     
-    this.saveDefaultConfig();
+    switch (TownyWars.config.method) {
+    case file:
+      this.file = new YMLFile(this);
+      this.file.initLists();
+      fileSave.runTaskTimerAsynchronously((Plugin)this, (MinevoltGems.config.interval * 60 * 20), (MinevoltGems.config.interval * 60 * 20));
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eFile"));
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bInterval: &e" + MinevoltGems.config.interval));
+      break;
+    case mysql:
+      this.sql = new MySQL(this);
+      this.sql.connect();
+      GemsAPI.createTable(this.sql);
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eMySQL"));
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bMySQL Successfully Connected"));
+      break;
+    case sqlite:
+        this.sqlite = new SQLite(this);
+        this.sqlite.connect();
+        GemsAPI.createTable(this.sql);
+        Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aStorageMethod: &eMySQL"));
+        Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bMySQL Successfully Connected"));
+        break;
+    default:
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &cStorageMethod must be file or mysql"));
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &aDefaulting to &eFile"));
+      this.file = new YMLFile(this);
+      this.file.initLists();
+      fileSave.runTaskTimerAsynchronously((Plugin)this, (MinevoltGems.config.interval * 60 * 20), (MinevoltGems.config.interval * 60 * 20));
+      Bukkit.getConsoleSender().sendMessage(GemsCommandExecutor.getFormattedMessage(Bukkit.getConsoleSender(), (MinevoltGems.getConfigInstance()).pr + " &bInterval: &e" + MinevoltGems.config.interval));
+      break;
+    }
     
     if(!(wallConfigFile.exists())){
 	      try {
@@ -135,40 +157,8 @@ public class TownyWars
      
     YamlConfiguration wallConfig = YamlConfiguration.loadConfiguration(wallConfigFile);
     
-    pPlayer = getConfig().getDouble("pper-player");
-    pPlot = getConfig().getDouble("pper-plot");
-    declareCost = getConfig().getDouble("declare-cost");
-    endCost = getConfig().getDouble("end-cost");
-    pKill = getConfig().getDouble("death-cost");
-    pKillPoints = getConfig().getDouble("pper-player-kill");
-    pMayorKill = getConfig().getDouble("pper-mayor-kill");
-    pKingKill = getConfig().getDouble("pper-king-kill");
-    String allowGriefingS;
-    allowGriefingS = getConfig().getString("griefing.allow-griefing");
-    String allowRollbackS;
-    allowRollbackS = getConfig().getString("griefing.allow-rollback");
-    allowGriefing = Boolean.valueOf(allowGriefingS.toUpperCase());
-    allowRollback = Boolean.valueOf(allowRollbackS.toUpperCase());
-    if(allowRollback){
-    	timer = ((getConfig().getInt("griefing.save-timer"))*60)*20;
-    }   
-    pBlock = getConfig().getDouble("griefing.per-block-cost");
-    pBlockPoints = getConfig().getDouble("griefing.per-block-points");
-    String tempExplosions = getConfig().getString("griefing.allow-explosions-war");
-    warExplosions = Boolean.valueOf(tempExplosions.toUpperCase());
-    String realExplosions = getConfig().getString("griefing.explosions.realistic-explosions");
-    realisticExplosions = Boolean.valueOf(realExplosions.toUpperCase());
-    debrisChance = getConfig().getInt("griefing.explosions.debris-chance");
-    for(String string : (ArrayList<String>) getConfig().getStringList("griefing.worldBlackList")){
-    	worldBlackList.add(string.toLowerCase());
-    }   
-    this.blockStringBlackList = (ArrayList<String>) getConfig().getStringList("griefing.blockBlackList");
-    blockBlackList = convertBanList(this.blockStringBlackList);  
-    if(TownyWars.allowRollback){
-    	new SaveTask(this.gm).runTaskTimer(plugin, TownyWars.timer, TownyWars.timer);
-    }
     try{
-    	for (Resident re : tUniverse.getActiveResidents()){
+    	for (Resident re : tUniverse.getResidents()){
     		if (allTownyWarsResidents.get(re.getName())==null){
     			addTownyWarsResident(re.getName());
     		}
@@ -220,19 +210,6 @@ public class TownyWars
 		return 0;
 	}
   	
-  	public Set<Material> convertBanList(List<String> banList2){
-  		Set<Material> newBanList = new HashSet<Material>();
-		if(!banList2.equals(null)){
-			for(String s : banList2){
-				Material mat = Material.valueOf(s.toUpperCase());
-				if(!mat.equals(null)){
-					newBanList.add(mat);
-				}
-			}
-		}
-		return newBanList;
-	}
-  	
   	/*
 	 * Takes a player and a location, the player is someone who wants to find out if the location
 	 * interacted with is located in a town that their nation is at war With
@@ -282,5 +259,9 @@ public class TownyWars
 	
 	public static TownyWars getInstance(){
 		return plugin;
+	}
+	
+	public static TownyWarsConfig getConfigInstance() {
+	    return config;
 	}
 }

@@ -637,7 +637,7 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
 			e.printStackTrace();
 		}
 	  }
-	  for(Rebellion r : Rebellion.getAllRebellions())
+	  for(Rebellion r : WarManager.getAllRebellions())
 			if(r.getName() == strings[1]){
 				  cs.sendMessage(ChatColor.RED + "Rebellion with that name already exists!");
 				  return true;

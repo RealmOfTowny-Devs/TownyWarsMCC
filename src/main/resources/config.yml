@@ -1,3 +1,8 @@
+## Language to use for commands and messages.
+## Currently only English is available. Value is the name of the file
+## in languages subfolder without .yml you intend to use.
+## If you develop another language file please send it to me!
+language: en
 pper-player: 2.0
 pper-plot: 1.0
 pper-player-kill: 1.0
@@ -18,3 +23,18 @@ griefing:
   explosions:
     realistic-explosions: true
     debris-chance: 75
+Storage:
+  ## Storage Method. Can be "file", "sqlite" or "mysql"
+  StorageMethod: file
+  ## Settings for MySQL if "mysql"
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    database: MinevoltGems
+    table: minecraft
+    username: root
+    password: example
+    useSSL: false   
+  ## Save interval for File based storage, in minutes
+  file:
+    save-interval: 5
