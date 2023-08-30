@@ -15,7 +15,9 @@ import java.util.UUID;
 
 import com.danielrharris.townywars.TownyWars;
 import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
+import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 
 public class WarParticipant implements Serializable{
@@ -26,19 +28,40 @@ public class WarParticipant implements Serializable{
 	private static final long serialVersionUID = -2699563764161267277L;
 	private Map<UUID, Integer> towns;
 	private int maxPoints;
+	private String name;
 	private String type;
 	private UUID uuid;
+	private boolean isRebellion;
     
     public static WarParticipant createWarParticipant(Object object) {
     	if(object instanceof Town) {
-    		return new WarParticipant((Town)object);
+    		Town town = (Town)object;
+    		if(town.hasNation()) {
+    			try {
+					return new WarParticipant(town.getNation());
+				} catch (NotRegisteredException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+    		}else {
+    			return new WarParticipant((Town)object);
+    		}    			
     	}else if (object instanceof Nation) {
     		return new WarParticipant((Nation)object);
     	}else if(object instanceof String){
     		String s = (String)object;
     		if(TownyUniverse.getInstance().hasTown(s)){
     			Town town = TownyUniverse.getInstance().getTown(s);
-    			return new WarParticipant(town);
+    			if(town.hasNation()) {
+        			try {
+    					return new WarParticipant(town.getNation());
+    				} catch (NotRegisteredException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				}
+        		}else {
+        			return new WarParticipant((Town)object);
+        		}
     		}
     		if(TownyUniverse.getInstance().hasNation(s)) {
     			Nation nation = TownyUniverse.getInstance().getNation(s);
@@ -52,6 +75,7 @@ public class WarParticipant implements Serializable{
     	WarParticipant part = new WarParticipant(nation);
     	part.setType("nation");
 		part.setUuid(uuid);
+		part.setName(nation.getName());
 		part.setMaxPoints(getNationMaxPoints(nation));
 		part.towns = new HashMap<UUID, Integer>();
 		for(UUID id : towns.keySet()) {
@@ -63,6 +87,7 @@ public class WarParticipant implements Serializable{
     public static WarParticipant createWarParticipant(Town town, UUID uuid) {
     	WarParticipant part = new WarParticipant(town);
     	part.setType("town");
+    	part.setName(town.getName());
 		part.setUuid(uuid);
 		part.setMaxPoints(getTownMaxPoints(town));
 		part.towns = new HashMap<UUID, Integer>();
@@ -70,20 +95,30 @@ public class WarParticipant implements Serializable{
 		return part;
     }
     
-    public WarParticipant(Nation nation) {
+    private WarParticipant(Nation nation) {
 		setType("nation");
+		setName(nation.getName());
 		setUuid(nation.getUUID());
 		setMaxPoints(getNationMaxPoints(nation));
 		initializeTowns(nation.getTowns());
 	}
 	
-    public WarParticipant(Town town) {
+    private WarParticipant(Town town) {
     	setType("town");
     	setUuid(town.getUUID());
+    	setName(town.getName());
     	setMaxPoints(getTownMaxPoints(town));
 		List<Town> list = new ArrayList<Town>();
 		list.add(town);
 		initializeTowns(list);
+	}
+    
+    private void initializeTowns(List<Town> towns) {
+		Map<UUID, Integer> t = new HashMap<UUID, Integer>();
+		for(Town town : towns) {
+			t.put(town.getUUID(), getTownMaxPoints(town));
+		}
+		this.towns = t;
 	}
     
     public static int getTownMaxPoints(Town town){
@@ -113,17 +148,6 @@ public class WarParticipant implements Serializable{
 		return towns;
 	}
 
-	public void initializeTownsByNames(List<String> towns) {
-		Map<UUID, Integer> t = new HashMap<UUID, Integer>();
-		for(String town : towns) {
-			if(TownyUniverse.getInstance().hasTown(town)) {
-				Town to = TownyUniverse.getInstance().getTown(town);
-				t.put(to.getUUID(), getTownMaxPoints(to));
-			}
-		}
-		this.towns = t;
-	}
-	
 	public int getTownPoints(Town town) throws TownOrNationNotFoundException {
 		if(towns.containsKey(town.getUUID())) {
 			return this.towns.get(town.getUUID());
@@ -160,14 +184,6 @@ public class WarParticipant implements Serializable{
 			t.add(TownyUniverse.getInstance().getTown(s));
 		}
 		return t;
-	}
-
-	private void initializeTowns(List<Town> towns) {
-		Map<UUID, Integer> t = new HashMap<UUID, Integer>();
-		for(Town town : towns) {
-			t.put(town.getUUID(), getTownMaxPoints(town));
-		}
-		this.towns = t;
 	}
 	
 	public void addNewTown(Town town) throws TownOrNationNotFoundException {
@@ -225,6 +241,15 @@ public class WarParticipant implements Serializable{
 		this.type = type;
 	}
 	
+	public List<Resident> getResidents() {
+		List<Resident> residents = new ArrayList<Resident>();
+		for(Town t : getTownsList()) {
+			for(Resident r : t.getResidents())
+				residents.add(r);
+		}
+		return residents;
+	}
+	
 	/** Read the object from Base64 string. */
 	public static WarParticipant decodeFromString(String s) throws IOException, ClassNotFoundException {	                                                       
 	    byte [] data = Base64.getDecoder().decode( s );
@@ -249,6 +274,14 @@ public class WarParticipant implements Serializable{
 
 	public void setUuid(UUID uuid) {
 		this.uuid = uuid;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	@SuppressWarnings("serial")

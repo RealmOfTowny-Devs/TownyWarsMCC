@@ -213,7 +213,7 @@ public class War implements Serializable {
 								e.printStackTrace();
 							}
 							broadcast(
-									enemyNation.getName(),
+									enemy,
 									ChatColor.GREEN
 											+ town.getName()
 											+ " has been conquered and joined your nation in the war!");
@@ -227,7 +227,7 @@ public class War implements Serializable {
 							enemy.addNewTown(town);
 							Nation newNation = upgradeTownToNation(enemy, enemyTown, town);
 							broadcast(
-									enemyTown.getName(),
+									enemy,
 									ChatColor.GREEN
 											+ town.getName()
 											+ " has been conquered and joined your Nation!");
@@ -247,7 +247,7 @@ public class War implements Serializable {
 						participant.removeTown(town);
 						enemy.addNewTown(town);
 						broadcast(
-								enemyNation.getName(),
+								enemy,
 								ChatColor.GREEN
 										+ town.getName()
 										+ " has been conquered and joined your Nation!");
@@ -260,7 +260,7 @@ public class War implements Serializable {
 						enemy.addNewTown(town);
 						Nation newNation = upgradeTownToNation(enemy, enemyTown, town);
 						broadcast(
-								enemyTown.getName(),
+								enemy,
 								ChatColor.GREEN
 										+ town.getName()
 										+ " has been conquered and joined your Nation!");
@@ -317,30 +317,12 @@ public class War implements Serializable {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static void broadcast(String participant, String message) {
-		if(TownyUniverse.getInstance().hasTown(participant)){
-			Town town = TownyUniverse.getInstance().getTown(participant);
-			if(town.hasNation()) {
-				try {
-					Nation n = town.getNation();
-					for (Resident re : n.getResidents()) {
-						Player plr = Bukkit.getPlayer(re.getName());
-						if (plr != null) {
-							plr.sendMessage(message);
-						}
-					}
-				} catch (NotRegisteredException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}				
-			}else {
-				for (Resident re : town.getResidents()) {
-					Player plr = Bukkit.getPlayer(re.getName());
-					if (plr != null) {
-						plr.sendMessage(message);
-					}
-				}
-			}	    		
+	public static void broadcast(WarParticipant participant, String message) {
+		for(Resident resident : participant.getResidents()) {
+			Player player = resident.getPlayer();
+			if(player!=null)
+				if(player.isOnline())
+					player.sendMessage(message);
 		}
 	}
 	

@@ -19,7 +19,7 @@ import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
 
 public class MySQL {
-	public static Connection con;
+	private Connection con;
   
 	private String host = "127.0.0.1";
 	private String port = "3306";
