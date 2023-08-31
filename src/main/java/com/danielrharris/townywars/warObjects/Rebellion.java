@@ -15,7 +15,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.WarManager.AlreadyAtWarException;
+import com.danielrharris.townywars.WarManager;
+import com.danielrharris.townywars.exceptions.Exceptions.AlreadyAtWarException;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
@@ -85,10 +86,10 @@ public class Rebellion implements Serializable{
 		}
 		Nation rebelnation = TownyUniverse.getInstance().getNation(name + "-rebels");
 		
-		War.removeTownFromNationAndAddToAnotherNation(getLeader(), getMotherNation(), rebelnation);	
+		WarManager.removeTownFromNationAndAddToAnotherNation(getLeader(), getMotherNation(), rebelnation);	
 		
 		for(Town town : getRebels()){
-			War.removeTownFromNationAndAddToAnotherNation(town, getMotherNation(), rebelnation);
+			WarManager.removeTownFromNationAndAddToAnotherNation(town, getMotherNation(), rebelnation);
 		}
 		
 		rebelnation.setCapital(getLeader());
@@ -99,8 +100,9 @@ public class Rebellion implements Serializable{
 			e.printStackTrace();
 		}
 		try {
-			participant = TownyWars.getInstance().getWarManager().createWarParticipant(rebelnation);
-			TownyWars.getInstance().getWarManager().createWar(participant, TownyWars.getInstance().getWarManager().createWarParticipant(motherNation), cs, this);
+			participant = WarManager.createWarParticipant(rebelnation);
+			TownyWars.getInstance().getWarManager();
+			WarManager.createWar(participant, WarManager.createWarParticipant(motherNation), cs, this);
 			TownyUniverse.getInstance().getDataSource().saveTown(getLeader());
 			TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
 			TownyUniverse.getInstance().getDataSource().saveNations();
@@ -120,9 +122,10 @@ public class Rebellion implements Serializable{
 	
 	public void success(){
 		try {
-			WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
+			TownyWars.getInstance().getWarManager();
+			WarParticipant enemy = WarManager.getWarForParticipant(participant).getEnemy(participant);
 			for(Town town : participant.getTownsList()) {
-				War.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
+				WarManager.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
 			}
 			try {
 				participant.pay(participant.getHoldingBalance(), enemy);
@@ -143,9 +146,10 @@ public class Rebellion implements Serializable{
 	
 	public void lost(){
 		try {
-			WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
+			TownyWars.getInstance().getWarManager();
+			WarParticipant enemy = WarManager.getWarForParticipant(participant).getEnemy(participant);
 			for(Town town : participant.getTownsList()) {
-				War.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
+				WarManager.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
 			}
 			participant.pay(participant.getHoldingBalance(), enemy);
 			TownyUniverse.getInstance().getDataSource().removeNation(getRebelNation());

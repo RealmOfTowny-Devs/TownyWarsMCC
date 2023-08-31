@@ -1,12 +1,13 @@
 package com.danielrharris.townywars.warObjects;
 
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
-import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.Nation;
-import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.warObjects.WarParticipant.TownOrNationNotFoundException;
+import com.danielrharris.townywars.WarManager;
+import com.danielrharris.townywars.exceptions.Exceptions.ParticipantNotFoundException;
+import com.danielrharris.townywars.exceptions.Exceptions.TownNotFoundException;
+import com.danielrharris.townywars.exceptions.Exceptions.TownOrNationNotFoundException;
+import com.danielrharris.townywars.exceptions.Exceptions.NotInWarException;
 import com.palmergames.bukkit.towny.TownyUniverse;
 
 import java.io.ByteArrayInputStream;
@@ -17,16 +18,13 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
 
 public class War implements Serializable {
 	/**
@@ -148,44 +146,20 @@ public class War implements Serializable {
 		throw new TownNotFoundException("Cannot find town");
 	}
 
-	public UUID getEnemyUUIDFromUUID(UUID id) throws Exception {
-			if (participant1.getUuid() == id) {
-				return participant2.getUuid();
-			}
-			if (participant2.getUuid() == id) {
-				return participant1.getUuid();
-			}
-		throw new Exception("War.getEnemy: Specified participant is not in war.");
-	}
-	
-	public WarParticipant getEnemyParticipantFromUUID(UUID id) throws Exception {
-		if (participant1.getUuid() == id) {
-			return participant2;
-		}
-		if (participant2.getUuid() == id) {
-			return participant1;
-		}
-	throw new Exception("War.getEnemy: Specified participant is not in war.");
-}
-
-	public WarParticipant getEnemy(WarParticipant participant) throws Exception {
+	public WarParticipant getEnemy(WarParticipant participant) throws NotInWarException {
 		if (participant1 == participant) {
 			return participant2;
 		}
 		if (participant2 == participant) {
 			return participant1;
 		}
-	    throw new Exception("War.getEnemy: Specified participant is not in war.");
+	    throw new NotInWarException("Specified participant is not in war.");
 	}
-	
-	
-	
-	//charge town points. Write mini functions to handle each scenario and charge these points!!!
-	///// MAAAAAKKKEEEE THIS WORK
-	
+		
 	public void chargeTownPoints(WarParticipant participant, Town town, int points) {
 		try {
-			WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
+			TownyWars.getInstance().getWarManager();
+			WarParticipant enemy = WarManager.getWarForParticipant(participant).getEnemy(participant);
 			int value = getTownPoints(town) - points;
 			if(value > 0){
 				participant.setTownPoints(town, value);
@@ -204,7 +178,7 @@ public class War implements Serializable {
 						if(enemy.getType().equalsIgnoreCase("nation")) { // enemy is a nation
 							Nation enemyNation = TownyUniverse.getInstance().getNation(enemy.getUuid());
 							if(enemyNation!=null) {
-								removeTownFromNationAndAddToAnotherNation(town, nation, enemyNation);
+								WarManager.removeTownFromNationAndAddToAnotherNation(town, nation, enemyNation);
 								participant.removeTown(town);
 								enemy.addNewTown(town);
 								try {
@@ -213,7 +187,7 @@ public class War implements Serializable {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
-								broadcast(
+								WarManager.broadcast(
 										enemy,
 										ChatColor.GREEN
 												+ town.getName()
@@ -226,8 +200,8 @@ public class War implements Serializable {
 							if(enemyTown!=null) {
 								participant.removeTown(town);
 								enemy.addNewTown(town);
-								Nation newNation = upgradeTownToNation(enemy, enemyTown, town);
-								broadcast(
+								Nation newNation = WarManager.upgradeTownToNation(enemy, enemyTown, town);
+								WarManager.broadcast(
 										enemy,
 										ChatColor.GREEN
 												+ town.getName()
@@ -244,10 +218,10 @@ public class War implements Serializable {
 					if(enemy.getType().equalsIgnoreCase("nation")) {   //enemy is nation
 						Nation enemyNation = TownyUniverse.getInstance().getNation(enemy.getUuid());
 						if(enemyNation!=null) {
-							moveSoloTownIntoNation(town, enemyNation);
+							WarManager.moveSoloTownIntoNation(town, enemyNation);
 							participant.removeTown(town);
 							enemy.addNewTown(town);
-							broadcast(
+							WarManager.broadcast(
 									enemy,
 									ChatColor.GREEN
 											+ town.getName()
@@ -259,13 +233,13 @@ public class War implements Serializable {
 						if(enemyTown!=null) {
 							participant.removeTown(town);
 							enemy.addNewTown(town);
-							Nation newNation = upgradeTownToNation(enemy, enemyTown, town);
-							broadcast(
+							Nation newNation = WarManager.upgradeTownToNation(enemy, enemyTown, town);
+							WarManager.broadcast(
 									enemy,
 									ChatColor.GREEN
 											+ town.getName()
 											+ " has been conquered and joined your Nation!");
-							Bukkit.getServer().broadcastMessage("Upgraded " + enemyTown.getName() + " into nation: " + newNation.getName());
+							Bukkit.getServer().broadcastMessage("Upgraded " + enemyTown.getName() + " into nation: " + newNation.getName());				
 						}else {
 							Bukkit.getServer().getConsoleSender().sendMessage("enemyTown is null");
 						}
@@ -276,12 +250,12 @@ public class War implements Serializable {
 			}
         } catch (Exception e) {
 			Bukkit.getConsoleSender().sendMessage("Error War.java chargePoints");
-		}
-			
+		}			
 		//war is over
+		
 		if (participant.getTownsMap().isEmpty()) {
 			try {
-					TownyWars.getInstance().getWarManager().endWar(getEnemy(participant), participant, false);
+					WarManager.endWar(getEnemy(participant), participant, false);
 			} catch (Exception ex) {
 				Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
 						ex);
@@ -295,78 +269,21 @@ public class War implements Serializable {
 			e.printStackTrace();
 		}
 	}
-
-	public static void broadcast(WarParticipant participant, String message) {
-		for(Resident resident : participant.getResidents()) {
-			Player player = resident.getPlayer();
-			if(player!=null)
-				if(player.isOnline())
-					player.sendMessage(message);
-		}
+	
+	public WarParticipant getWarParticipant1() {
+		return participant1;
 	}
 	
-	public static void removeTownFromNationAndAddToAnotherNation(Town town, Nation nation, Nation newNation) {
-        try {
-			if (town.hasNation() && town.getNation() == nation) {
-			    town.removeNation();
-			    TownyUniverse.getInstance().getDataSource().saveTown(town);
-			    TownyUniverse.getInstance().getDataSource().saveNation(nation);
-			}
-			newNation.addTown(town);
-			TownyUniverse.getInstance().getDataSource().saveTown(town);
-			TownyUniverse.getInstance().getDataSource().saveNation(newNation);
-		} catch (NotRegisteredException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        
-    }
+	public WarParticipant getWarParticipant2() {
+		return participant2;
+	}
 	
-	public static void moveSoloTownIntoNation(Town town, Nation newNation) {
-        if (town.hasNation()) {
-		    town.removeNation();
-		    TownyUniverse.getInstance().getDataSource().saveTown(town);
-		    TownyUniverse.getInstance().getDataSource().saveNations();
-		}
-		newNation.addTown(town);
-		TownyUniverse.getInstance().getDataSource().saveTown(town);
-		TownyUniverse.getInstance().getDataSource().saveNation(newNation);
-        
-    }
+	public void setWarParticipant1(WarParticipant part) {
+		participant1 = part;
+	}
 	
-	public Nation upgradeTownToNation(WarParticipant winner, Town town, Town townToAdd) {
-		Nation nation = null;
-		try {
-			TownyUniverse.getInstance().getDataSource().newNation(town.getName() + "-Nation");
-			nation = TownyUniverse.getInstance().getNation(town.getName() + "-Nation");
-			nation.addTown(town);
-			TownyUniverse.getInstance().getDataSource().saveTown(town);
-			if(townToAdd.hasNation()) {
-				Nation n = townToAdd.getNation();
-				townToAdd.removeNation();
-				TownyUniverse.getInstance().getDataSource().saveNation(n);
-			}			
-			nation.addTown(townToAdd);
-			nation.setKing(town.getMayor());
-            nation.setCapital(town);
-			TownyUniverse.getInstance().getDataSource().saveTown(townToAdd);
-			TownyUniverse.getInstance().getDataSource().saveNation(nation);
-		} catch (TownyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		Map<UUID, Integer> towns = new HashMap<UUID, Integer>();
-		for(UUID id : winner.getTownsMap().keySet()) {
-			towns.put(id, winner.getTownsMap().get(id));
-		}
-		towns.put(townToAdd.getUUID(), WarParticipant.getTownMaxPoints(townToAdd));
-		if(winner == participant1) {
-			participant1 = WarParticipant.createWarParticipant(nation, nation.getUUID(), towns);
-		}
-		if(winner == participant2) {
-			participant2 = WarParticipant.createWarParticipant(nation, nation.getUUID(), towns);
-		}
-		return nation;
+	public void setWarParticipant2(WarParticipant part) {
+		participant2 = part;
 	}
 	
 	public WarParticipant findWarParticipantByTown(Town town){
@@ -401,19 +318,5 @@ public class War implements Serializable {
 	    oos.writeObject( this );
 	    oos.close();
 	    return Base64.getEncoder().encodeToString(baos.toByteArray()); 
-	}
-
-	@SuppressWarnings("serial")
-	public class ParticipantNotFoundException extends Exception{
-		public ParticipantNotFoundException(String errorMessage) {
-	        super(errorMessage);
-	    }
-	}
-	
-	@SuppressWarnings("serial")
-	public class TownNotFoundException extends Exception{
-		public TownNotFoundException(String errorMessage) {
-	        super(errorMessage);
-	    }
 	}
 }
