@@ -309,12 +309,14 @@ public class WarManager
   
     public void endWar(WarParticipant winner, WarParticipant loser, boolean peace)
     {
-    	for (Town t : winner.getTownsList()) {
-    		t.setPVP(false);
-    	}
-    	for (Town t : loser.getTownsList()) {
-    		t.setPVP(false);
-    	}
+    	if(!winner.getTownsList().isEmpty() && winner.getTownsList()!=null)
+	    	for (Town t : winner.getTownsList()) {
+	    		t.setPVP(false);
+	    	}
+    	if(!loser.getTownsList().isEmpty() && loser.getTownsList()!=null)
+	    	for (Town t : loser.getTownsList()) {
+	    		t.setPVP(false);
+	    	}
     	War war = this.getWarForParticipant(winner);
     	if(peace) {
     		requestedPeace.remove(loser);
@@ -348,22 +350,30 @@ public class WarManager
             	}
         	}else {
         		loser.pay(loser.getHoldingBalance(), winner);
-        		War.broadcast(loser, ChatColor.RED + winner.getName() + " has won the war and your nation is gone!");
+        		War.broadcast(loser, ChatColor.RED + winner.getName() + " has won the war and your " + loser.getType() + " is gone!");
 				War.broadcast(winner, ChatColor.GREEN + loser.getName() + " has lost the war and has been totally annihilated!");
         	}
     	}
     		
-    	if(loser.getTownsList().size() == 0 && loser.getType().equalsIgnoreCase("nation")) {
+    	if(loser.getTownsList().size() == 0) {
     		if(TownyUniverse.getInstance().hasNation(loser.getUuid())) {
     			Nation nation = TownyUniverse.getInstance().getNation(loser.getUuid());
         		TownyUniverse.getInstance().getDataSource().deleteNation(nation);
-    		} 		
+    		}
+    		if(TownyUniverse.getInstance().hasTown(loser.getUuid())) {
+    			Town town = TownyUniverse.getInstance().getTown(loser.getUuid());
+        		TownyUniverse.getInstance().getDataSource().deleteTown(town);
+    		}
     	}
     		
-    	if(winner.getTownsList().size() == 0 && winner.getType().equalsIgnoreCase("nation")) {
+    	if(winner.getTownsList().size() == 0) {
     		if(TownyUniverse.getInstance().hasNation(winner.getUuid())) {
     			Nation nation = TownyUniverse.getInstance().getNation(winner.getUuid());
     			TownyUniverse.getInstance().getDataSource().deleteNation(nation);
+    		}
+    		if(TownyUniverse.getInstance().hasTown(winner.getUuid())) {
+    			Town town = TownyUniverse.getInstance().getTown(winner.getUuid());
+        		TownyUniverse.getInstance().getDataSource().deleteTown(town);
     		}
     	}
     	
