@@ -42,19 +42,24 @@ public class Rebellion implements Serializable{
 		this.name = leader.getName();
 		this.setUuid(UUID.randomUUID());
 		this.leader = leader.getUUID().toString();
-		TownyWars.getInstance().getWarManager().getActiveRebellions().add(this);
 	}
 	
 	public Town getLeader() {
-		return TownyUniverse.getInstance().getTown(UUID.fromString(leader));
+		if(TownyUniverse.getInstance().hasTown(UUID.fromString(leader)))
+			return TownyUniverse.getInstance().getTown(UUID.fromString(leader));
+		return null;
 	}
 	
 	public Nation getRebelNation() {
-		return TownyUniverse.getInstance().getNation(UUID.fromString(rebelNation));
+		if(TownyUniverse.getInstance().hasNation(UUID.fromString(rebelNation)))
+			return TownyUniverse.getInstance().getNation(UUID.fromString(rebelNation));
+		return null;
 	}
 	
 	public Nation getMotherNation() {
-		return TownyUniverse.getInstance().getNation(UUID.fromString(motherNation));
+		if(TownyUniverse.getInstance().hasNation(UUID.fromString(motherNation)))
+			return TownyUniverse.getInstance().getNation(UUID.fromString(motherNation));
+		return null;
 	}
 	
 	public List<Town> getRebels() {
@@ -114,32 +119,42 @@ public class Rebellion implements Serializable{
 	}
 	
 	public void success(){
-		for(Town town : participant.getTownsList()) {
-			War.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
-		}
 		try {
-			getMotherNation().collect(getRebelNation().getAccount().getHoldingBalance());
-			getRebelNation().getAccount().setBalance((double)0.00, "Won the rebellion! Awesome!");
-			getMotherNation().setKing(getLeader().getMayor());
-			getMotherNation().setCapital(getLeader());
-			TownyUniverse.getInstance().getDataSource().removeNation(getRebelNation());
-			TownyUniverse.getInstance().getDataSource().saveNation(getMotherNation());
-			TownyUniverse.getInstance().getDataSource().saveNation(getRebelNation());
-		} catch (TownyException e) {
+			WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
+			for(Town town : participant.getTownsList()) {
+				War.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
+			}
+			try {
+				participant.pay(participant.getHoldingBalance(), enemy);
+				getMotherNation().setKing(getLeader().getMayor());
+				getMotherNation().setCapital(getLeader());
+				TownyUniverse.getInstance().getDataSource().removeNation(getRebelNation());
+				TownyUniverse.getInstance().getDataSource().saveNation(getMotherNation());
+				TownyUniverse.getInstance().getDataSource().saveNation(getRebelNation());
+			} catch (TownyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (Exception e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
+			e1.printStackTrace();
+		}		
 	}
 	
 	public void lost(){
-		for(Town town : participant.getTownsList()) {
-			War.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
-		}
-		getMotherNation().collect(getRebelNation().getAccount().getHoldingBalance());
-		getRebelNation().getAccount().setBalance((double)0.00, "Lost rebellion. Tough luck!");	
-		TownyUniverse.getInstance().getDataSource().removeNation(getRebelNation());
-		TownyUniverse.getInstance().getDataSource().saveNation(getMotherNation());
-		TownyUniverse.getInstance().getDataSource().saveNation(getRebelNation());
+		try {
+			WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
+			for(Town town : participant.getTownsList()) {
+				War.removeTownFromNationAndAddToAnotherNation(town, getRebelNation(), getMotherNation());
+			}
+			participant.pay(participant.getHoldingBalance(), enemy);
+			TownyUniverse.getInstance().getDataSource().removeNation(getRebelNation());
+			TownyUniverse.getInstance().getDataSource().saveNation(getMotherNation());
+			TownyUniverse.getInstance().getDataSource().saveNation(getRebelNation());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
 	}
 
 	public boolean isRebelTown(Town town){

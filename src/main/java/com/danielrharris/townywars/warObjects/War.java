@@ -1,14 +1,11 @@
 package com.danielrharris.townywars.warObjects;
 
-import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownBlock;
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.WarManager;
 import com.danielrharris.townywars.warObjects.WarParticipant.TownOrNationNotFoundException;
 import com.palmergames.bukkit.towny.TownyUniverse;
 
@@ -20,12 +17,9 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,6 +73,12 @@ public class War implements Serializable {
 	
 	public Rebellion getRebellion() {
 		return this.rebelwar;
+	}
+	
+	public boolean isRebelWar() {
+		if(getRebellion()!=null)
+			return true;
+		return false;
 	}
 
 	public int getParticipantPoints(UUID id) throws ParticipantNotFoundException {
@@ -184,43 +184,77 @@ public class War implements Serializable {
 	///// MAAAAAKKKEEEE THIS WORK
 	
 	public void chargeTownPoints(WarParticipant participant, Town town, int points) {
-		WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
-		int value = getTownPoints(town) - points;
-		if(value > 0){
-			participant.setTownPoints(town, value);
-		}
-		if (value <= 0) {
-			if(participant.getType().equalsIgnoreCase("nation")) { // Participant is nation
-				Nation nation = TownyUniverse.getInstance().getNation(participant.getUuid());
-				if(nation!=null) {
-					if(participant.getTownsList().size() > 1 && nation.getCapital() == town){
-						if(nation.getTowns().get(0) != town){
-							nation.setCapital(nation.getTowns().get(0));
-						}else{
-							nation.setCapital(nation.getTowns().get(1));
+		try {
+			WarParticipant enemy = TownyWars.getInstance().getWarManager().getWarForParticipant(participant).getEnemy(participant);
+			int value = getTownPoints(town) - points;
+			if(value > 0){
+				participant.setTownPoints(town, value);
+			}
+			if (value <= 0) {
+				if(participant.getType().equalsIgnoreCase("nation")) { // Participant is nation
+					Nation nation = TownyUniverse.getInstance().getNation(participant.getUuid());
+					if(nation!=null) {
+						if(participant.getTownsList().size() > 1 && nation.getCapital() == town){
+							if(nation.getTowns().get(0) != town){
+								nation.setCapital(nation.getTowns().get(0));
+							}else{
+								nation.setCapital(nation.getTowns().get(1));
+							}
 						}
-					}
-					if(enemy.getType().equalsIgnoreCase("nation")) { // enemy is a nation
+						if(enemy.getType().equalsIgnoreCase("nation")) { // enemy is a nation
+							Nation enemyNation = TownyUniverse.getInstance().getNation(enemy.getUuid());
+							if(enemyNation!=null) {
+								removeTownFromNationAndAddToAnotherNation(town, nation, enemyNation);
+								participant.removeTown(town);
+								enemy.addNewTown(town);
+								try {
+									TownyWars.getInstance().getWarManager().save();
+								} catch (Exception e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+								broadcast(
+										enemy,
+										ChatColor.GREEN
+												+ town.getName()
+												+ " has been conquered and joined your nation in the war!");
+							}else {
+								Bukkit.getServer().getConsoleSender().sendMessage("enemyNation is null");
+							}						
+						}else { //enemy is a town
+							Town enemyTown = TownyUniverse.getInstance().getTown(enemy.getUuid());
+							if(enemyTown!=null) {
+								participant.removeTown(town);
+								enemy.addNewTown(town);
+								Nation newNation = upgradeTownToNation(enemy, enemyTown, town);
+								broadcast(
+										enemy,
+										ChatColor.GREEN
+												+ town.getName()
+												+ " has been conquered and joined your Nation!");
+								Bukkit.getServer().broadcastMessage("Upgraded " + enemyTown.getName() + " into nation: " + newNation.getName());
+							}else {
+								Bukkit.getServer().getConsoleSender().sendMessage("enemyTown is null");
+							}
+						}					
+					}else {
+						Bukkit.getServer().getConsoleSender().sendMessage("nation is null");
+					}			
+				}else { //participant is a town. Figure out what happens to their town. Since they are just a town, this is a total loss. Do the end of the war here also
+					if(enemy.getType().equalsIgnoreCase("nation")) {   //enemy is nation
 						Nation enemyNation = TownyUniverse.getInstance().getNation(enemy.getUuid());
 						if(enemyNation!=null) {
-							removeTownFromNationAndAddToAnotherNation(town, nation, enemyNation);
+							moveSoloTownIntoNation(town, enemyNation);
 							participant.removeTown(town);
 							enemy.addNewTown(town);
-							try {
-								TownyWars.getInstance().getWarManager().save();
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
 							broadcast(
 									enemy,
 									ChatColor.GREEN
 											+ town.getName()
-											+ " has been conquered and joined your nation in the war!");
-						}else {
-							Bukkit.getServer().getConsoleSender().sendMessage("enemyNation is null");
-						}						
-					}else { //enemy is a town
+											+ " has been conquered and joined your Nation!");
+							Bukkit.getServer().broadcastMessage("Moved " + town.getName() + " into " + enemyNation.getName());
+						}
+					}else { //enemy is town
 						Town enemyTown = TownyUniverse.getInstance().getTown(enemy.getUuid());
 						if(enemyTown!=null) {
 							participant.removeTown(town);
@@ -235,77 +269,23 @@ public class War implements Serializable {
 						}else {
 							Bukkit.getServer().getConsoleSender().sendMessage("enemyTown is null");
 						}
-					}					
-				}else {
-					Bukkit.getServer().getConsoleSender().sendMessage("nation is null");
-				}			
-			}else { //participant is a town. Figure out what happens to their town. Since they are just a town, this is a total loss. Do the end of the war here also
-				if(enemy.getType().equalsIgnoreCase("nation")) {   //enemy is nation
-					Nation enemyNation = TownyUniverse.getInstance().getNation(enemy.getUuid());
-					if(enemyNation!=null) {
-						moveSoloTownIntoNation(town, enemyNation);
-						participant.removeTown(town);
-						enemy.addNewTown(town);
-						broadcast(
-								enemy,
-								ChatColor.GREEN
-										+ town.getName()
-										+ " has been conquered and joined your Nation!");
-						Bukkit.getServer().broadcastMessage("Moved " + town.getName() + " into " + enemyNation.getName());
 					}
-				}else { //enemy is town
-					Town enemyTown = TownyUniverse.getInstance().getTown(enemy.getUuid());
-					if(enemyTown!=null) {
-						participant.removeTown(town);
-						enemy.addNewTown(town);
-						Nation newNation = upgradeTownToNation(enemy, enemyTown, town);
-						broadcast(
-								enemy,
-								ChatColor.GREEN
-										+ town.getName()
-										+ " has been conquered and joined your Nation!");
-						Bukkit.getServer().broadcastMessage("Upgraded " + enemyTown.getName() + " into nation: " + newNation.getName());
-					}else {
-						Bukkit.getServer().getConsoleSender().sendMessage("enemyTown is null");
-					}
+					
 				}
-				
-			}
 
-		} //figure out what happens with the towns/nations if war is ended - Probably have to fix WarManager first
-		try {
-			if (participant.getTownsMap().isEmpty()) {
-				try {
-						WarParticipant winner = getEnemy(participant);
-						WarParticipant loser = participant;
-						boolean endWarTransfersDone = false;
-						if(loser.getType().equalsIgnoreCase("nation")) {
-							Nation winnerNation = TownyUniverse.getInstance().getNation(winner.getUuid());
-							if(winnerNation!=null) {
-								for(Rebellion r : TownyWars.getInstance().getWarManager().getActiveRebellions()){
-									if(r.getRebelnation() == winnerNation){
-										winnerNation.getCapital().collect(winnerNation.getAccount().getHoldingBalance());
-										winnerNation.pay(winnerNation.getAccount().getHoldingBalance(), "You are disbanded. You don't need money.");
-										endWarTransfersDone = true;
-										break;
-									}
-								}
-							}		
-						}					
-						if(!endWarTransfersDone){
-							winner.collect(loser.getHoldingBalance());
-							looser.pay(looser.getHoldingBalance(), "Conquered. Tough luck!");
-						}
-						TownyWars.getInstance().getWarManager().endWar(winner, loser, false);
-
-				} catch (Exception ex) {
-					Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
-							ex);
-				}
 			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+        } catch (Exception e) {
+			Bukkit.getConsoleSender().sendMessage("Error War.java chargePoints");
+		}
+			
+		//war is over
+		if (participant.getTownsMap().isEmpty()) {
+			try {
+					TownyWars.getInstance().getWarManager().endWar(getEnemy(participant), participant, false);
+			} catch (Exception ex) {
+				Logger.getLogger(War.class.getName()).log(Level.SEVERE, null,
+						ex);
+			}
 		}
 		
 		try {
@@ -316,7 +296,6 @@ public class War implements Serializable {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public static void broadcast(WarParticipant participant, String message) {
 		for(Resident resident : participant.getResidents()) {
 			Player player = resident.getPlayer();

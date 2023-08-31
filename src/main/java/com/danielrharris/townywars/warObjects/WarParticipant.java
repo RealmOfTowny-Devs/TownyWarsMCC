@@ -28,10 +28,8 @@ public class WarParticipant implements Serializable{
 	private static final long serialVersionUID = -2699563764161267277L;
 	private Map<UUID, Integer> towns;
 	private int maxPoints;
-	private String name;
 	private String type;
 	private UUID uuid;
-	private boolean isRebellion;
     
     public static WarParticipant createWarParticipant(Object object) {
     	if(object instanceof Town) {
@@ -75,7 +73,6 @@ public class WarParticipant implements Serializable{
     	WarParticipant part = new WarParticipant(nation);
     	part.setType("nation");
 		part.setUuid(uuid);
-		part.setName(nation.getName());
 		part.setMaxPoints(getNationMaxPoints(nation));
 		part.towns = new HashMap<UUID, Integer>();
 		for(UUID id : towns.keySet()) {
@@ -87,7 +84,6 @@ public class WarParticipant implements Serializable{
     public static WarParticipant createWarParticipant(Town town, UUID uuid) {
     	WarParticipant part = new WarParticipant(town);
     	part.setType("town");
-    	part.setName(town.getName());
 		part.setUuid(uuid);
 		part.setMaxPoints(getTownMaxPoints(town));
 		part.towns = new HashMap<UUID, Integer>();
@@ -97,7 +93,6 @@ public class WarParticipant implements Serializable{
     
     private WarParticipant(Nation nation) {
 		setType("nation");
-		setName(nation.getName());
 		setUuid(nation.getUUID());
 		setMaxPoints(getNationMaxPoints(nation));
 		initializeTowns(nation.getTowns());
@@ -106,7 +101,6 @@ public class WarParticipant implements Serializable{
     private WarParticipant(Town town) {
     	setType("town");
     	setUuid(town.getUUID());
-    	setName(town.getName());
     	setMaxPoints(getTownMaxPoints(town));
 		List<Town> list = new ArrayList<Town>();
 		list.add(town);
@@ -271,17 +265,101 @@ public class WarParticipant implements Serializable{
 	public UUID getUuid() {
 		return uuid;
 	}
+	
+	public double getHoldingBalance() {
+		if(getType().equalsIgnoreCase("town")) {
+			return TownyUniverse.getInstance().getTown(getUuid()).getAccount().getHoldingBalance();
+		}else {
+		    return TownyUniverse.getInstance().getNation(getUuid()).getAccount().getHoldingBalance();	
+		}	
+	}
+	
+	public void setHoldingBalance(double balance) {
+		if(getType().equalsIgnoreCase("town")) {
+			Town town = TownyUniverse.getInstance().getTown(getUuid());
+			town.getAccount().setBalance(balance, "TownyWars transaction");
+			town.save();
+		}else {
+		    Nation nation = TownyUniverse.getInstance().getNation(getUuid());
+		    nation.getAccount().setBalance(balance, "TownyWars transaction");
+		    nation.save();
+		}	
+	}
+	
+	public void pay(double amount, WarParticipant receiver) {
+		if(getType().equalsIgnoreCase("town")) {
+			Town town = TownyUniverse.getInstance().getTown(getUuid());
+			if(town.getAccount().getHoldingBalance()>=amount) {
+				if(receiver.getType().equalsIgnoreCase("town")) {
+					Town receiverTown = TownyUniverse.getInstance().getTown(receiver.getUuid());
+					receiverTown.getAccount().setBalance(receiverTown.getAccount().getHoldingBalance() + amount, "Got paid from " + getName() + " TownyWars!");
+					town.getAccount().setBalance(town.getAccount().getHoldingBalance() - amount, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverTown.save();
+				}else {
+					Nation receiverNation = TownyUniverse.getInstance().getNation(receiver.getUuid());
+					receiverNation.getAccount().setBalance(receiverNation.getAccount().getHoldingBalance() + amount, "Got paid from " + getName() + " TownyWars!");
+					town.getAccount().setBalance(town.getAccount().getHoldingBalance() - amount, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverNation.save();
+				}
+			}else {
+				if(receiver.getType().equalsIgnoreCase("town")) {
+					Town receiverTown = TownyUniverse.getInstance().getTown(receiver.getUuid());
+					receiverTown.getAccount().setBalance(receiverTown.getAccount().getHoldingBalance() + town.getAccount().getHoldingBalance(), "Got paid from " + getName() + " TownyWars!");
+					town.getAccount().setBalance((double)0.00, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverTown.save();
+				}else {
+					Nation receiverNation = TownyUniverse.getInstance().getNation(receiver.getUuid());
+					receiverNation.getAccount().setBalance(receiverNation.getAccount().getHoldingBalance() + town.getAccount().getHoldingBalance(), "Got paid from " + getName() + " TownyWars!");
+					town.getAccount().setBalance((double)0.00, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverNation.save();
+				}			
+				if(town.getMayor().getPlayer().isOnline())
+					town.getMayor().getPlayer().sendMessage("Your town did not have enough money to pay the full amount, so you paid as much as you had and are now broke...");
+			}			
+			town.save();
+		}else {
+		    Nation nation = TownyUniverse.getInstance().getNation(getUuid());
+		    if(nation.getAccount().getHoldingBalance()>=amount) {
+				if(receiver.getType().equalsIgnoreCase("town")) {
+					Town receiverTown = TownyUniverse.getInstance().getTown(receiver.getUuid());
+					receiverTown.getAccount().setBalance(receiverTown.getAccount().getHoldingBalance() + amount, "Got paid from " + getName() + " TownyWars!");
+					nation.getAccount().setBalance(nation.getAccount().getHoldingBalance() - amount, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverTown.save();
+				}else {
+					Nation receiverNation = TownyUniverse.getInstance().getNation(receiver.getUuid());
+					receiverNation.getAccount().setBalance(receiverNation.getAccount().getHoldingBalance() + amount, "Got paid from " + getName() + " TownyWars!");
+					nation.getAccount().setBalance(nation.getAccount().getHoldingBalance() - amount, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverNation.save();
+				}
+			}else {
+				if(receiver.getType().equalsIgnoreCase("town")) {
+					Town receiverTown = TownyUniverse.getInstance().getTown(receiver.getUuid());
+					receiverTown.getAccount().setBalance(receiverTown.getAccount().getHoldingBalance() + nation.getAccount().getHoldingBalance(), "Got paid from " + getName() + " TownyWars!");
+					nation.getAccount().setBalance((double)0.00, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverTown.save();
+				}else {
+					Nation receiverNation = TownyUniverse.getInstance().getNation(receiver.getUuid());
+					receiverNation.getAccount().setBalance(receiverNation.getAccount().getHoldingBalance() + nation.getAccount().getHoldingBalance(), "Got paid from " + getName() + " TownyWars!");
+					nation.getAccount().setBalance((double)0.00, "Paid " + receiver.getName() + " in TownyWars!");
+					receiverNation.save();
+				}			
+				if(nation.getKing().getPlayer().isOnline())
+					nation.getKing().getPlayer().sendMessage("Your nation did not have enough money to pay the full amount, so you paid as much as you had and are now broke...");
+			}			
+			nation.save();
+		}
+	}
 
 	public void setUuid(UUID uuid) {
 		this.uuid = uuid;
 	}
 
 	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
+		if(this.getType().equalsIgnoreCase("town")) {
+			return TownyUniverse.getInstance().getTown(getUuid()).getName();
+		}else {
+			return TownyUniverse.getInstance().getNation(getUuid()).getName();
+		}
 	}
 
 	@SuppressWarnings("serial")

@@ -12,7 +12,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.DatabaseMetaData;
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
 
 public class SQLite {
@@ -51,23 +50,6 @@ public class SQLite {
     	return activeWars;
     }
     
-    public Set<Rebellion> loadRebellions() {
-    	Set<Rebellion> activeRebellions = new HashSet<Rebellion>();
-    	createTable("rebellions");
-    	if(getColumnKeys("rebellions")!=null && !getColumnKeys("rebellions").isEmpty()) {
-    		for(int key : getColumnKeys("rebellions")) {    		
-        		try {
-            		String base64 = retrieveBase64("rebellions", key);
-            		activeRebellions.add(Rebellion.decodeRebellion(base64));
-    			} catch (ClassNotFoundException | IOException e) {
-    				// TODO Auto-generated catch block
-    				e.printStackTrace();
-    			}
-        	}
-    	} 	
-    	return activeRebellions;
-    }
-    
     public void saveWars(Set<War> activeWars) {
     	createTable("wars");
     	for(War w : activeWars) {
@@ -80,22 +62,10 @@ public class SQLite {
     	}
     }
     
-    public void saveRebellions(Set<Rebellion> activeRebellions) {
-    	createTable("rebellions");
-    	for(Rebellion r : activeRebellions) {
-    		try {
-				storeValues("rebellions", r.encodeRebellion());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	}
-    }
-
     public void createTable(String table) {
         try (Connection connection = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement statement = connection.prepareStatement(
-                     "CREATE TABLE IF NOT EXISTS " + table + " (id INTEGER PRIMARY KEY, base64 TEXT)"
+                     "CREATE TABLE IF NOT EXISTS " + table + " (id INTEGER AUTO_INCREMENT PRIMARY KEY, base64 TEXT)"
              )) {
             statement.executeUpdate();
         } catch (SQLException e) {

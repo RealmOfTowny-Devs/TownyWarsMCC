@@ -14,33 +14,20 @@ import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyUniverse;
-import com.palmergames.util.FileMgmt;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 public class WarManager
 {
 
 	private Set<War> activeWars;
-	private Set<Rebellion> activeRebellions;
 	private Set<WarParticipant> requestedPeace;
-	private  Map<String, Double> neutral;
 	public Town townremove;
 	private TownyWars townywars;
 	private YMLFile ymlfile;
@@ -51,25 +38,19 @@ public class WarManager
 	public WarManager(TownyWars townywars) {
 		this.townywars = townywars;
 		activeWars = new HashSet<War>();
-		activeRebellions = new HashSet<Rebellion>();
 		requestedPeace = new HashSet<WarParticipant>();
-		neutral = new HashMap<String, Double>();
 	}
   
 	public void save() throws Exception {
 		switch (this.townywars.getConfigInstance().method) {
     		case file:
     			this.ymlfile.saveWars(activeWars);
-    			this.ymlfile.saveRebellions(activeRebellions);
     		case mysql:
     		    this.mysql.saveWars(activeWars);
-                this.mysql.saveRebellions(activeRebellions);
     		case sqlite:
     			this.sqlite.saveWars(activeWars);
-    			this.sqlite.saveRebellions(activeRebellions);
     		default:
     			this.ymlfile.saveWars(activeWars);
-    			this.ymlfile.saveRebellions(activeRebellions);
 		}
 	}
   
@@ -78,19 +59,15 @@ public class WarManager
 	    	case file:
 	      	    this.ymlfile = new YMLFile(townywars);
 	      	    activeWars = ymlfile.loadWars();
-	      	    activeRebellions = ymlfile.loadRebellions();
 	    	case mysql:
 	    		this.mysql = new MySQL(townywars);
 	    		activeWars = mysql.loadWars();
-	    		activeRebellions = mysql.loadRebellions();
 	    	case sqlite:
 	            this.sqlite = new SQLite(townywars);
 	            activeWars = sqlite.loadWars();
-	            activeRebellions = sqlite.loadRebellions();
 	    	default:
 	    		this.ymlfile = new YMLFile(townywars);
 	      	    activeWars = ymlfile.loadWars();
-	      	    activeRebellions = ymlfile.loadRebellions();
   		}	    
   	}
   
@@ -332,57 +309,67 @@ public class WarManager
   
     public void endWar(WarParticipant winner, WarParticipant loser, boolean peace)
     {
-    	War war = this.getWarForParticipant(winner);
-    	boolean isRebelWar = false;
-    	Rebellion rebellion;
-    	if(war.getRebellion()!=null) {
-    		isRebelWar = true;
-    		rebellion = this.getWarForParticipant(winner).getRebellion();
-    	}
-        
-    	if(peace && !isRebelWar) {
-        	requestedPeace.remove(loser);
-        	War.broadcast(winner, ChatColor.GREEN + "You are now at peace!");
-        	War.broadcast(loser, ChatColor.GREEN + "You are now at peace!");
-        	for (Town t : winner.getTownsList()) {
-        		t.setPVP(false);
-        	}
-        	for (Town t : loser.getTownsList()) {
-        		t.setPVP(false);
-        	}
-    	}
-    			  
-    	//rebels win
-    	if(!peace && isRebelWar && winner == rebellion.getRebelWarParticipant()){
-    		War.broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and are now free!");
-    		War.broadcast(winner, ChatColor.GREEN + winner.getName() + " won the rebellion and are now free!");
-    		rebellion.success();
-    		this.getActiveRebellions().remove(rebellion);
-    	}
-    
-    	if (peace && isRebelWar && winner == war.getEnemy(rebellion.getRebelWarParticipant()))
-    	{
-    		War.broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and are now back under control of their mother nation!");
-    		War.broadcast(winner, ChatColor.GREEN + loser.getName() + " lost the rebellion and are now back under control of their mother nation!");
-    		rebellion.lost();
-    		this.getActiveRebellions().remove(rebellion);
-    	}
-    
-    	//
-    	if(loser.getTownsList().size() == 0)
-    		TownyUniverse.getDataSource().removeNation(loser);
-    	if(winner.getTownsList().size() == 0)
-    		TownyUniverse.getDataSource().removeNation(winner);
-    
-    	TownyUniverse.getInstance().getDataSource().saveTowns();
-    	TownyUniverse.getInstance().getDataSource().saveNations();
-    	
-		for (Town t : winner.getTownsList()) {
+    	for (Town t : winner.getTownsList()) {
     		t.setPVP(false);
     	}
     	for (Town t : loser.getTownsList()) {
     		t.setPVP(false);
     	}
+    	War war = this.getWarForParticipant(winner);
+    	if(peace) {
+    		requestedPeace.remove(loser);
+        	War.broadcast(winner, ChatColor.GREEN + "You are now at peace!");
+        	War.broadcast(loser, ChatColor.GREEN + "You are now at peace!");
+        	if(war.isRebelWar()) {
+        		Rebellion rebellion = this.getWarForParticipant(winner).getRebellion();
+        		rebellion.lost();
+        	}
+    	}else {
+    		if(war.isRebelWar()) {
+        		Rebellion rebellion = this.getWarForParticipant(winner).getRebellion();
+        		if(rebellion!=null) {
+            		//rebels win
+                	if(winner == rebellion.getRebelWarParticipant()){
+                		War.broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and are now free!");
+                		War.broadcast(winner, ChatColor.GREEN + winner.getName() + " won the rebellion and are now free!");
+                		rebellion.success();
+                	}      	
+                	try {
+    					if (winner == war.getEnemy(rebellion.getRebelWarParticipant()))
+    					{
+    						War.broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and are now back under control of their mother nation!");
+    						War.broadcast(winner, ChatColor.GREEN + loser.getName() + " lost the rebellion and are now back under control of their mother nation!");
+    						rebellion.lost();
+    					}
+    				} catch (Exception e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				}
+            	}
+        	}else {
+        		loser.pay(loser.getHoldingBalance(), winner);
+        		War.broadcast(loser, ChatColor.RED + winner.getName() + " has won the war and your nation is gone!");
+				War.broadcast(winner, ChatColor.GREEN + loser.getName() + " has lost the war and has been totally annihilated!");
+        	}
+    	}
+    		
+    	if(loser.getTownsList().size() == 0 && loser.getType().equalsIgnoreCase("nation")) {
+    		if(TownyUniverse.getInstance().hasNation(loser.getUuid())) {
+    			Nation nation = TownyUniverse.getInstance().getNation(loser.getUuid());
+        		TownyUniverse.getInstance().getDataSource().deleteNation(nation);
+    		} 		
+    	}
+    		
+    	if(winner.getTownsList().size() == 0 && winner.getType().equalsIgnoreCase("nation")) {
+    		if(TownyUniverse.getInstance().hasNation(winner.getUuid())) {
+    			Nation nation = TownyUniverse.getInstance().getNation(winner.getUuid());
+    			TownyUniverse.getInstance().getDataSource().deleteNation(nation);
+    		}
+    	}
+    	
+    	TownyUniverse.getInstance().getDataSource().saveTowns();
+    	TownyUniverse.getInstance().getDataSource().saveNations();
+    			
     	activeWars.remove(war);
     	try {
 			TownyWars.getInstance().getWarManager().save();
@@ -392,10 +379,10 @@ public class WarManager
 		}
     }
   
-    public boolean hasBeenOffered(War ww, Nation nation)
+    public boolean hasBeenOffered(War ww, WarParticipant participant)
     {
         try {
-		    return requestedPeace.contains(ww.getEnemy(nation));
+		    return requestedPeace.contains(ww.getEnemy(participant));
 	    } catch (Exception e) {
 		    // TODO Auto-generated catch block
 		    e.printStackTrace();
@@ -482,21 +469,6 @@ public class WarManager
 			}
     	}
     }
-
-    public Set<Rebellion> getActiveRebellions() {
-	    return activeRebellions;
-    }
-
-    public void setActiveRebellions(Set<Rebellion> allRebellions) {
-	    activeRebellions = allRebellions;
-    }
-    
-    public Rebellion getRebellionFromName(String s) throws Exception{
-		for(Rebellion r : activeRebellions)
-			if(r.getName().equals(s))
-				return r;
-		throw(new Exception("Rebellion not found!"));
-	}
     
     @SuppressWarnings("serial")
 	public class AlreadyAtWarException extends Exception{

@@ -2,22 +2,15 @@ package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.config.TownyWarsConfig;
 import com.danielrharris.townywars.listeners.*;
-import com.danielrharris.townywars.tasks.SaveTask;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
-import com.danielrharris.townywars.storage.MySQL;
-import com.danielrharris.townywars.storage.SQLite;
-import com.danielrharris.townywars.storage.YMLFile;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -166,56 +159,6 @@ public class TownyWars extends JavaPlugin
 		}
 		// all good!
 		return 0;
-	}
-  	
-  
-    // This will need rewritten to use WarParticipants and the new WarManager
-  	/*
-	 * Takes a player and a location, the player is someone who wants to find out if the location
-	 * interacted with is located in a town that their nation is at war With
-	 */
-	public static boolean atWar(Player p, Location loc){
-		try
-		{
-			if(TownyUniverse.getInstance().getResident(p.getName())!=null)
-			{
-				Resident re = TownyUniverse.getInstance().getResident(p.getName());
-				if(re.getTown()!=null){
-					if(re.getTown().getNation()!=null){
-						Nation nation = re.getTown().getNation();
-						// add the player to the master list if they don't exist in it yet
-						if (plugin.getTownyWarsResident(re.getName())==null){
-							plugin.addTownyWarsResident(re.getName());
-							System.out.println("resident added!");
-						}
-						War ww = warManager.getWarForNation(nation);
-						if (ww != null)
-						{
-							WorldCoord wc = WorldCoord.parseWorldCoord(loc);
-							if(TownyUniverse.getInstance().getTownBlock(wc)!=null){
-								TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(wc);
-								Town otherTown = townBlock.getTown();
-								if(otherTown!=re.getTown()){
-									if(otherTown.getNation()!=null){
-										Nation otherNation = otherTown.getNation();
-										if(otherNation!=nation){									
-											Set<Nation> nationsInWar = ww.getNationsInWar();
-											if(nationsInWar.contains(otherNation)){
-												//nations are at war with each other
-												return true;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}				
-		}catch (Exception ex) {
-			return false;
-		}
-		return false;
 	}
 	
 	public static TownyWars getInstance(){
