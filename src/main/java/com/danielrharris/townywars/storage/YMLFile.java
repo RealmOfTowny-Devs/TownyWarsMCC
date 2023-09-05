@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
+import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
 
 public class YMLFile {
@@ -15,6 +16,8 @@ public class YMLFile {
     private File warFile;  
     private File dataFolder;
     private FileConfiguration war;
+    private File rebellionFile;
+    private FileConfiguration rebel;
   
     private Plugin plugin;
   
@@ -68,6 +71,45 @@ public class YMLFile {
         } 
         try {
             this.warFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
+    
+    public Set<Rebellion> loadRebellions() {
+    	Set<Rebellion> activeRebellions = new HashSet<Rebellion>();
+        this.rebel = (FileConfiguration)YamlConfiguration.loadConfiguration(this.warFile);
+        if (this.rebel.getKeys(false) != null && !this.rebel.getKeys(false).isEmpty())
+            for (String s : this.rebel.getKeys(false)) {	  
+		        try {
+			        Rebellion r = Rebellion.decodeRebellion(this.rebel.getString(s));
+			        activeRebellions.add(r);
+		        } catch (ClassNotFoundException | IOException e) {
+		        	e.printStackTrace();
+		        }
+            }
+        return activeRebellions;
+    }
+    
+    public void saveRebellions(Set<Rebellion> activeRebellions) {
+        if (activeRebellions != null && !activeRebellions.isEmpty())
+            for (Rebellion r : activeRebellions) {
+            	try {
+					this.rebel.set(r.getUuid().toString(), r.encodeRebellion());
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+            } 
+        if (this.rebellionFile.exists())
+            this.rebellionFile.delete(); 
+        try {
+            this.rebel.save(this.rebellionFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        try {
+            this.rebellionFile.createNewFile();
         } catch (IOException e) {
             e.printStackTrace();
         } 

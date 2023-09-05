@@ -1,17 +1,13 @@
 package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.listeners.GriefListener;
-import com.danielrharris.townywars.tasks.ShowDPTask;
 import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
-import com.palmergames.bukkit.towny.exceptions.EconomyException;
+import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
-import me.drkmatr1984.BlocksAPI.utils.SBlock;
-import me.drkmatr1984.BlocksAPI.utils.Utils;
 import mkremins.fanciful.FancyMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -69,21 +65,21 @@ class WarExecutor implements CommandExecutor
       cs.sendMessage(ChatColor.AQUA + "/twar - " + ChatColor.YELLOW + "Displays the TownyWars configuration information");
       cs.sendMessage(ChatColor.AQUA + "/twar help - " + ChatColor.YELLOW + "Displays the TownyWars help page");
       cs.sendMessage(ChatColor.AQUA + "/twar status - " + ChatColor.YELLOW + "Displays a list of on-going wars");
-      cs.sendMessage(ChatColor.AQUA + "/twar status [nation] - " + ChatColor.YELLOW + "Displays a list of the nation's towns and their defense points");
+      cs.sendMessage(ChatColor.AQUA + "/twar status [town/nation] - " + ChatColor.YELLOW + "Displays a list of the nation's towns and their defense points");
       if(cs.hasPermission("townywars.leader")){
     	  cs.sendMessage(ChatColor.AQUA + "/twar repair - " + ChatColor.YELLOW + "Allows you to repair war grief by paying money from town bank");
       }  
       cs.sendMessage(ChatColor.AQUA + "/twar showtowndp - " + ChatColor.YELLOW + "Shows your towns current defense points.");
       cs.sendMessage(ChatColor.AQUA + "/twar showtownmaxdp - " + ChatColor.YELLOW + "Shows your towns max defense points.");
       if(cs.hasPermission("townywars.leader")){
-    	  cs.sendMessage(ChatColor.AQUA + "/twar declare [nation] - " + ChatColor.YELLOW + "Starts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT)");
-          cs.sendMessage(ChatColor.AQUA + "/twar end - " + ChatColor.YELLOW + "Request from enemy nations king to end the ongoing war. (REQUIRES YOU TO BE A KING/ASSISTANT)");
+    	  cs.sendMessage(ChatColor.AQUA + "/twar declare [town/nation] - " + ChatColor.YELLOW + "Starts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT OR MAYOR/ASSISTANT)");
+          cs.sendMessage(ChatColor.AQUA + "/twar peace - " + ChatColor.YELLOW + "Request from enemy nations king to end the ongoing war. (REQUIRES YOU TO BE A KING/ASSISTANT)");
       }
       if(cs instanceof Player){
     	  p = (Player) cs;
     	  try {
-			res = TownyUniverse.getDataSource().getResident(p.getName());
-			if(res.getTown().getNation().getCapital() != res.getTown()){
+			res = TownyUniverse.getInstance().getResident(p.getName());
+			if(res.getTown().getNation().getCapital() != res.getTown() && res.isMayor()){
 				cs.sendMessage(ChatColor.AQUA + "/twar createrebellion [name] - " + ChatColor.YELLOW + "Creates a (secret) rebellion within your nation.");
 			    cs.sendMessage(ChatColor.AQUA + "/twar joinrebellion [name] - " + ChatColor.YELLOW + "Joins a rebellion within your nation using the name.");
 			    cs.sendMessage(ChatColor.AQUA + "/twar leaverebellion - " + ChatColor.YELLOW + "Leaves your current rebellion.");
@@ -372,9 +368,9 @@ class WarExecutor implements CommandExecutor
     	unknownCommand=false;
       return declareWar(cs, strings, false);
     }
-    if (farg.equals("end")) {
+    if (farg.equals("peace")) {
     	unknownCommand=false;
-      return declareEnd(cs, strings, false);
+      return declarePeace(cs, strings, false);
     }
     if (farg.equals("createrebellion")) {
     	unknownCommand=false;
@@ -778,7 +774,7 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
 	  Resident res = null;
 	  
 	  try {
-			res = TownyUniverse.getDataSource().getResident(cs.getName());
+			res = TownyUniverse.getInstance().getResident(cs.getName());
 		} catch (NotRegisteredException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
@@ -821,19 +817,15 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
       return true;
   }
   
-  private boolean declareEnd(CommandSender cs, String[] strings, boolean admin)
+  private boolean declarePeace(CommandSender cs, String[] strings, boolean admin)
   {
-    if ((admin) && (strings.length <= 2))
-    {
-      cs.sendMessage(ChatColor.RED + "You need to specify two nations!");
-      return true;
-    }
-    String sonat = "";
-    if (admin) {
-      sonat = strings[1];
-    }
-    Resident res = null;
-    Nation nat;
+      if ((admin) && (strings.length <= 2))
+      {
+    	  cs.sendMessage(ChatColor.RED + "You need to specify two towns/nations!");
+    	  return true;
+      }
+      Resident res = null;
+      Nation nat;
     try
     {
       if (admin)

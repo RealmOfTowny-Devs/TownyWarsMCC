@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.DatabaseMetaData;
 import com.danielrharris.townywars.TownyWars;
+import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
 
 public class SQLite {
@@ -55,6 +56,35 @@ public class SQLite {
     	for(War w : activeWars) {
     		try {
 				storeValues("wars", w.encodeWar());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    public Set<Rebellion> loadRebellions() {
+    	Set<Rebellion> activeRebellions = new HashSet<Rebellion>();
+    	createTable("rebellions");
+    	if(getColumnKeys("rebellions")!=null && !getColumnKeys("rebellions").isEmpty()) {
+    		for(int key : getColumnKeys("rebellions")) {    		
+        		try {
+            		String base64 = retrieveBase64("rebellions", key);
+            		activeRebellions.add(Rebellion.decodeRebellion(base64));
+    			} catch (ClassNotFoundException | IOException e) {
+    				// TODO Auto-generated catch block
+    				e.printStackTrace();
+    			}
+        	}
+    	} 	
+    	return activeRebellions;
+    }
+    
+    public void saveRebellions(Set<Rebellion> activeRebellions) {
+    	createTable("rebellions");
+    	for(Rebellion r : activeRebellions) {
+    		try {
+				storeValues("rebellions", r.encodeRebellion());
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

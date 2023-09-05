@@ -15,6 +15,7 @@ import java.util.Set;
 import org.bukkit.Bukkit;
 
 import com.danielrharris.townywars.TownyWars;
+import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
 
 public class MySQL {
@@ -71,6 +72,47 @@ public class MySQL {
   			        PreparedStatement ps = getStatement("REPLACE INTO wars" + " SET base64= ? WHERE uuid= ?");
   			        ps.setString(1, w.encodeWar());
   			        ps.setString(2, w.getUuid().toString());
+  			        ps.executeUpdate();
+  			        ps.close();
+  			      } catch (Exception ex) {
+  			    	  //put error message here
+  			      }
+  	  		}
+  		}
+  	}
+  	
+  	public Set<Rebellion> loadRebellions() {
+  		Set<Rebellion> activeRebellions = new HashSet<Rebellion>();
+  		try {
+			for(String key : getTableColumnNames("rebellions")) {
+				try {
+				      PreparedStatement ps = getStatement("SELECT * FROM rebellions" + " WHERE uuid= ?");
+				      ps.setString(1, key);
+				      ResultSet rs = ps.executeQuery();
+				      rs.next();
+				      String base64 = rs.getString("base64");
+				      rs.close();
+				      ps.close();
+				      activeRebellions.add(Rebellion.decodeRebellion(base64));
+				  } catch (Exception ex) {
+				      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
+				  }
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+  		return activeRebellions;
+  	}
+  	
+  	public void saveRebellions(Set<Rebellion> activeRebellions) {	
+  		if(activeRebellions!=null && !activeRebellions.isEmpty()) {
+  			for(Rebellion r : activeRebellions) {
+  				try {
+  					createTable("rebellions");
+  			        PreparedStatement ps = getStatement("REPLACE INTO rebellions" + " SET base64= ? WHERE uuid= ?");
+  			        ps.setString(1, r.encodeRebellion());
+  			        ps.setString(2, r.getUuid().toString());
   			        ps.executeUpdate();
   			        ps.close();
   			      } catch (Exception ex) {

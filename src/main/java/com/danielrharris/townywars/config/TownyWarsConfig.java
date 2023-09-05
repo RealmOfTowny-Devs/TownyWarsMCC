@@ -29,7 +29,7 @@ public class TownyWarsConfig {
   public double pBlock;
   public double pBlockPoints;
   public double declareCost;
-  public double endCost;
+  public double peaceCost;
   public boolean allowGriefing;
   public boolean allowRollback;
   public int timer;
@@ -68,7 +68,7 @@ public class TownyWarsConfig {
 	  pPlayer = this.config.getDouble("pper-player");
 	  pPlot = this.config.getDouble("pper-plot");
 	  declareCost = this.config.getDouble("declare-cost");
-	  endCost = this.config.getDouble("end-cost");
+	  peaceCost = this.config.getDouble("end-cost");
 	  pKill = this.config.getDouble("death-cost");
 	  pKillPoints = this.config.getDouble("pper-player-kill");
 	  pMayorKill = this.config.getDouble("pper-mayor-kill");
