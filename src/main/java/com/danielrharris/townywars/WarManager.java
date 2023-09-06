@@ -1,14 +1,14 @@
 package com.danielrharris.townywars;
 
-import com.danielrharris.townywars.storage.MySQL;
-import com.danielrharris.townywars.storage.SQLite;
-import com.danielrharris.townywars.storage.YMLFile;
 import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.danielrharris.townywars.exceptions.Exceptions.NotInWarException;
 import com.danielrharris.townywars.exceptions.Exceptions.TownNotFoundException;
 import com.danielrharris.townywars.exceptions.Exceptions.TownOrNationNotFoundException;
+import com.danielrharris.townywars.events.PeaceAchievedEvent;
+import com.danielrharris.townywars.events.WarEndEvent;
+import com.danielrharris.townywars.events.WarStartEvent;
 import com.danielrharris.townywars.exceptions.Exceptions.AlreadyAtWarException;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -37,63 +37,21 @@ import org.bukkit.entity.Player;
 public class WarManager
 {
 
-	private static Set<War> activeWars;
-	private static Set<Rebellion> plannedRebellions;
-	private static Set<WarParticipant> requestedPeace;
+	private static Set<War> activeWars = new HashSet<War>();
+	private static Set<Rebellion> plannedRebellions = new HashSet<Rebellion>();
+	private static Set<WarParticipant> requestedPeace = new HashSet<WarParticipant>();
 	public Town townremove;
-	private TownyWars townywars;
-	private YMLFile ymlfile;
-	private SQLite sqlite;
-	private MySQL mysql;
+	
 	//private static final int SAVING_VERSION = 1;
   
-	public WarManager(TownyWars townywars) {
-		this.townywars = townywars;
-		activeWars = new HashSet<War>();
-		requestedPeace = new HashSet<WarParticipant>();
+	public WarManager() throws Exception {
+		activeWars = TownyWars.getInstance().getDataManager().loadWars();
+		plannedRebellions = TownyWars.getInstance().getDataManager().loadRebellions();
 	}
-  
-	public void save() throws Exception {
-		switch (this.townywars.getConfigInstance().method) {
-    		case file:
-    			this.ymlfile.saveWars(activeWars);
-    			this.ymlfile.saveRebellions(plannedRebellions);
-    		case mysql:
-    		    this.mysql.saveWars(activeWars);
-                this.mysql.saveRebellions(plannedRebellions);
-    		case sqlite:
-    			this.sqlite.saveWars(activeWars);
-    			this.sqlite.saveRebellions(plannedRebellions);
-    		default:
-    			this.ymlfile.saveWars(activeWars);
-    			this.ymlfile.saveRebellions(plannedRebellions);
-		}
-	}
-  
-	public void load() throws Exception {
-  		switch (this.townywars.getConfigInstance().method) {
-	    	case file:
-	      	    this.ymlfile = new YMLFile(townywars);
-	      	    activeWars = ymlfile.loadWars();
-	      	  plannedRebellions = ymlfile.loadRebellions();
-	    	case mysql:
-	    		this.mysql = new MySQL(townywars);
-	    		activeWars = mysql.loadWars();
-	    		plannedRebellions = mysql.loadRebellions();
-	    	case sqlite:
-	            this.sqlite = new SQLite(townywars);
-	            activeWars = sqlite.loadWars();
-	            plannedRebellions = sqlite.loadRebellions();
-	    	default:
-	    		this.ymlfile = new YMLFile(townywars);
-	      	    activeWars = ymlfile.loadWars();
-	      	    plannedRebellions = ymlfile.loadRebellions();
-  		}	    
-  	}
-  
+  	
   	public static Set<War> getWars()
   	{
-  		return activeWars;
+  		return WarManager.activeWars;
   	}
   	
   	public static War getWar(UUID war) throws NotInWarException {
@@ -273,7 +231,7 @@ public class WarManager
     	return getWarAtLocation(block.getLocation());
     }
     
-    public static WarParticipant createWarParticipant(Object object) throws AlreadyAtWarException
+    public static WarParticipant createWarParticipant(Object object) throws AlreadyAtWarException, NotRegisteredException
     {
     	if(object instanceof Town) {
     		if(!isAtWar((Town)object))
@@ -300,37 +258,41 @@ public class WarManager
     public static War createWar(WarParticipant participant1, WarParticipant participant2, Rebellion r){  	
 		try {
 			War war = new War(participant1, participant2, r);
-			activeWars.add(war);
-	    	for (Resident re : participant1.getResidents())
-	    	{
-	    		Player plr = Bukkit.getPlayer(re.getName());
-	            if (plr != null) {
-	            	plr.sendMessage(ChatColor.RED + "Your faction is now at war with " + participant2.getName() + "!");
-	            }
-	    	}
-	    	for (Resident re : participant2.getResidents())
-	    	{
-	    		Player plr = Bukkit.getPlayer(re.getName());
-	            if (plr != null) {
-	            	plr.sendMessage(ChatColor.RED + "Your faction is now at war with " + participant1.getName() + "!");
-	            }
-	    	}
-	    	for (Town t : participant1.getTownsList()) {
-	    		t.setPVP(true);
-	    	}
-	    	for (Town t : participant2.getTownsList()) {
-	    		t.setPVP(true);
-	    	}
-	                
-	        TownyUniverse.getInstance().getDataSource().saveTowns();
-	        TownyUniverse.getInstance().getDataSource().saveNations();
-	        try {
-	    		TownyWars.getInstance().getWarManager().save();
-	    	} catch (Exception e) {
-	    		// TODO Auto-generated catch block
-	    		e.printStackTrace();
-	    	}
-	        return war;
+			WarStartEvent event = new WarStartEvent(war);
+			Bukkit.getServer().getPluginManager().callEvent(event);
+			if(!event.isCancelled()) {
+				activeWars.add(war);
+		    	for (Resident re : participant1.getResidents())
+		    	{
+		    		Player plr = re.getPlayer();
+		            if (plr != null) {
+		            	plr.sendMessage(ChatColor.RED + "Your town is now at war with " + participant2.getName() + "!");
+		            }
+		    	}
+		    	for (Resident re : participant2.getResidents())
+		    	{
+		    		Player plr = re.getPlayer();
+		            if (plr != null) {
+		            	plr.sendMessage(ChatColor.RED + "Your town is now at war with " + participant1.getName() + "!");
+		            }
+		    	}
+		    	for (Town t : participant1.getTownsList()) {
+		    		t.setPVP(true);
+		    	}
+		    	for (Town t : participant2.getTownsList()) {
+		    		t.setPVP(true);
+		    	}
+		                
+		        TownyUniverse.getInstance().getDataSource().saveTowns();
+		        TownyUniverse.getInstance().getDataSource().saveNations();
+		        try {
+		    		TownyWars.getInstance().getDataManager().saveWars();
+		    	} catch (Exception e) {
+		    		// TODO Auto-generated catch block
+		    		e.printStackTrace();
+		    	}
+		        return war;
+			}			
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -338,41 +300,41 @@ public class WarManager
 		return null;
     }
   
-    public static War createWar(Nation nat, Nation onat) throws AlreadyAtWarException{
+    public static War createWar(Nation nat, Nation onat) throws AlreadyAtWarException, NotRegisteredException{
     	return createWar(createWarParticipant(nat), createWarParticipant(onat), null);
     }
   
-    public static War createWar(Nation nat, Nation onat, Rebellion r) throws AlreadyAtWarException
+    public static War createWar(Nation nat, Nation onat, Rebellion r) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(nat), createWarParticipant(onat), r);
     }
     
-    public static War createWar(Nation nat, Town town, Rebellion r) throws AlreadyAtWarException
+    public static War createWar(Nation nat, Town town, Rebellion r) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(nat), createWarParticipant(town), r);
     }
     
-    public static War createWar(Nation nat, Town town) throws AlreadyAtWarException
+    public static War createWar(Nation nat, Town town) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(nat), createWarParticipant(town), null);
     }
     
-    public static War createWar(Town town, Nation nation, Rebellion r) throws AlreadyAtWarException
+    public static War createWar(Town town, Nation nation, Rebellion r) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(town), createWarParticipant(nation), r);
     }
     
-    public static War createWar(Town town, Nation nation) throws AlreadyAtWarException
+    public static War createWar(Town town, Nation nation) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(town), createWarParticipant(nation), null);
     }
     
-    public static War createWar(Town town, Town otherTown, Rebellion r) throws AlreadyAtWarException
+    public static War createWar(Town town, Town otherTown, Rebellion r) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(town), createWarParticipant(otherTown), r);
     }
     
-    public static War createWar(Town town, Town otherTown) throws AlreadyAtWarException
+    public static War createWar(Town town, Town otherTown) throws AlreadyAtWarException, NotRegisteredException
     {
     	return createWar(createWarParticipant(town), createWarParticipant(otherTown), null);
     }
@@ -380,6 +342,8 @@ public class WarManager
     public static void endWar(WarParticipant winner, WarParticipant loser, boolean peace) throws NotInWarException
     {  	
     	War war = WarManager.getWar(winner);
+    	WarEndEvent event = new WarEndEvent(war, winner, loser);
+    	Bukkit.getServer().getPluginManager().callEvent(event);
     	if(!winner.getTownsList().isEmpty() && winner.getTownsList()!=null)
     		for (Town t : winner.getTownsList()) {
     			t.setPVP(false);
@@ -389,17 +353,18 @@ public class WarManager
     			t.setPVP(false);
     		}
     	if(peace) {
+    		PeaceAchievedEvent peaceEvent = new PeaceAchievedEvent(war);
+    		Bukkit.getServer().getPluginManager().callEvent(peaceEvent);
     		requestedPeace.remove(loser);
     		requestedPeace.remove(winner);
     		if(war.isRebelWar()) {
     			Rebellion rebellion = WarManager.getWar(winner).getRebellion();
     			if(winner == rebellion.getRebelWarParticipant()) {
-    				broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and you are now in control of " + loser.getName() + "!");
-    				broadcast(winner, ChatColor.GREEN + loser.getName() + " lost the rebellion and a new king has been crowned!");
-    				rebellion.success();
+    				broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and is now free!");
+    				broadcast(winner, ChatColor.GREEN + loser.getName() + " surrendered the rebellion and you are now free!");
     			}else {
-    				broadcast(loser, ChatColor.RED + winner.getName() + " won the rebellion and you are now back under their control!");
-    				broadcast(winner, ChatColor.GREEN + loser.getName() + " lost the rebellion and are now back under your control!");
+    				broadcast(loser, ChatColor.RED + winner.getName() + " accepted terms and you are now back under their control!");
+    				broadcast(winner, ChatColor.GREEN + loser.getName() + " surrendered the rebellion and are now back under your control!");
     				rebellion.lost();
     			}
     		}else {
@@ -448,60 +413,57 @@ public class WarManager
     				TownyUniverse.getInstance().getDataSource().deleteTown(town);
     			}
     		}
-    		TownyUniverse.getInstance().getDataSource().saveTowns();
-    		TownyUniverse.getInstance().getDataSource().saveNations();
-    		
-    		activeWars.remove(war);
-    		try {
-    			TownyWars.getInstance().getWarManager().save();
-    		} catch (Exception e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		}
     	}
+    	TownyUniverse.getInstance().getDataSource().saveTowns();
+		TownyUniverse.getInstance().getDataSource().saveNations();
+		
+		activeWars.remove(war);
+		try {
+			TownyWars.getInstance().getDataManager().saveWars();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
     
-    @SuppressWarnings("deprecation")
-	public static boolean requestPeace(WarParticipant participant1, WarParticipant participant2, boolean admin)
+    public static void requestPeace(WarParticipant participant1, boolean admin) throws NotInWarException
 	{
+    	WarParticipant participant2 = WarManager.getEnemy(participant1);
 		if(admin) {
-			endWar(participant1, participant2, true);
-    		return true;
-		}
-	    if (requestedPeace.contains(participant2))
-	    {
-	    	if(getWar(participant1).getRebellion() != null) {
-	    		Rebellion rebellion = getWar(participant1).getRebellion();
-	    		rebellion.peace();
-	    		return true;
-	    	}
-	    		      
-	    	try
-	    	{
-	    		if(WarManager.canPay(TownyWars.getInstance().getConfigInstance().peaceCost, participant1) && WarManager.canPay(TownyWars.getInstance().getConfigInstance().peaceCost, participant1)) {
-	    			//both can pay peace costs
+	    	endWar(participant1, participant2, true);
+	    	return;
+	    }			
+		
+	    if (requestedPeace.contains(participant2)) {
+	    	
+	    	if(WarManager.canPay(TownyWars.getInstance().getConfigInstance().peaceCost, participant1) && WarManager.canPay(TownyWars.getInstance().getConfigInstance().peaceCost, participant1)) {
+    			WarManager.chargeParticipant(TownyWars.getInstance().getConfigInstance().peaceCost, participant1);
+    			WarManager.chargeParticipant(TownyWars.getInstance().getConfigInstance().peaceCost, participant2);
+    			endWar(participant1, participant2, true);
+	    	}else {
+	    		Set<Resident> importants = new HashSet<Resident>();
+	    		if(!WarManager.canPay(TownyWars.getInstance().getConfigInstance().peaceCost, participant1)) {
+	    			importants.add(participant1.getLeader());
+	    			for(Resident r : participant1.getAssistants())
+	    				importants.add(r);
 	    		}
-	    			participant1.setHoldingBalance(participant1.getHoldingBalance() - TownyWars.getInstance().getConfigInstance().peaceCost);
-	          nat.collect(TownyWars.endCost);
-	          onat.collect(TownyWars.endCost);
-	      }
-	      catch (EconomyException ex)
-	      {
-	        Logger.getLogger(WarManager.class.getName()).log(Level.SEVERE, null, ex);
-	      }
-	      return true;
+                if(!WarManager.canPay(TownyWars.getInstance().getConfigInstance().peaceCost, participant2)) {
+                	importants.add(participant2.getLeader());
+	    			for(Resident r : participant2.getAssistants())
+	    				importants.add(r);
+	    		}
+	    		for(Resident r : importants) {
+	    			Player p = r.getPlayer();
+	    			if(p!=null)
+	    				if(p.isOnline())
+	    					p.sendMessage("Y'all are too broke to pay the peace costs of $" + TownyWars.getInstance().getConfigInstance().peaceCost);
+	    		}
+	    	}
+	    }else {
+	    	requestedPeace.add(participant1);
+	    	broadcast(participant1, "You and your residents has asked " + participant2.getName() + " for peace");
+	    	broadcast(participant2, participant1.getName() + "has asked you and your residents for peace");
 	    }
-	    requestedPeace.add(nat.getName());
-	    for (Resident re : onat.getResidents()) {
-	      if ((re.isKing()) || (onat.hasAssistant(re)))
-	      {
-	        Player plr = Bukkit.getPlayer(re.getName());
-	        if (plr != null) {
-	          plr.sendMessage(ChatColor.GREEN + nat.getName() + " has requested peace!");
-	        }
-	      }
-	    }
-	    return false;
 	}
   
     public static boolean peaceHasBeenOffered(WarParticipant participant)
@@ -604,6 +566,24 @@ public class WarManager
     
     public static void broadcast(WarParticipant participant, String message) {
 		for(Resident resident : participant.getResidents()) {
+			Player player = resident.getPlayer();
+			if(player!=null)
+				if(player.isOnline())
+					player.sendMessage(message);
+		}
+	}
+    
+    public static void broadcast(Town town, String message) {
+		for(Resident resident : town.getResidents()) {
+			Player player = resident.getPlayer();
+			if(player!=null)
+				if(player.isOnline())
+					player.sendMessage(message);
+		}
+	}
+    
+    public static void broadcast(Nation nation, String message) {
+		for(Resident resident : nation.getResidents()) {
 			Player player = resident.getPlayer();
 			if(player!=null)
 				if(player.isOnline())
@@ -733,7 +713,7 @@ public class WarManager
 							participant.removeTown(town);
 							enemy.addNewTown(town);
 							try {
-								TownyWars.getInstance().getWarManager().save();
+								TownyWars.getInstance().getDataManager().saveWars();
 							} catch (Exception e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -809,7 +789,7 @@ public class WarManager
 		}
 		
 		try {
-			TownyWars.getInstance().getWarManager().save();
+			TownyWars.getInstance().getDataManager().saveWars();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -913,12 +893,36 @@ public class WarManager
 		return null;
 	}
 	
-	public static Set<Rebellion> getActiveRebellions() {
+	public static Set<Rebellion> getPlannedRebellions() {
 	    return plannedRebellions;
     }
 
-    public static void setActiveRebellions(Set<Rebellion> activeRebellions) {
-	    plannedRebellions = activeRebellions;
+    public void setPlannedRebellions(Set<Rebellion> plannedRebellions) {
+	    WarManager.plannedRebellions = plannedRebellions;
+    }
+    
+    public static void addPlannedRebellion(Rebellion plannedRebellion) {
+    	Set<Rebellion> rebels = new HashSet<Rebellion>();
+    	for(Rebellion r : plannedRebellions) {
+    		rebels.add(r);
+    	}
+	    rebels.add(plannedRebellion);
+	    TownyWars.getInstance().getWarManager().setPlannedRebellions(rebels);
+    }
+    
+    public static boolean removePlannedRebellion(Rebellion plannedRebellion) {
+    	if(plannedRebellions.contains(plannedRebellion)) {
+    		Set<Rebellion> rebels = new HashSet<Rebellion>();
+        	for(Rebellion r : plannedRebellions) {
+        		rebels.add(r);
+        	}
+        	if(rebels.contains(plannedRebellion)) {
+        		rebels.remove(plannedRebellion);
+        		TownyWars.getInstance().getWarManager().setPlannedRebellions(rebels);
+        		return true;
+        	}
+    	}
+    	return false;
     }
     
     public static Rebellion getRebellion(String s) throws Exception{
@@ -926,13 +930,13 @@ public class WarManager
 			if(r.getName().equals(s))
 				return r;
 		throw(new Exception("Rebellion not found!"));
-	}
+    }
     
     public static Rebellion getRebellion(UUID id) throws Exception{
 		for(Rebellion r : plannedRebellions)
 			if(r.getUuid().equals(id))
 				return r;
 		throw(new Exception("Rebellion not found!"));
-	}
+    }
     
 }

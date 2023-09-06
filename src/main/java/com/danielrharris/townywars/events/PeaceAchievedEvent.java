@@ -10,16 +10,13 @@ import org.bukkit.event.HandlerList;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
 
-public class WarEndEvent extends Event
+public class PeaceAchievedEvent extends Event
 {
 	private War war;
 	private String time;
-	private WarParticipant winner, loser;
 	
-	public WarEndEvent(War war, WarParticipant winner, WarParticipant loser) {
+	public PeaceAchievedEvent(War war) {
 		this.war = war;
-		this.winner = winner;
-		this.loser = loser;
 		Date now = new Date();
 		SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 		this.time = "[" + format.format(now) + "]";
@@ -42,14 +39,6 @@ public class WarEndEvent extends Event
 
 	public String getTime() {
 		return time;
-	}
-
-	public WarParticipant getWinner() {
-		return winner;
-	}
-
-	public WarParticipant getLoser() {
-		return loser;
 	}
 	
 }

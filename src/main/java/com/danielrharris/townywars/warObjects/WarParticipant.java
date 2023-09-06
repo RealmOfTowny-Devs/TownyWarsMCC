@@ -9,8 +9,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.danielrharris.townywars.WarManager;
@@ -273,6 +275,37 @@ public class WarParticipant implements Serializable{
 		    nation.save();
 			}
 		}	
+	}
+	
+	public Resident getLeader() {
+		if(this.getType().equalsIgnoreCase("town")) {
+			if(TownyUniverse.getInstance().hasTown(uuid)) {
+				return TownyUniverse.getInstance().getTown(uuid).getMayor();
+			}
+		}else {
+			if(TownyUniverse.getInstance().hasNation(uuid)) {
+				return TownyUniverse.getInstance().getNation(uuid).getKing();
+			}
+		}
+		return null;
+	}
+	
+	public Set<Resident> getAssistants() {
+		Set<Resident> assistants = new HashSet<Resident>();
+		if(this.getType().equalsIgnoreCase("nation")) {
+			if(TownyUniverse.getInstance().hasNation(uuid)) {
+				for(Resident r : TownyUniverse.getInstance().getNation(uuid).getAssistants()) {
+					assistants.add(r);
+				}			
+			}
+		}else {
+			if(TownyUniverse.getInstance().hasTown(uuid)) {
+				for(Resident r: TownyUniverse.getInstance().getTown(uuid).getTrustedResidents()) {
+					assistants.add(r);
+				}
+			}
+		}
+		return assistants;
 	}
 	
 	public boolean isRebelWar() throws NotInWarException {

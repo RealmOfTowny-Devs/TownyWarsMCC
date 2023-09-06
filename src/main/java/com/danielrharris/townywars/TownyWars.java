@@ -1,13 +1,12 @@
 package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.config.TownyWarsConfig;
+import com.danielrharris.townywars.config.TownyWarsDataManager;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
-import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -31,15 +30,14 @@ import java.util.logging.Logger;
 public class TownyWars extends JavaPlugin
 {
     private TownyUniverse tUniverse;
-    private Towny towny;
     private static TownyWars plugin;
     private TownyWarsConfig config;
+    private TownyWarsDataManager dataManager;
     private GriefManager gm;
-    private static WarManager warManager;
+    private WarManager warManager;
     File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
     public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
     public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
-    public static List<String> messagedPlayers = new ArrayList<String>();
     //set up the date conversion spec and the character set for file writing
     private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
     private static final Charset utf8 = StandardCharsets.UTF_8;
@@ -50,16 +48,14 @@ public class TownyWars extends JavaPlugin
     public void onEnable()
     {
 	  	TownyWars.plugin = this;
-        this.config = new TownyWarsConfig(TownyWars.plugin);
-        warManager = new WarManager(TownyWars.plugin);
-	  	try
-	  	{
-	  		warManager.load();
-	  	}
-        catch (Exception ex)
-        {
-        	Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        this.config = new TownyWarsConfig(this);
+        this.dataManager = new TownyWarsDataManager(this);
+        try {
+			this.warManager = new WarManager();
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	  	PluginManager pm = getServer().getPluginManager();
 	  	gm = new GriefManager(this);
 	  	pm.registerEvents(new GriefListener(this, gm), this);
@@ -68,14 +64,13 @@ public class TownyWars extends JavaPlugin
 	  	pm.registerEvents(new NationWalkEvent(),this);
 	  	pm.registerEvents(new EnemyWalkWWar(),this);
 	  	getCommand("twar").setExecutor(new WarExecutor(this));
-	  	towny = ((Towny)Bukkit.getPluginManager().getPlugin("Towny"));
 	  	tUniverse = TownyUniverse.getInstance();
 	  	for(Town town : tUniverse.getTowns()){
 	  		town.setAdminEnabledPVP(false);
 	  		town.setAdminDisabledPVP(false);
 	  		town.setPVP(false);
 	  	}
-	  	for (War w : warManager.getWars()) {
+	  	for (War w : WarManager.getWars()) {
 	  		for (WarParticipant p : w.getWarParticipants()) {
 	  			for (Town t : p.getTownsList()) {
 	  				t.setPVP(true);
@@ -113,7 +108,7 @@ public class TownyWars extends JavaPlugin
 	  
     try
     {
-      warManager.save();  
+        dataManager.save();  
     }
     catch (Exception ex)
     {
@@ -167,6 +162,10 @@ public class TownyWars extends JavaPlugin
 	
 	public WarManager getWarManager(){
 		return warManager;
+	}
+	
+	public TownyWarsDataManager getDataManager() {
+		return dataManager;
 	}
 	
 	public TownyWarsConfig getConfigInstance() {

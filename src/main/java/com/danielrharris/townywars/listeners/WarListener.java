@@ -14,8 +14,7 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
-
+import com.palmergames.bukkit.towny.TownyUniverse;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -38,25 +37,33 @@ public class WarListener implements Listener
 		String command = event.getMessage().toLowerCase();
 		if (command.startsWith("/n") && command.contains("delete"))
 		{
-			for(War w : WarManager.getWars()){
-				for(Nation n : w.getNationsInWar()){
-					if(n.hasResident(event.getPlayer().getName())){
+			Resident r = WarManager.getResidentFromPlayer(event.getPlayer());
+			if(r!=null) {
+				try {
+					if(WarManager.isAtWar(r.getTown())) {
 						event.setCancelled(true);
 						event.getPlayer().sendMessage(ChatColor.RED + "You cannot delete a nation while at war!");
 					}
+				} catch (NotRegisteredException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}
 		
 		if (command.startsWith("/n") && command.contains("leave"))
 		{
-			for(War w : WarManager.getWars()){
-				for(Nation n : w.getNationsInWar()){
-					if(n.hasResident(event.getPlayer().getName())){
-						event.setCancelled(true);
-						event.getPlayer().sendMessage(ChatColor.RED + "You cannot leave a nation while at war!");
+			Resident r = WarManager.getResidentFromPlayer(event.getPlayer());
+			if(r!=null) {
+				try {
+					if(WarManager.isAtWar(r.getTown())) {
+							event.setCancelled(true);
+							event.getPlayer().sendMessage(ChatColor.RED + "You cannot leave a nation while at war!");
 					}
-				}
+				} catch (NotRegisteredException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}		
 			}
 		}
 	}

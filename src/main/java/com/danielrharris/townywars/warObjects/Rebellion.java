@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -18,7 +16,6 @@ import org.bukkit.entity.Player;
 
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.WarManager;
-import com.danielrharris.townywars.exceptions.Exceptions.AlreadyAtWarException;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
@@ -44,6 +41,7 @@ public class Rebellion implements Serializable{
 		this.name = leader.getName();
 		this.id = leader.getUUID();
 		this.leader = leader.getUUID();
+		WarManager.addPlannedRebellion(this);
 	}
 	
 	public Town getLeaderTown() {
@@ -64,8 +62,8 @@ public class Rebellion implements Serializable{
 		return null;
 	}
 	
-	public List<Town> getRebelTowns() {
-		List<Town> rebelsList = new ArrayList<Town>();
+	public Set<Town> getRebelTowns() {
+		Set<Town> rebelsList = new HashSet<Town>();
 		if(rebels.isEmpty())
 			return null;
 		for(UUID uuid : rebels) {
@@ -75,7 +73,7 @@ public class Rebellion implements Serializable{
 		return rebelsList;
 	}
 	
-	public void execute(){
+	public void execute() throws Exception{
 		Player player = getLeaderTown().getMayor().getPlayer();
 		try {
 			TownyUniverse.getInstance().getDataSource().newNation(name + "-rebels");
@@ -96,33 +94,18 @@ public class Rebellion implements Serializable{
 			
 			for(Town town : getRebelTowns()){
 				WarManager.removeTownFromNationAndAddToAnotherNation(town, getMotherNation(), rebelnation);
-			}
-			
+			}			
 			rebelnation.setCapital(getLeaderTown());
-			try {
-				rebelnation.setKing(getLeaderTown().getMayor());
-			} catch (TownyException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				WarManager.createWar(rebelnation, getMotherNation(), this);
-				TownyUniverse.getInstance().getDataSource().saveTown(getLeaderTown());
-				TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
-				TownyUniverse.getInstance().getDataSource().saveNations();
-				try {
-					TownyWars.getInstance().getWarManager().save();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				if(player!=null)
-					player.sendMessage(ChatColor.RED + "You executed your rebellion and are now at war with your nation!");
-			} catch (AlreadyAtWarException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			WarManager.getActiveRebellions().remove(this);
+			rebelnation.setKing(getLeaderTown().getMayor());
+			TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
+			WarManager.createWar(rebelnation, getMotherNation(), this);
+			TownyUniverse.getInstance().getDataSource().saveTown(getLeaderTown());
+			TownyUniverse.getInstance().getDataSource().saveNation(rebelnation);
+			TownyUniverse.getInstance().getDataSource().saveNations();
+			if(player!=null)
+				player.sendMessage(ChatColor.RED + "You executed your rebellion and are now at war with your nation!");		
+			WarManager.removePlannedRebellion(this);
+			TownyWars.getInstance().getDataManager().save();
 		}
 		
 	}
@@ -172,10 +155,6 @@ public class Rebellion implements Serializable{
 		}		
 	}
 	
-	public void peace() {
-		//make this WORK!
-	}
-
 	public boolean isRebelTown(Town town){
 		for(Town rebel : getRebelTowns())
 			if(town == rebel)
@@ -246,6 +225,10 @@ public class Rebellion implements Serializable{
 
 	public UUID getUuid() {
 		return id;
+	}
+
+	public void peace(WarParticipant loser) {
+				
 	}
 
 }

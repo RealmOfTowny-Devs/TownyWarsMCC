@@ -34,7 +34,11 @@ public class YMLFile {
         if (this.warFile == null)
            this.warFile = new File(this.dataFolder, "activeWars.yml"); 
         if (!this.warFile.exists())
-           this.plugin.saveResource("data/activeWars.yml", false); 
+           this.plugin.saveResource("data/activeWars.yml", false);
+        if (this.rebellionFile == null)
+            this.rebellionFile = new File(this.dataFolder, "activeRebellions.yml"); 
+        if (!this.rebellionFile.exists())
+            this.plugin.saveResource("data/activeRebellions.yml", false);
     }
   
     public Set<War> loadWars() {
