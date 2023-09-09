@@ -3,11 +3,4 @@ version: 2.0.0
 authors: [DanielRHarris]
 main: com.danielrharris.townywars.TownyWars
 depend: [Towny]
-commands:
-  twar:
-    usage: No permission!
-  twar neutral:
-    permission: townywars.neutral
-    usage: Syntax error! Perhaps you meant /twar neutral [nation]
-  twar repair:
-    permission: townywars.repair
+softdepend: [PlaceholderAPI, MVdWPlaceholderAPI]

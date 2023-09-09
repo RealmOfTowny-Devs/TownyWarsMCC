@@ -1,0 +1,5 @@
+pluginName: "TownyWars"    ## Don't use colors here
+messagePrefix: "&8[&eTowny&bWars&8]"
+commands: ## These are the actual TownyWars commands. They are all renameable!
+    names:
+        main: "townywars, twars" ######### VERY IMPORTANT: MUST SPACE COMMANDS FOR MULTIPLE COMMANDS WITH ", "

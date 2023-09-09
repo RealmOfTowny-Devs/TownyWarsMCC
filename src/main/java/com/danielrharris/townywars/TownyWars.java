@@ -2,19 +2,30 @@ package com.danielrharris.townywars;
 
 import com.danielrharris.townywars.config.TownyWarsConfig;
 import com.danielrharris.townywars.config.TownyWarsDataManager;
+import com.danielrharris.townywars.config.TownyWarsLanguage;
 import com.danielrharris.townywars.listeners.*;
+import com.danielrharris.townywars.placeholders.PlaceholderAPI;
+import com.danielrharris.townywars.placeholders.mvdwPlaceholderAPI;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandMap;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,23 +43,30 @@ public class TownyWars extends JavaPlugin
     private TownyUniverse tUniverse;
     private static TownyWars plugin;
     private TownyWarsConfig config;
+    private TownyWarsLanguage language;
     private TownyWarsDataManager dataManager;
     private GriefManager gm;
     private WarManager warManager;
+    private PlaceholderAPI papi;
     File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
     public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
     public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
     //set up the date conversion spec and the character set for file writing
     private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd zzz HH:mm:ss");
     private static final Charset utf8 = StandardCharsets.UTF_8;
+    private WarExecutor executor;
+    private CommandMap cmap;   
+    private CCommand command;
 	
     private static final String deathsFile="deaths.txt";
 
     @Override
     public void onEnable()
     {
+    	this.papi = null;
 	  	TownyWars.plugin = this;
         this.config = new TownyWarsConfig(this);
+        this.language = new TownyWarsLanguage(this);
         this.dataManager = new TownyWarsDataManager(this);
         try {
 			this.warManager = new WarManager();
@@ -57,13 +75,15 @@ public class TownyWars extends JavaPlugin
 			e1.printStackTrace();
 		}
 	  	PluginManager pm = getServer().getPluginManager();
+	  	this.executor = new WarExecutor(this);
+	  	this.RegisterCommands();
 	  	gm = new GriefManager(this);
 	  	pm.registerEvents(new GriefListener(this, gm), this);
 	  	pm.registerEvents(new WarListener(this), this);
 	  	pm.registerEvents(new PvPListener(this), this);
 	  	pm.registerEvents(new NationWalkEvent(),this);
 	  	pm.registerEvents(new EnemyWalkWWar(),this);
-	  	getCommand("twar").setExecutor(new WarExecutor(this));
+	  	
 	  	tUniverse = TownyUniverse.getInstance();
 	  	for(Town town : tUniverse.getTowns()){
 	  		town.setAdminEnabledPVP(false);
@@ -79,7 +99,17 @@ public class TownyWars extends JavaPlugin
 	  	}
     
 	  	tUniverse.getDataSource().saveTowns();
-    
+        
+	  	if(Bukkit.getPluginManager().isPluginEnabled("MVdWPlaceholderAPI")) {
+	  		Bukkit.getServer().getLogger().info("Hooked into MVdWPlaceholderAPI!");
+	      	new mvdwPlaceholderAPI(plugin);
+	    }
+	    if(Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+	    	Bukkit.getServer().getLogger().info("Hooked into PlaceholderAPI!");
+	      	this.papi = new PlaceholderAPI(plugin);
+	      	papi.register();
+	    }
+	  	
 	  	if(!(wallConfigFile.exists())){
 	  		try {
 	  			wallConfigFile.createNewFile();
@@ -114,6 +144,9 @@ public class TownyWars extends JavaPlugin
     {
       Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
     }
+    
+    this.unRegisterCommands();
+    
   }
   
   public void addTownyWarsResident(String playerName){
@@ -155,6 +188,80 @@ public class TownyWars extends JavaPlugin
 		// all good!
 		return 0;
 	}
+  
+    public CommandMap getCommandMap() {
+    	return cmap;
+    }
+    
+    public class CCommand extends Command {
+        private CommandExecutor exe = null;
+      
+        protected CCommand(String name) {
+        	super(name);
+        }
+      
+        public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+        	if (this.exe != null)
+        		this.exe.onCommand(sender, this, commandLabel, args); 
+        	return false;
+        }
+      
+      public void setExecutor(CommandExecutor exe) {
+          this.exe = exe;
+      }
+      
+    }
+  
+    private void RegisterCommands() {
+    	String cbukkit = Bukkit.getServer().getClass().getPackage().getName() + ".CraftServer";
+    	try {
+    		Class<?> clazz = Class.forName(cbukkit);
+    		try {
+    			Field f = clazz.getDeclaredField("commandMap");
+    			f.setAccessible(true);
+    			cmap = (CommandMap)f.get(Bukkit.getServer());
+    			boolean defalt = false;
+    			for(String cmd : getLanguage().commandNameMain) { 				
+    				if (!cmd.equals(null)) {
+        				this.command = new CCommand(cmd);
+        				if(!cmap.register("twars", this.command)) {
+        					if(!defalt) {
+        						Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &aCommand &e" + cmd + " &chas already been taken. Defaulting to &e'twars' &cfor TownyWars command."));
+            					defalt = true;
+        					}     					
+        				}else {
+        	     	        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + "&aCommand &e" + cmd + " &aRegistered!"));
+        				}
+        				this.command.setExecutor(executor);        
+        			}
+    			}   			 
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		} 
+    	} catch (ClassNotFoundException e) {
+    		Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &ccould not be loaded, is this even Spigot or CraftBukkit?"));
+    		setEnabled(false);
+    	} 
+    }
+    
+    private void unRegisterCommands() {
+        String cbukkit = Bukkit.getServer().getClass().getPackage().getName() + ".CraftServer";
+        try {
+            Class<?> clazz = Class.forName(cbukkit);
+            try {
+                Field f = clazz.getDeclaredField("commandMap");
+                f.setAccessible(true);
+                cmap = (CommandMap)f.get(Bukkit.getServer());
+                this.command.unregister(cmap);
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &aCommands " + getLanguage().mainCommandString + " have been Unregistered!"));
+            } catch (Exception e) {
+            e.printStackTrace();
+            } 
+        } catch (ClassNotFoundException e) {
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &ccould not be unloaded, is this even Spigot or CraftBukkit?"));
+            setEnabled(false);
+        } 
+  }
 	
 	public static TownyWars getInstance(){
 		return plugin;
@@ -171,4 +278,13 @@ public class TownyWars extends JavaPlugin
 	public TownyWarsConfig getConfigInstance() {
 	    return config;
 	}
+
+	public TownyWarsLanguage getLanguage() {
+		return language;
+	}
+	
+	public PlaceholderAPI getPapiInstance() {
+		return this.papi;
+	}
+	
 }

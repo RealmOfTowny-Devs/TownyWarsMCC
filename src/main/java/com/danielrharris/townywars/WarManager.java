@@ -165,6 +165,30 @@ public class WarManager
 		}
   	}
   	
+  	public static boolean isAtWar(Player player) {
+		for(War w : getWars()) {
+			for(WarParticipant part : w.getWarParticipants()) {
+				for(Resident r : part.getResidents()) {
+					if(getPlayerFromResident(r) == player)
+						return true;
+				}
+			}
+		}
+		return false;
+  	}
+  	
+  	public static boolean isAtWar(Resident resident) {
+		for(War w : getWars()) {
+			for(WarParticipant part : w.getWarParticipants()) {
+				for(Resident r : part.getResidents()) {
+					if(r == resident)
+						return true;
+				}
+			}
+		}
+		return false;
+  	}
+  	
   	public static boolean isAtWar(Nation nation) {
   		try {
 			getWar(nation);
@@ -560,7 +584,7 @@ public class WarManager
     	}
     }
     
-    public static Player getPlayertFromResident(Resident r) {
+    public static Player getPlayerFromResident(Resident r) {
     	return r.getPlayer();
     }
     

@@ -26,11 +26,7 @@ public class SQLite {
 		if (!dataFolder.exists())
             dataFolder.mkdir();
         if (!warData.exists()){
-            try {
-                warData.createNewFile();
-            } catch (IOException e) {
-                plugin.getLogger().log(Level.SEVERE, "File write error: " + warData.toString());
-            }
+        	plugin.saveResource("data/warData.db", false);
         }
 	}
 

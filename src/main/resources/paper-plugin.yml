@@ -1,0 +1,16 @@
+name: TownyWars
+version: 2.0.0
+authors: [DanielRHarris, DrkMatr1984]
+main: com.danielrharris.townywars.TownyWars
+
+dependencies:
+  server:
+    Towny:
+      load: BEFORE
+      required: true
+    MVdWPlaceholderAPI:
+      load: BEFORE
+      required: false
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
