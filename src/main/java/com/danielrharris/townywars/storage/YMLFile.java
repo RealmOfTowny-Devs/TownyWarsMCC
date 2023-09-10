@@ -10,14 +10,17 @@ import org.bukkit.plugin.Plugin;
 
 import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
+import com.danielrharris.townywars.warObjects.WarParticipant;
 
 public class YMLFile {
 	
-    private File warFile;  
     private File dataFolder;
+    private File warFile = null;  
     private FileConfiguration war;
-    private File rebellionFile;
+    private File rebellionFile = null;
     private FileConfiguration rebel;
+    private File peaceFile = null;
+    private FileConfiguration peace;
   
     private Plugin plugin;
   
@@ -39,33 +42,39 @@ public class YMLFile {
             this.rebellionFile = new File(this.dataFolder, "activeRebellions.yml"); 
         if (!this.rebellionFile.exists())
             this.plugin.saveResource("data/activeRebellions.yml", false);
+        if (this.peaceFile == null)
+            this.peaceFile = new File(this.dataFolder, "peaceRequested.yml"); 
+        if (!this.peaceFile.exists())
+            this.plugin.saveResource("data/peaceRequested.yml", false);
     }
   
     public Set<War> loadWars() {
     	Set<War> activeWars = new HashSet<War>();
         this.war = (FileConfiguration)YamlConfiguration.loadConfiguration(this.warFile);
-        if (this.war.getKeys(false) != null && !this.war.getKeys(false).isEmpty())
-            for (String s : this.war.getKeys(false)) {	  
-		        try {
-			        War w = War.decodeWar(this.war.getString(s));
-			        activeWars.add(w);
-		        } catch (ClassNotFoundException | IOException e) {
-		        	e.printStackTrace();
-		        }
-            }
+        if(this.war.getKeys(false) != null)
+        	if(!this.war.getKeys(false).isEmpty())
+	            for (String s : this.war.getKeys(false)) {	  
+			        try {
+				        War w = War.decodeWar(this.war.getString(s));
+				        activeWars.add(w);
+			        } catch (ClassNotFoundException | IOException e) {
+			        	e.printStackTrace();
+			        }
+	            }
         return activeWars;
     }
   
     public void saveWars(Set<War> activeWars) {
-        if (activeWars != null && !activeWars.isEmpty())
-            for (War war : activeWars) {
-            	try {
-					this.war.set(war.getUuid().toString(), war.encodeWar());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} 
-            } 
+        if (activeWars != null)
+        	if(!activeWars.isEmpty())
+	            for (War war : activeWars) {
+	            	try {
+						this.war.set(war.getUuid().toString(), war.encodeWar());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+	            } 
         if (this.warFile.exists())
             this.warFile.delete(); 
         try {
@@ -82,29 +91,31 @@ public class YMLFile {
     
     public Set<Rebellion> loadRebellions() {
     	Set<Rebellion> activeRebellions = new HashSet<Rebellion>();
-        this.rebel = (FileConfiguration)YamlConfiguration.loadConfiguration(this.warFile);
-        if (this.rebel.getKeys(false) != null && !this.rebel.getKeys(false).isEmpty())
-            for (String s : this.rebel.getKeys(false)) {	  
-		        try {
-			        Rebellion r = Rebellion.decodeRebellion(this.rebel.getString(s));
-			        activeRebellions.add(r);
-		        } catch (ClassNotFoundException | IOException e) {
-		        	e.printStackTrace();
-		        }
-            }
+        this.rebel = (FileConfiguration)YamlConfiguration.loadConfiguration(this.rebellionFile);
+        if(this.rebel.getKeys(false) != null)
+        	if(!this.rebel.getKeys(false).isEmpty())
+	            for (String s : this.rebel.getKeys(false)) {	  
+			        try {
+				        Rebellion r = Rebellion.decodeRebellion(this.rebel.getString(s));
+				        activeRebellions.add(r);
+			        } catch (ClassNotFoundException | IOException e) {
+			        	e.printStackTrace();
+			        }
+	            }
         return activeRebellions;
     }
     
     public void saveRebellions(Set<Rebellion> activeRebellions) {
-        if (activeRebellions != null && !activeRebellions.isEmpty())
-            for (Rebellion r : activeRebellions) {
-            	try {
-					this.rebel.set(r.getUuid().toString(), r.encodeRebellion());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} 
-            } 
+        if(activeRebellions != null)
+        	if(!activeRebellions.isEmpty())
+	            for (Rebellion r : activeRebellions) {
+	            	try {
+						this.rebel.set(r.getUuid().toString(), r.encodeRebellion());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+	            } 
         if (this.rebellionFile.exists())
             this.rebellionFile.delete(); 
         try {
@@ -118,4 +129,46 @@ public class YMLFile {
             e.printStackTrace();
         } 
     }
+    
+    public Set<WarParticipant> loadPeace() {
+    	Set<WarParticipant> peaceRequested = new HashSet<WarParticipant>();
+        this.peace = (FileConfiguration)YamlConfiguration.loadConfiguration(this.peaceFile);
+        if (this.peace.getKeys(false) != null)
+        	if(!this.peace.getKeys(false).isEmpty())
+	            for (String s : this.peace.getKeys(false)) {	  
+			        try {
+			        	WarParticipant w = WarParticipant.decodeFromString(this.peace.getString(s));
+			        	peaceRequested.add(w);
+			        } catch (ClassNotFoundException | IOException e) {
+			        	e.printStackTrace();
+			        }
+	            }
+        return peaceRequested;
+    }
+    
+    public void savePeace(Set<WarParticipant> peaceRequested) {
+        if (peaceRequested != null)
+        	if(!peaceRequested.isEmpty())
+	            for (WarParticipant w : peaceRequested) {
+	            	try {
+						this.peace.set(w.getUuid().toString(), w.encodeToString());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+	            } 
+        if (this.peaceFile.exists())
+            this.peaceFile.delete(); 
+        try {
+            this.peace.save(this.peaceFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        try {
+            this.peaceFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
+    
 }

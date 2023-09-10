@@ -1,9 +1,12 @@
 package com.danielrharris.townywars.config;
 
 import java.io.File;
+
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.danielrharris.townywars.TownyWars;
 
@@ -52,11 +55,31 @@ public class TownyWarsLanguage
 		
 	}
 	
-	public String formatMessage(Player player, String message) {
-		String string = "";
-		string = TownyWars.getInstance().getPapiInstance().translatePlaceholders(player, message);
-		string = ""; // <--- mdvwPlaceholderAPI translate here
-		string = ChatColor.translateAlternateColorCodes('&', message);
-		return string;
+	public static boolean sendFormattedMessage(Player player, String message) {
+		String string = message;
+		if(TownyWars.getInstance().getPapiInstance()!=null)
+			if(player!=null)
+				string = TownyWars.getInstance().getPapiInstance().translatePlaceholders(player, string);
+		if(TownyWars.getInstance().getMpapiInstance()!=null)
+			if(player!=null)
+					string = TownyWars.getInstance().getMpapiInstance().translatePlaceholders(player, string);
+		if(isJson(string)) { //try these different methods out
+			//return Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(),"tellraw " + player.getName() + " " + string);
+			//player.spigot().sendMessage(TextComponent.fromLegacyText(string));
+			player.sendRawMessage(string);
+			return true;
+		}
+		player.sendMessage(ChatColor.translateAlternateColorCodes('&', string));
+		return true;
 	}
+	
+	private static boolean isJson(String message) {
+		try {
+			new JSONObject(message);
+			return true;
+		}catch (JSONException e) {
+			return false;
+		}
+	}
+
 }

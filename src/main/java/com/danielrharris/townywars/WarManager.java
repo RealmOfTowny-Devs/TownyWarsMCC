@@ -40,13 +40,16 @@ public class WarManager
 	private static Set<War> activeWars = new HashSet<War>();
 	private static Set<Rebellion> plannedRebellions = new HashSet<Rebellion>();
 	private static Set<WarParticipant> requestedPeace = new HashSet<WarParticipant>();
-	public Town townremove;
 	
 	//private static final int SAVING_VERSION = 1;
   
 	public WarManager() throws Exception {
-		activeWars = TownyWars.getInstance().getDataManager().loadWars();
-		plannedRebellions = TownyWars.getInstance().getDataManager().loadRebellions();
+		if(TownyWars.getInstance().getDataManager().loadWars()!=null)
+			activeWars = TownyWars.getInstance().getDataManager().loadWars();
+		if(TownyWars.getInstance().getDataManager().loadRebellions()!=null)
+			plannedRebellions = TownyWars.getInstance().getDataManager().loadRebellions();
+		if(TownyWars.getInstance().getDataManager().loadPeace()!=null)
+			requestedPeace = TownyWars.getInstance().getDataManager().loadPeace();
 	}
   	
   	public static Set<War> getWars()
@@ -947,6 +950,10 @@ public class WarManager
         	}
     	}
     	return false;
+    }
+    
+    public static Set<WarParticipant> getRequestedPeace(){
+    	return requestedPeace;
     }
     
     public static Rebellion getRebellion(String s) throws Exception{

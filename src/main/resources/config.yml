@@ -1,11 +1,10 @@
 ## Language to use for commands and messages.
 ## Currently only English is available. Value is the name of the file
-## in languages subfolder without .yml you intend to use.
+## in languages subfolder without .yml you intend to use. (default is en.yml)
 ## If you develop another language file please send it to me!
 language: en
 ## The message prefix when thre plugin sends messages and also
 ## for console messages
-messagePrefix: "&8[&bTowny&eWars&8]&r"
 pper-player: 2.0
 pper-plot: 1.0
 pper-player-kill: 1.0

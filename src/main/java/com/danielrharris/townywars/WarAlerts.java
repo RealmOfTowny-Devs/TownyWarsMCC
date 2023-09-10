@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
@@ -14,7 +13,13 @@ import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.palmergames.bukkit.towny.object.Resident;
 
-import mkremins.fanciful.FancyMessage;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.HoverEvent.Action;
+import net.md_5.bungee.api.chat.TextComponent;
 
 public class WarAlerts {
 	
@@ -37,24 +42,17 @@ public class WarAlerts {
 					Player player = r.getPlayer();
 					final UUID uuid = player.getUniqueId();
 					if (messagedPlayers.contains(uuid))
-					{
+					{//This will probably need fixed
 						try {
-							points = ChatColor.RED + "" + ChatColor.BOLD + participant + ChatColor.DARK_RED + " is Under Attack!";
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						try {
-							new FancyMessage("                     ")
-							.then(d.format((wwar.getParticipantPoints(participant))))
-							    .color(ChatColor.YELLOW)
-							    .tooltip(points)
-							    .command("/twar showtowndp")
-							.then(" Defense Points Remaining")
-								.color(ChatColor.WHITE)
-							    .tooltip(points)
-							    .command("/twar showtowndp")
-							.send(player);
+							points = ChatColor.RED + "" + ChatColor.BOLD + participant.getName() + ChatColor.DARK_RED + " is Under Attack!";
+							BaseComponent comp = new TextComponent("");
+							comp.addExtra(d.format((wwar.getParticipantPoints(participant))));
+							comp.setColor(ChatColor.YELLOW);
+							HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(points).create());
+							comp.setHoverEvent(event);
+							ClickEvent clickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/twar showtowndp");
+							comp.setClickEvent(clickEvent);
+							player.spigot().sendMessage(comp);
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -77,7 +75,8 @@ public class WarAlerts {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
-						new FancyMessage("                 ")
+						///////////////////////////         Recode to use bungee api instead
+						/*new FancyMessage("                 ")
 						.then("g")
 							.color(ChatColor.WHITE)
 							.style(ChatColor.MAGIC)
@@ -96,7 +95,7 @@ public class WarAlerts {
 						.then("g")
 							.color(ChatColor.WHITE)
 							.style(ChatColor.MAGIC)
-						.send(player);
+						.send(player);*/
 						player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 10, 10);
 					}
 				}

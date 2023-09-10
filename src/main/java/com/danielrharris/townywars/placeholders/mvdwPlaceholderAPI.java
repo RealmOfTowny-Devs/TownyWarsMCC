@@ -30,4 +30,12 @@ public class mvdwPlaceholderAPI {
     	else
     		return PlaceholderAPI.replacePlaceholders(null, message);
     }
+    
+    public String translatePlaceholders(Player p, String message) {
+   	    return PlaceholderAPI.replacePlaceholders(p, message);
+    }
+    
+    public String translatePlaceholders(OfflinePlayer op, String message) {
+   	    return PlaceholderAPI.replacePlaceholders(op, message);
+    }
 }

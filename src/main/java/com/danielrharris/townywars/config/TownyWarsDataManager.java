@@ -9,6 +9,7 @@ import com.danielrharris.townywars.storage.SQLite;
 import com.danielrharris.townywars.storage.YMLFile;
 import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
+import com.danielrharris.townywars.warObjects.WarParticipant;
 
 public class TownyWarsDataManager {
 	
@@ -44,6 +45,19 @@ public class TownyWarsDataManager {
     			this.sqlite.saveWars(WarManager.getWars());
     		default:
     			this.ymlfile.saveWars(WarManager.getWars());
+		}
+	}
+	
+	public void savePeace() throws Exception {
+		switch (TownyWars.getInstance().getConfigInstance().method) {
+    		case file:
+    			this.ymlfile.savePeace(WarManager.getRequestedPeace());
+    		case mysql:
+                this.mysql.savePeace(WarManager.getRequestedPeace());
+    		case sqlite:
+    			this.sqlite.savePeace(WarManager.getRequestedPeace());
+    		default:
+    			this.ymlfile.savePeace(WarManager.getRequestedPeace());
 		}
 	}
 	
@@ -83,6 +97,19 @@ public class TownyWarsDataManager {
             return sqlite.loadRebellions();
     	default:
       	    return ymlfile.loadRebellions();
+		}
+	}
+	
+	public Set<WarParticipant> loadPeace() throws Exception {
+		switch (TownyWars.getInstance().getConfigInstance().method) {
+    	case file:
+      	    return ymlfile.loadPeace();
+    	case mysql:
+    		return mysql.loadPeace();
+    	case sqlite:
+            return sqlite.loadPeace();
+    	default:
+      	    return ymlfile.loadPeace();
 		}
 	}
 }

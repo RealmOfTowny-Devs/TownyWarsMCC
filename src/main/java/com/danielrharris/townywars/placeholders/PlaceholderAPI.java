@@ -48,7 +48,7 @@ public class PlaceholderAPI extends PlaceholderExpansion {
 		return null;
 	}
 	
-	public String translatePlaceholders(Player p, String message) {
+	public String translatePlaceholders(@NotNull Player p, String message) {
 		return me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(p, message);
 	}
 	

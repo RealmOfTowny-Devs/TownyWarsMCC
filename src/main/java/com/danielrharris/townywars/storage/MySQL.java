@@ -17,6 +17,7 @@ import org.bukkit.Bukkit;
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
+import com.danielrharris.townywars.warObjects.WarParticipant;
 
 public class MySQL {
 	private Connection con;
@@ -43,20 +44,22 @@ public class MySQL {
   	public Set<War> loadWars() {
   		Set<War> activeWars = new HashSet<War>();
   		try {
-			for(String key : getTableColumnNames("wars")) {
-				try {
-				      PreparedStatement ps = getStatement("SELECT base64 FROM wars" + " WHERE uuid= ?");
-				      ps.setString(1, key);
-				      ResultSet rs = ps.executeQuery();
-				      rs.next();
-				      String base64 = rs.getString("base64");
-				      rs.close();
-				      ps.close();
-				      activeWars.add(War.decodeWar(base64));
-				  } catch (Exception ex) {
-				      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
-				  }
-			}
+  			if(getTableColumnNames("wars")!=null)
+  				if(!getTableColumnNames("wars").isEmpty())
+					for(String key : getTableColumnNames("wars")) {
+						try {
+						      PreparedStatement ps = getStatement("SELECT base64 FROM wars" + " WHERE uuid= ?");
+						      ps.setString(1, key);
+						      ResultSet rs = ps.executeQuery();
+						      rs.next();
+						      String base64 = rs.getString("base64");
+						      rs.close();
+						      ps.close();
+						      activeWars.add(War.decodeWar(base64));
+						  } catch (Exception ex) {
+						      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
+						  }
+					}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -65,39 +68,41 @@ public class MySQL {
   	}
   	
   	public void saveWars(Set<War> activeWars) {
-  		if(activeWars!=null && !activeWars.isEmpty()) {
-  			for(War w : activeWars) {
-  				try {
-  					createTable("wars");
-  			        PreparedStatement ps = getStatement("REPLACE INTO wars" + " SET base64= ? WHERE uuid= ?");
-  			        ps.setString(1, w.encodeWar());
-  			        ps.setString(2, w.getUuid().toString());
-  			        ps.executeUpdate();
-  			        ps.close();
-  			      } catch (Exception ex) {
-  			    	  //put error message here
-  			      }
-  	  		}
-  		}
+  		if(activeWars!=null)
+  			if(!activeWars.isEmpty())
+	  			for(War w : activeWars) {
+	  				try {
+	  					createTable("wars");
+	  			        PreparedStatement ps = getStatement("REPLACE INTO wars" + " SET base64= ? WHERE uuid= ?");
+	  			        ps.setString(1, w.encodeWar());
+	  			        ps.setString(2, w.getUuid().toString());
+	  			        ps.executeUpdate();
+	  			        ps.close();
+	  			      } catch (Exception ex) {
+	  			    	  //put error message here
+	  			      }
+	  	  		}  		
   	}
   	
   	public Set<Rebellion> loadRebellions() {
   		Set<Rebellion> activeRebellions = new HashSet<Rebellion>();
   		try {
-			for(String key : getTableColumnNames("rebellions")) {
-				try {
-				      PreparedStatement ps = getStatement("SELECT * FROM rebellions" + " WHERE uuid= ?");
-				      ps.setString(1, key);
-				      ResultSet rs = ps.executeQuery();
-				      rs.next();
-				      String base64 = rs.getString("base64");
-				      rs.close();
-				      ps.close();
-				      activeRebellions.add(Rebellion.decodeRebellion(base64));
-				  } catch (Exception ex) {
-				      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
-				  }
-			}
+  			if(getTableColumnNames("rebellions")!=null)
+  				if(!getTableColumnNames("rebellions").isEmpty())
+					for(String key : getTableColumnNames("rebellions")) {
+						try {
+						      PreparedStatement ps = getStatement("SELECT * FROM rebellions" + " WHERE uuid= ?");
+						      ps.setString(1, key);
+						      ResultSet rs = ps.executeQuery();
+						      rs.next();
+						      String base64 = rs.getString("base64");
+						      rs.close();
+						      ps.close();
+						      activeRebellions.add(Rebellion.decodeRebellion(base64));
+						  } catch (Exception ex) {
+						      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
+						  }
+					}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -106,20 +111,63 @@ public class MySQL {
   	}
   	
   	public void saveRebellions(Set<Rebellion> activeRebellions) {	
-  		if(activeRebellions!=null && !activeRebellions.isEmpty()) {
-  			for(Rebellion r : activeRebellions) {
-  				try {
-  					createTable("rebellions");
-  			        PreparedStatement ps = getStatement("REPLACE INTO rebellions" + " SET base64= ? WHERE uuid= ?");
-  			        ps.setString(1, r.encodeRebellion());
-  			        ps.setString(2, r.getUuid().toString());
-  			        ps.executeUpdate();
-  			        ps.close();
-  			      } catch (Exception ex) {
-  			    	  //put error message here
-  			      }
-  	  		}
-  		}
+  		if(activeRebellions!=null)
+  			if(!activeRebellions.isEmpty()) 
+	  			for(Rebellion r : activeRebellions) {
+	  				try {
+	  					createTable("rebellions");
+	  			        PreparedStatement ps = getStatement("REPLACE INTO rebellions" + " SET base64= ? WHERE uuid= ?");
+	  			        ps.setString(1, r.encodeRebellion());
+	  			        ps.setString(2, r.getUuid().toString());
+	  			        ps.executeUpdate();
+	  			        ps.close();
+	  			      } catch (Exception ex) {
+	  			    	  //put error message here
+	  			      }
+	  	  		}		
+  	}
+  	
+  	public Set<WarParticipant> loadPeace() {
+  		Set<WarParticipant> peaceRequested = new HashSet<WarParticipant>();
+  		try {
+  			if(getTableColumnNames("peace")!=null)
+  				if(getTableColumnNames("peace").isEmpty())
+					for(String key : getTableColumnNames("peace")) {
+						try {
+						      PreparedStatement ps = getStatement("SELECT * FROM peace" + " WHERE uuid= ?");
+						      ps.setString(1, key);
+						      ResultSet rs = ps.executeQuery();
+						      rs.next();
+						      String base64 = rs.getString("base64");
+						      rs.close();
+						      ps.close();
+						      peaceRequested.add(WarParticipant.decodeFromString(base64));
+						  } catch (Exception ex) {
+						      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
+						  }
+					}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+  		return peaceRequested;
+  	}
+  	
+  	public void savePeace(Set<WarParticipant> peaceRequested) {	
+  		if(peaceRequested!=null)
+  			if(!peaceRequested.isEmpty())
+	  			for(WarParticipant w : peaceRequested) {
+	  				try {
+	  					createTable("peace");
+	  			        PreparedStatement ps = getStatement("REPLACE INTO peace" + " SET base64= ? WHERE uuid= ?");
+	  			        ps.setString(1, w.encodeToString());
+	  			        ps.setString(2, w.getUuid().toString());
+	  			        ps.executeUpdate();
+	  			        ps.close();
+	  			      } catch (Exception ex) {
+	  			    	  //put error message here
+	  			      }
+	  	  		}
   	}
   
   	private boolean isConnected() {

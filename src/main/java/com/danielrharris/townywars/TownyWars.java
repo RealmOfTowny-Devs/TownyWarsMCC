@@ -8,6 +8,8 @@ import com.danielrharris.townywars.placeholders.PlaceholderAPI;
 import com.danielrharris.townywars.placeholders.mvdwPlaceholderAPI;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
+import com.github.Anon8281.universalScheduler.UniversalScheduler;
+import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.*;
 
@@ -40,6 +42,7 @@ import java.util.logging.Logger;
 
 public class TownyWars extends JavaPlugin
 {
+	private TaskScheduler scheduler;
     private TownyUniverse tUniverse;
     private static TownyWars plugin;
     private TownyWarsConfig config;
@@ -47,7 +50,8 @@ public class TownyWars extends JavaPlugin
     private TownyWarsDataManager dataManager;
     private GriefManager gm;
     private WarManager warManager;
-    private PlaceholderAPI papi;
+    private PlaceholderAPI papi = null;
+    private mvdwPlaceholderAPI mpapi = null;
     File wallConfigFile = new File(this.getDataFolder(), "walls.yml");
     public static HashMap<Chunk, List<Location>> wallBlocks = new HashMap<Chunk, List<Location>>();
     public Map<String,TownyWarsResident> allTownyWarsResidents = new HashMap<String,TownyWarsResident>();
@@ -63,6 +67,7 @@ public class TownyWars extends JavaPlugin
     @Override
     public void onEnable()
     {
+    	scheduler = UniversalScheduler.getScheduler(this);
     	this.papi = null;
 	  	TownyWars.plugin = this;
         this.config = new TownyWarsConfig(this);
@@ -102,7 +107,7 @@ public class TownyWars extends JavaPlugin
         
 	  	if(Bukkit.getPluginManager().isPluginEnabled("MVdWPlaceholderAPI")) {
 	  		Bukkit.getServer().getLogger().info("Hooked into MVdWPlaceholderAPI!");
-	      	new mvdwPlaceholderAPI(plugin);
+	      	this.mpapi = new mvdwPlaceholderAPI(plugin);
 	    }
 	    if(Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
 	    	Bukkit.getServer().getLogger().info("Hooked into PlaceholderAPI!");
@@ -284,7 +289,28 @@ public class TownyWars extends JavaPlugin
 	}
 	
 	public PlaceholderAPI getPapiInstance() {
-		return this.papi;
+		return papi;
 	}
+
+	public mvdwPlaceholderAPI getMpapiInstance() {
+		return mpapi;
+	}
+
+	public TaskScheduler getScheduler() {
+		return scheduler;
+	}
+	
+	//Universal Scheduler examples
+	
+	/*
+	 * Call it just like
+		Main.getScheduler().runTaskLater(() -> { //Main there is your plugin Main
+		        Bukkit.broadcastMessage("Wow, it was scheduled");
+		});
+		If you need to get the scheduled task for some reason
+		MyScheduledTask task = Main.getScheduler().runTaskLater(() -> { //Main there is your plugin Main
+		        Bukkit.broadcastMessage("Wow, it was scheduled");
+		}, 10L);
+	 */
 	
 }
