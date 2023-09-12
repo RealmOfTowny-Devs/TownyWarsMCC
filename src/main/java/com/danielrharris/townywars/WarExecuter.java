@@ -1,5 +1,6 @@
 package com.danielrharris.townywars;
 
+import com.danielrharris.townywars.config.TownyWarsLanguage;
 import com.danielrharris.townywars.listeners.GriefListener;
 import com.danielrharris.townywars.warObjects.Rebellion;
 import com.danielrharris.townywars.warObjects.War;
@@ -9,7 +10,6 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import mkremins.fanciful.FancyMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -37,449 +37,500 @@ class WarExecutor implements CommandExecutor
   
 	public boolean onCommand(CommandSender cs, Command cmnd, String string, String[] strings)
 	{
-		for(String commandName : this.plugin.getLanguage().commandNameMain) {
-			if (cmnd.getName().equalsIgnoreCase(commandName)) {
-				boolean unknownCommand=true;
-				DecimalFormat d = new DecimalFormat("#.00");
-				if (strings.length == 0)
-				{
-					unknownCommand=false;
-					cs.sendMessage(ChatColor.GREEN + "For help with TownyWars, type /twar help");
-					return true;
-				}
-				String farg = strings[0];
-				
-				if (farg.equals("reload"))
-				{
-					unknownCommand=false;
-					if (!cs.hasPermission("townywars.admin")) {
-						return false;
-					}
-					cs.sendMessage(ChatColor.GREEN + "Reloading plugin...");
-					PluginManager pm = Bukkit.getServer().getPluginManager();
-					pm.disablePlugin(this.plugin);
-					pm.enablePlugin(this.plugin);
-					cs.sendMessage(ChatColor.GREEN + "Plugin reloaded!");
-				}
-				
-				if (farg.equals("help"))
-				{
-					Player p;
-					Resident res;  
-					cs.sendMessage(ChatColor.GREEN + "Towny Wars Help:");
-					cs.sendMessage(ChatColor.AQUA + "/twar - " + ChatColor.YELLOW + "Displays the TownyWars configuration information");
-					cs.sendMessage(ChatColor.AQUA + "/twar help - " + ChatColor.YELLOW + "Displays the TownyWars help page");
-					cs.sendMessage(ChatColor.AQUA + "/twar status - " + ChatColor.YELLOW + "Displays a list of on-going wars");
-					cs.sendMessage(ChatColor.AQUA + "/twar status [town/nation] - " + ChatColor.YELLOW + "Displays a list of the nation's towns and their defense points");
-					if(cs.hasPermission("townywars.leader")){
-						cs.sendMessage(ChatColor.AQUA + "/twar repair - " + ChatColor.YELLOW + "Allows you to repair war grief by paying money from town bank");
-					}  
-					cs.sendMessage(ChatColor.AQUA + "/twar showtowndp - " + ChatColor.YELLOW + "Shows your towns current defense points.");
-					cs.sendMessage(ChatColor.AQUA + "/twar showtownmaxdp - " + ChatColor.YELLOW + "Shows your towns max defense points.");
-					if(cs.hasPermission("townywars.leader")){
-						cs.sendMessage(ChatColor.AQUA + "/twar declare [town/nation] - " + ChatColor.YELLOW + "Starts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT OR MAYOR/ASSISTANT)");
-						cs.sendMessage(ChatColor.AQUA + "/twar peace - " + ChatColor.YELLOW + "Request from enemy nations king to end the ongoing war. (REQUIRES YOU TO BE A KING/ASSISTANT)");
-					}
-					if(cs instanceof Player){
-						p = (Player) cs;
-						try {
-							res = TownyUniverse.getInstance().getResident(p.getName());
-							if(res.getTown().getNation().getCapital() != res.getTown() && res.isMayor()){
-								cs.sendMessage(ChatColor.AQUA + "/twar createrebellion [name] - " + ChatColor.YELLOW + "Creates a (secret) rebellion within your nation.");
-							 	cs.sendMessage(ChatColor.AQUA + "/twar joinrebellion [name] - " + ChatColor.YELLOW + "Joins a rebellion within your nation using the name.");
-							 	cs.sendMessage(ChatColor.AQUA + "/twar leaverebellion - " + ChatColor.YELLOW + "Leaves your current rebellion.");
-							 	cs.sendMessage(ChatColor.AQUA + "/twar showrebellion - " + ChatColor.YELLOW + "Shows your current rebellion and its members.");
-							 	cs.sendMessage(ChatColor.AQUA + "/twar executerebellion - " + ChatColor.YELLOW + "Executes your rebellion and you go to war with your nation (requires to be leader of rebellion).");
-							}
-						} catch (NotRegisteredException e) {
+		boolean unknownCommand=true;
+		DecimalFormat d = new DecimalFormat("#.00");
+		
+		for(String commandName : this.plugin.getLanguage().mainCommand.getNames()) {
+			if (cmnd.getName().equalsIgnoreCase(commandName)) {					
+				if(hasPermission(cs, this.plugin.getLanguage().mainCommand.getPermission())) {
+//				    ******************************       Main Command       ***********************
+					
+					if (strings.length == 0)
+					{
+						if(hasPermission(cs, this.plugin.getLanguage().mainCommand.getPermission())) {
+							unknownCommand=false;
+							TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().mainCommand.getMessage());
 							return true;
-						}   	  
+						}else {
+							TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
+							return false;
+						}
+						
 					}
-					if (cs.hasPermission("townywars.admin"))
-					{
-						cs.sendMessage(ChatColor.AQUA + "/twar reload - " + ChatColor.YELLOW + "Reload the plugin");
-						cs.sendMessage(ChatColor.AQUA + "/twar astart [nation] [nation] - " + ChatColor.YELLOW + "Forces two nations to go to war");
-						cs.sendMessage(ChatColor.AQUA + "/twar aend [nation] [nation] - " + ChatColor.YELLOW + "Forces two nations to stop a war");
-						cs.sendMessage(ChatColor.AQUA + "/twar aaddtowndp [town] - " + ChatColor.YELLOW + "Adds a DP to the town");
-						cs.sendMessage(ChatColor.AQUA + "/twar aremovetowndp [town] - " + ChatColor.YELLOW + "Removes a DP from the town");
-					}
-					return true;
-				}
-				
-				War w;
-				if (farg.equals("status"))
-				{
-					unknownCommand=false;
-					if (strings.length == 1)
-					{
-						cs.sendMessage(ChatColor.GREEN + "List of on-going wars:");
-						for (War war : WarManager.getWars())
+					
+					String farg = strings[0];
+					
+					//  *****************************    Reload Command    ******************************
+					
+					for(String reload : this.plugin.getLanguage().reload.getNames()) {
+						if (farg.equals(reload))
 						{
-							WarParticipant first = null;
-							WarParticipant second = null;
-							for (WarParticipant st : war.getWarParticipants()) {
-								if (first == null) {
-									first = st;
-								} else {
-									second = st;
-								}
+							unknownCommand=false;
+							if (!hasPermission(cs, this.plugin.getLanguage().mainCommand.getPermission())) {
+								TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
+								return false;
 							}
-							try {
-								cs.sendMessage(ChatColor.GREEN + first.getName() + " " + war.getParticipantPoints(first) + " vs. " + second.getName() + " " + war.getParticipantPoints(second));
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+							TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().reload.getMessage());
+		                    if(TownyWars.getInstance().reload())
+		                    	TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().successfulReloadMessage);
 						}
-						return true;
-					}
-					String onation = strings[1];
-					Nation t;
-					try
-					{
-						t = TownyUniverse.getDataSource().getNation(onation);
-					}
-					catch (NotRegisteredException ex)
-					{
-						cs.sendMessage(ChatColor.GOLD + "No nation called " + onation + " could be found!");
-						return true;
-					}
-					w = WarManager.getWarForNation(t);
-					if (w == null)
-					{
-						cs.sendMessage(ChatColor.RED + "That nation isn't in a war!");
-						return true;
-					}
-					cs.sendMessage(t.getName() + " war info:");
-					for (Town tt : t.getTowns()) {
-						try {
-							cs.sendMessage(ChatColor.GREEN + tt.getName() + ": " + w.getTownPoints(tt) + " points");
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-					return true;
-				}
-				if (farg.equals("repair"))
-				{	
-					unknownCommand=false;
-					if(cs.hasPermission("townywars.leader")){
-						if(cs instanceof Player){
-							Player p = (Player) cs;	        	
-							int numBlocks = 0;
-							Town town = null;
-							double price = 0;
-							try {
-								town = TownyUniverse.getDataSource().getResident(p.getName()).getTown();
-								if(GriefListener.getGriefedBlocks()!=null){
-									if(!GriefListener.getGriefedBlocks().isEmpty()){
-										for(SBlock b : GriefListener.getGriefedBlocks().get(town)){
-											if(b.getType()!=Material.AIR && !Utils.isOtherAttachable(b.getType())){
-												numBlocks++;
-											}
-										}
-									}
+					}				
+					
+					/// *************************   Help Command    ******************************
+					
+					for(String help : this.plugin.getLanguage().help.getNames()) {
+						if (farg.equals(help))
+						{
+							if(hasPermission(cs, this.plugin.getLanguage().help.getPermission()) || hasPermission(cs, this.plugin.getLanguage().adminHelpPerm)){
+								Player p;
+								Resident res; 
+								String[] helpMessages = (String[]) this.plugin.getLanguage().help.getMessage().toArray();
+								for(int i = 0; i > helpMessages.length; i++) {
+									TownyWarsLanguage.sendFormattedMessage(cs, helpMessages[i]);
 								}
-								price = Math.round((numBlocks * TownyWars.pBlock)*1e2)/1e2;
-							} catch (NotRegisteredException e) {
-								p.sendMessage(ChatColor.RED + "You are not in a Town!");
-								return true;
-							}		
-							if (strings.length == 1){
-								if(town!=null){
-									if(numBlocks > 0){
-										//Rollback everything, charge for block destructions
-										p.sendMessage(ChatColor.GREEN + "Price to Repair " + town.getName() + ChatColor.WHITE + ": $" + ChatColor.YELLOW + d.format(price));
-										p.sendMessage("   " + ChatColor.MAGIC + "l" + ChatColor.RESET + "  " + ChatColor.BOLD + ChatColor.GOLD + "Repair?" + ChatColor.RESET + "  " + ChatColor.MAGIC + "l");
-										sendYesNoMessage(p);
-									}else if(numBlocks == 0 && GriefListener.getGriefedBlocks().get(town)!=null && GriefListener.getGriefedBlocks().get(town).size() > 0){
-										p.sendMessage(ChatColor.GREEN + "Price to Repair " + town.getName() + ChatColor.WHITE + ": " + ChatColor.YELLOW + "FREE!");
-										p.sendMessage("   " + ChatColor.MAGIC + "l" + ChatColor.RESET + "  " + ChatColor.BOLD + ChatColor.GOLD + "Repair?" + ChatColor.RESET + "  " + ChatColor.MAGIC + "l");
-										sendYesNoMessage(p);
-										//rollback block places only (free)
-									}else if((numBlocks == 0 && GriefListener.getGriefedBlocks().get(town)==null) || (numBlocks == 0 && GriefListener.getGriefedBlocks().get(town)!=null && GriefListener.getGriefedBlocks().get(town).isEmpty())){
-										p.sendMessage(ChatColor.GREEN + "Nothing to Repair");
-									}
-								}
-							}
-							if (strings.length == 2){
-								if(town!=null){
-									if(GriefListener.getGriefedBlocks().get(town)!=null){
-										if(!GriefListener.getGriefedBlocks().get(town).isEmpty()){
-											String response = ChatColor.stripColor(strings[1]).toLowerCase();
-											if(response.equals("yes")){
-												try {
-													if(town.canPayFromHoldings(price)){
-														town.pay(price, "repairs");
-														p.sendMessage("");
-														p.sendMessage(ChatColor.GREEN+ "Repairs are underway!");
-														p.sendMessage(ChatColor.AQUA + "New Town Balance: " + ChatColor.YELLOW + town.getHoldingFormattedBalance());  				
-														gm.rollbackBlocks(town);
-													}else{
-														p.sendMessage("");
-														p.sendMessage(ChatColor.DARK_RED + town.getName() + " does not have enough money to pay for repairs.");
+															
+								if(cs instanceof Player){
+									p = (Player) cs;
+									try {
+										res = TownyUniverse.getInstance().getResident(p.getName());
+										if(res.hasNation()) {
+											if(!WarManager.isAtWar(res.getNation()))
+												if(res.getTown().getNation().getCapital() != res.getTown() && res.isMayor()){
+													String[] rebellionMessages = (String[]) this.plugin.getLanguage().rebellionMessages.toArray();
+													for(int i = 0; i > rebellionMessages.length; i++) {
+														TownyWarsLanguage.sendFormattedMessage(cs, rebellionMessages[i]);
 													}
-												} catch (EconomyException e) {
-													// TODO Auto-generated catch block
-													e.printStackTrace();
+												}
+										}
+										if(res.hasNation()) {
+											if(res.getNation().getAssistants().contains(res) || res.isKing()) {
+												String[] leaderMessages = (String[]) this.plugin.getLanguage().leaderMessages.toArray();
+												for(int i = 0; i > leaderMessages.length; i++) {
+													TownyWarsLanguage.sendFormattedMessage(cs, leaderMessages[i]);
+												}
+											}	
+										}else if(res.hasTown()) {
+											Town town = res.getTown();
+											//Trusted Residents may need looked at again
+											if(town.getTrustedResidents().contains(res) || res.isMayor()) {
+												String[] leaderMessages = (String[]) this.plugin.getLanguage().leaderMessages.toArray();
+												for(int i = 0; i > leaderMessages.length; i++) {
+													TownyWarsLanguage.sendFormattedMessage(cs, leaderMessages[i]);
 												}
 											}
-											if(response.equals("no")){
-												p.sendMessage("");
-												p.sendMessage(ChatColor.DARK_RED + "Canceling Repair...");
-												return true;
-											}
 										}
+									} catch (NotRegisteredException e) {
+										return true;
+									}								
+								}
+								if (hasPermission(cs, this.plugin.getLanguage().adminHelpPerm))
+								{
+									String[] adminMessages = (String[]) this.plugin.getLanguage().adminMessages.toArray();
+									for(int i = 0; i > adminMessages.length; i++) {
+										TownyWarsLanguage.sendFormattedMessage(cs, adminMessages[i]);
 									}
 								}
-							}
-			    	   }
-					}else{
-						cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
+								return true;
+							}else {
+								TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
+								return false;
+							}				
+						}
 					}
-				}
-		 	  
-				if (farg.equals("showtownmaxdp")){
-					unknownCommand=false;
-					Town town = null;
-					try {
-						Resident re = TownyUniverse.getDataSource().getResident(cs.getName());
-						if(re.hasTown()){
-							town = re.getTown();
-							Double points = War.getTownMaxPoints(town);
-							String proper = d.format(points);
-							if(TownyWars.isBossBar){
-								new ShowDPTask(town, plugin).runTask(plugin);
-							}
-							cs.sendMessage(ChatColor.YELLOW + "Your town's max defense value is currently " +  proper + " defense points!");
-							cs.sendMessage(ChatColor.YELLOW + "Claim more land or get more residents to increase it!");
-							return true;
-						}else{
-							cs.sendMessage(ChatColor.RED + "You are not in a Town!");
-						}		
-					} catch (NotRegisteredException e) {
-						cs.sendMessage(ChatColor.RED + "You are not in a Town!");
-						return true;
-					}  	
-				}
-		    
-				if (farg.equals("showtowndp")){
-					unknownCommand=false;
-					Town town = null;
-					Double points = null;
-					War wwar = null;
-					try {
-						Resident re = TownyUniverse.getDataSource().getResident(cs.getName());
-						if(re.hasTown()){
-							town = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
-							if(town.hasNation()){
-								try {
-									wwar = WarManager.getWarForNation(town.getNation());
-									if(wwar!=null){			
-										try {
-											points = wwar.getTownPoints(town);
-											if(points!=null){
-												String proper = d.format(points);
-												if(TownyWars.isBossBar){
-													new ShowDPTask(town, plugin).runTask(plugin);
-												}
-												cs.sendMessage(ChatColor.YELLOW + "Your town's defense value is currently " +  proper + " defense points!");
-												cs.sendMessage(ChatColor.YELLOW + "Your points will return to max value when the war ends!");
-												return true;
-											}
-										} catch (Exception e) {
-											e.printStackTrace();
-											return true;
-										}
-									}else{
-										if(TownyWars.isBossBar){
-											points = War.getTownMaxPoints(town);
-											String proper = d.format(points);
-											new ShowDPTask(town, plugin).runTask(plugin);
-											cs.sendMessage(ChatColor.YELLOW + "Your town's max defense value is currently " +  proper + " defense points!");
-											cs.sendMessage(ChatColor.YELLOW + "Claim more land or get more residents to increase it!");
-										}
+						
+					
+					/// *************************   Status Command    ******************************
+					
+					for(String status : this.plugin.getLanguage().status.getNames()) {
+						if (farg.equalsIgnoreCase(status)) {
+							if(hasPermission(cs, this.plugin.getLanguage().status.getPermission())) {
+								unknownCommand=false;
+								if (strings.length == 1)
+								{
+									cs.sendMessage(ChatColor.GREEN + "List of on-going wars:");
+									for (War war : WarManager.getWars())
+									{
+										showWarStatus(cs, war);								
 									}
-								} catch (Exception e1) {
-									cs.sendMessage(ChatColor.RED + "You are not in a Nation!");
 									return true;
 								}
+								
+								String part = strings[1];
+								if(TownyUniverse.getInstance().hasTown(part)) {
+									Town town = TownyUniverse.getInstance().getTown(part);
+									if(WarManager.isAtWar(town)) {
+										War war = WarManager.getWar(town);
+										showWarStatus(cs, war);
+										return true;									
+									}else {
+										TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notInWarErrorMessage);
+										return false;
+									}
+								}
+								if(TownyUniverse.getInstance().hasNation(part)) {
+									Nation nation = TownyUniverse.getInstance().getNation(part);
+									if(WarManager.isAtWar(nation)) {
+										War war = WarManager.getWar(nation);
+										showWarStatus(cs, war);
+										return true;									
+									}else {
+										TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notInWarErrorMessage);
+										return false;
+									}
+								}							
+								return true;
+							}else {
+								TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
+								return false;
 							}
+						}							
+					}
+
+					/// *************************   Repair Command    ******************************
+					
+					if (farg.equals("repair"))
+					{	
+						unknownCommand=false;
+						if(cs.hasPermission("townywars.leader")){
+							if(cs instanceof Player){
+								Player p = (Player) cs;	        	
+								int numBlocks = 0;
+								Town town = null;
+								double price = 0;
+								try {
+									town = TownyUniverse.getDataSource().getResident(p.getName()).getTown();
+									if(GriefListener.getGriefedBlocks()!=null){
+										if(!GriefListener.getGriefedBlocks().isEmpty()){
+											for(SBlock b : GriefListener.getGriefedBlocks().get(town)){
+												if(b.getType()!=Material.AIR && !Utils.isOtherAttachable(b.getType())){
+													numBlocks++;
+												}
+											}
+										}
+									}
+									price = Math.round((numBlocks * TownyWars.pBlock)*1e2)/1e2;
+								} catch (NotRegisteredException e) {
+									p.sendMessage(ChatColor.RED + "You are not in a Town!");
+									return true;
+								}		
+								if (strings.length == 1){
+									if(town!=null){
+										if(numBlocks > 0){
+											//Rollback everything, charge for block destructions
+											p.sendMessage(ChatColor.GREEN + "Price to Repair " + town.getName() + ChatColor.WHITE + ": $" + ChatColor.YELLOW + d.format(price));
+											p.sendMessage("   " + ChatColor.MAGIC + "l" + ChatColor.RESET + "  " + ChatColor.BOLD + ChatColor.GOLD + "Repair?" + ChatColor.RESET + "  " + ChatColor.MAGIC + "l");
+											sendYesNoMessage(p);
+										}else if(numBlocks == 0 && GriefListener.getGriefedBlocks().get(town)!=null && GriefListener.getGriefedBlocks().get(town).size() > 0){
+											p.sendMessage(ChatColor.GREEN + "Price to Repair " + town.getName() + ChatColor.WHITE + ": " + ChatColor.YELLOW + "FREE!");
+											p.sendMessage("   " + ChatColor.MAGIC + "l" + ChatColor.RESET + "  " + ChatColor.BOLD + ChatColor.GOLD + "Repair?" + ChatColor.RESET + "  " + ChatColor.MAGIC + "l");
+											sendYesNoMessage(p);
+											//rollback block places only (free)
+										}else if((numBlocks == 0 && GriefListener.getGriefedBlocks().get(town)==null) || (numBlocks == 0 && GriefListener.getGriefedBlocks().get(town)!=null && GriefListener.getGriefedBlocks().get(town).isEmpty())){
+											p.sendMessage(ChatColor.GREEN + "Nothing to Repair");
+										}
+									}
+								}
+								if (strings.length == 2){
+									if(town!=null){
+										if(GriefListener.getGriefedBlocks().get(town)!=null){
+											if(!GriefListener.getGriefedBlocks().get(town).isEmpty()){
+												String response = ChatColor.stripColor(strings[1]).toLowerCase();
+												if(response.equals("yes")){
+													try {
+														if(town.canPayFromHoldings(price)){
+															town.pay(price, "repairs");
+															p.sendMessage("");
+															p.sendMessage(ChatColor.GREEN+ "Repairs are underway!");
+															p.sendMessage(ChatColor.AQUA + "New Town Balance: " + ChatColor.YELLOW + town.getHoldingFormattedBalance());  				
+															gm.rollbackBlocks(town);
+														}else{
+															p.sendMessage("");
+															p.sendMessage(ChatColor.DARK_RED + town.getName() + " does not have enough money to pay for repairs.");
+														}
+													} catch (EconomyException e) {
+														// TODO Auto-generated catch block
+														e.printStackTrace();
+													}
+												}
+												if(response.equals("no")){
+													p.sendMessage("");
+													p.sendMessage(ChatColor.DARK_RED + "Canceling Repair...");
+													return true;
+												}
+											}
+										}
+									}
+								}
+				    	   }
 						}else{
-							cs.sendMessage(ChatColor.RED + "You are not in a Town!");
+							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
 						}
-					} catch (NotRegisteredException e) {
-						cs.sendMessage(ChatColor.RED + "You are not in a Town!");
-						return true;
 					}
-				}
-		    
-				if (farg.equals("neutral"))
-				{
-					unknownCommand=false;
-					if (!cs.hasPermission("townywars.neutral"))
-					{
-						cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
-						return true;
+			 	  
+					if (farg.equals("showtownmaxdp")){
+						unknownCommand=false;
+						Town town = null;
+						try {
+							Resident re = TownyUniverse.getDataSource().getResident(cs.getName());
+							if(re.hasTown()){
+								town = re.getTown();
+								Double points = War.getTownMaxPoints(town);
+								String proper = d.format(points);
+								if(TownyWars.isBossBar){
+									new ShowDPTask(town, plugin).runTask(plugin);
+								}
+								cs.sendMessage(ChatColor.YELLOW + "Your town's max defense value is currently " +  proper + " defense points!");
+								cs.sendMessage(ChatColor.YELLOW + "Claim more land or get more residents to increase it!");
+								return true;
+							}else{
+								cs.sendMessage(ChatColor.RED + "You are not in a Town!");
+							}		
+						} catch (NotRegisteredException e) {
+							cs.sendMessage(ChatColor.RED + "You are not in a Town!");
+							return true;
+						}  	
 					}
-					Nation csNation;
-					try
-					{
-						Town csTown = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
-						csNation = TownyUniverse.getDataSource().getTown(csTown.toString()).getNation();
+			    
+					if (farg.equals("showtowndp")){
+						unknownCommand=false;
+						Town town = null;
+						Double points = null;
+						War wwar = null;
+						try {
+							Resident re = TownyUniverse.getDataSource().getResident(cs.getName());
+							if(re.hasTown()){
+								town = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
+								if(town.hasNation()){
+									try {
+										wwar = WarManager.getWarForNation(town.getNation());
+										if(wwar!=null){			
+											try {
+												points = wwar.getTownPoints(town);
+												if(points!=null){
+													String proper = d.format(points);
+													if(TownyWars.isBossBar){
+														new ShowDPTask(town, plugin).runTask(plugin);
+													}
+													cs.sendMessage(ChatColor.YELLOW + "Your town's defense value is currently " +  proper + " defense points!");
+													cs.sendMessage(ChatColor.YELLOW + "Your points will return to max value when the war ends!");
+													return true;
+												}
+											} catch (Exception e) {
+												e.printStackTrace();
+												return true;
+											}
+										}else{
+											if(TownyWars.isBossBar){
+												points = War.getTownMaxPoints(town);
+												String proper = d.format(points);
+												new ShowDPTask(town, plugin).runTask(plugin);
+												cs.sendMessage(ChatColor.YELLOW + "Your town's max defense value is currently " +  proper + " defense points!");
+												cs.sendMessage(ChatColor.YELLOW + "Claim more land or get more residents to increase it!");
+											}
+										}
+									} catch (Exception e1) {
+										cs.sendMessage(ChatColor.RED + "You are not in a Nation!");
+										return true;
+									}
+								}
+							}else{
+								cs.sendMessage(ChatColor.RED + "You are not in a Town!");
+							}
+						} catch (NotRegisteredException e) {
+							cs.sendMessage(ChatColor.RED + "You are not in a Town!");
+							return true;
+						}
 					}
-					catch (NotRegisteredException ex)
+			    
+					if (farg.equals("neutral"))
 					{
-						cs.sendMessage(ChatColor.RED + "You are not not part of a town, or your town is not part of a nation!");
-						Logger.getLogger(WarExecutor.class.getName()).log(Level.SEVERE, null, ex);
-						return true;
-			    	}
-					if ((!cs.isOp()) && (!csNation.toString().equals(strings[1])))
-					{
-						cs.sendMessage(ChatColor.RED + "You may only set your own nation to neutral, not others.");
-						return true;
-					}
-					if (strings.length == 0) {
-						cs.sendMessage(ChatColor.RED + "You must specify a nation to toggle neutrality for (eg. /twar neutral [nation]");
-					}
-					if (strings.length == 1)
-					{
-						String onation = strings[1];
-						Nation t;
+						unknownCommand=false;
+						if (!cs.hasPermission("townywars.neutral"))
+						{
+							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
+							return true;
+						}
+						Nation csNation;
 						try
 						{
-							t = TownyUniverse.getDataSource().getNation(onation);
+							Town csTown = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
+							csNation = TownyUniverse.getDataSource().getTown(csTown.toString()).getNation();
 						}
 						catch (NotRegisteredException ex)
 						{
-							cs.sendMessage(ChatColor.GOLD + "The nation called " + onation + " could not be found!");
+							cs.sendMessage(ChatColor.RED + "You are not not part of a town, or your town is not part of a nation!");
+							Logger.getLogger(WarExecutor.class.getName()).log(Level.SEVERE, null, ex);
+							return true;
+				    	}
+						if ((!cs.isOp()) && (!csNation.toString().equals(strings[1])))
+						{
+							cs.sendMessage(ChatColor.RED + "You may only set your own nation to neutral, not others.");
 							return true;
 						}
-						WarManager.neutral.put(t.toString(), 0D);
+						if (strings.length == 0) {
+							cs.sendMessage(ChatColor.RED + "You must specify a nation to toggle neutrality for (eg. /twar neutral [nation]");
+						}
+						if (strings.length == 1)
+						{
+							String onation = strings[1];
+							Nation t;
+							try
+							{
+								t = TownyUniverse.getDataSource().getNation(onation);
+							}
+							catch (NotRegisteredException ex)
+							{
+								cs.sendMessage(ChatColor.GOLD + "The nation called " + onation + " could not be found!");
+								return true;
+							}
+							WarManager.neutral.put(t.toString(), 0D);
+						}
 					}
-				}
-				
-				if (farg.equals("astart"))
-				{
-					unknownCommand=false;
-					if (!cs.hasPermission("townywars.admin"))
+					
+					if (farg.equals("astart"))
 					{
-						cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
-						return true;
+						unknownCommand=false;
+						if (!cs.hasPermission("townywars.admin"))
+						{
+							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
+							return true;
+						}
+						return declareWar(cs, strings, true);
 					}
-					return declareWar(cs, strings, true);
-				}
-				
-				if (farg.equals("declare")) {
-					unknownCommand=false;
-					return declareWar(cs, strings, false);
-				}
-				if (farg.equals("peace")) {
-					unknownCommand=false;
-					return declarePeace(cs, strings, false);
-				}
-				if (farg.equals("createrebellion")) {
-					unknownCommand=false;
-					return createRebellion(cs,strings, false);
-				}
-				if (farg.equals("joinrebellion")) {
-					unknownCommand=false;
-					return joinRebellion(cs,strings, false);
-				}
-				if (farg.equals("leaverebellion")) {
-					unknownCommand=false;
-					return leaveRebellion(cs, strings, false);
-				}
-				if(farg.equals("executerebellion")) {
-					unknownCommand=false;
-					return executeRebellion(cs, strings, false);
+					
+					if (farg.equals("declare")) {
+						unknownCommand=false;
+						return declareWar(cs, strings, false);
+					}
+					if (farg.equals("peace")) {
+						unknownCommand=false;
+						return declarePeace(cs, strings, false);
+					}
+					if (farg.equals("createrebellion")) {
+						unknownCommand=false;
+						return createRebellion(cs,strings, false);
+					}
+					if (farg.equals("joinrebellion")) {
+						unknownCommand=false;
+						return joinRebellion(cs,strings, false);
+					}
+					if (farg.equals("leaverebellion")) {
+						unknownCommand=false;
+						return leaveRebellion(cs, strings, false);
+					}
+					if(farg.equals("executerebellion")) {
+						unknownCommand=false;
+						return executeRebellion(cs, strings, false);
+				    }
+					if(farg.equals("showrebellion")) {
+						unknownCommand=false;
+						return showRebellion(cs, strings, false);
+					}
+					if (farg.equals("aend"))
+					{
+						unknownCommand=false;
+						if (!cs.hasPermission("townywars.admin"))
+						{
+							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
+							return true;
+						}
+						return declareEnd(cs, strings, true);
+					}
+					if(farg.equals("aaddtowndp")){
+						unknownCommand=false;
+						if (!cs.hasPermission("townywars.admin"))
+						{
+							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
+							return true;
+						}
+						return addTownDp(cs, strings);
+					}
+					if(farg.equals("aremovetowndp")){
+						unknownCommand=false;
+						if (!cs.hasPermission("townywars.admin"))
+						{
+							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
+							return true;
+						}
+						return removeTownDp(cs, strings);
+					}
+			    /*try {
+			    	Resident targetResident = TownyUniverse.getDataSource().getResident(farg);
+			    	Town targetTown = null;
+			    	Nation targetNation = null;
+			    	try {
+			    		targetTown = targetResident.getTown();
+			    		try {
+			        		targetNation = targetResident.getTown().getNation();
+			        	}
+			        	catch (NotRegisteredException ex) { }
+			    	}
+			    	catch (NotRegisteredException ex) { }
+			    	String townName = "none";
+			    	String nationName = "none";
+			    	if (targetTown!=null) {
+			    		townName=targetTown.getName();
+			    	}
+			    	if (targetNation!=null) {
+			    		nationName=targetNation.getName();
+			    	}
+			    	long lastOnline = targetResident.getLastOnline();
+			    	long currentTime = System.currentTimeMillis();
+			    	String onlineState = "offline";
+			    	if (currentTime-lastOnline<1000) { onlineState = "online"; }
+			    	cs.sendMessage(ChatColor.GREEN + targetResident.getName()+" ("+onlineState+")");
+			    	cs.sendMessage(ChatColor.GREEN + "--------------------");
+			    	if (townName.compareTo("none")==0) {
+			    		cs.sendMessage("Town: "+ChatColor.GRAY+townName);
+			    	}
+			    	else {
+			    		cs.sendMessage("Town: "+ChatColor.GREEN+townName);
+			    	}
+			    	if (nationName.compareTo("none")==0) {
+			    		cs.sendMessage("Nation: "+ChatColor.GRAY+nationName);
+			    	}
+			    	else {
+			    		cs.sendMessage("Nation: "+ChatColor.GREEN+nationName);
+			    	}
+			    	cs.sendMessage(ChatColor.GREEN + "--------------------");
+			    	unknownCommand=false;
 			    }
-				if(farg.equals("showrebellion")) {
-					unknownCommand=false;
-					return showRebellion(cs, strings, false);
+				catch (NotRegisteredException ex)
+			    {
+					cs.sendMessage(ChatColor.RED + farg + " does not exist!");
+			    }*/
+			    	if (unknownCommand) {
+			    		cs.sendMessage(ChatColor.RED + "Unknown twar command.");
+			    	}
+			    	return true;
+				}else {
+					/////    DISPLAY NO PERMISSION MESSAGE HERE
 				}
-				if (farg.equals("aend"))
-				{
-					unknownCommand=false;
-					if (!cs.hasPermission("townywars.admin"))
-					{
-						cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
-						return true;
-					}
-					return declareEnd(cs, strings, true);
-				}
-				if(farg.equals("aaddtowndp")){
-					unknownCommand=false;
-					if (!cs.hasPermission("townywars.admin"))
-					{
-						cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
-						return true;
-					}
-					return addTownDp(cs, strings);
-				}
-				if(farg.equals("aremovetowndp")){
-					unknownCommand=false;
-					if (!cs.hasPermission("townywars.admin"))
-					{
-						cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
-						return true;
-					}
-					return removeTownDp(cs, strings);
-				}
-		    /*try {
-		    	Resident targetResident = TownyUniverse.getDataSource().getResident(farg);
-		    	Town targetTown = null;
-		    	Nation targetNation = null;
-		    	try {
-		    		targetTown = targetResident.getTown();
-		    		try {
-		        		targetNation = targetResident.getTown().getNation();
-		        	}
-		        	catch (NotRegisteredException ex) { }
-		    	}
-		    	catch (NotRegisteredException ex) { }
-		    	String townName = "none";
-		    	String nationName = "none";
-		    	if (targetTown!=null) {
-		    		townName=targetTown.getName();
-		    	}
-		    	if (targetNation!=null) {
-		    		nationName=targetNation.getName();
-		    	}
-		    	long lastOnline = targetResident.getLastOnline();
-		    	long currentTime = System.currentTimeMillis();
-		    	String onlineState = "offline";
-		    	if (currentTime-lastOnline<1000) { onlineState = "online"; }
-		    	cs.sendMessage(ChatColor.GREEN + targetResident.getName()+" ("+onlineState+")");
-		    	cs.sendMessage(ChatColor.GREEN + "--------------------");
-		    	if (townName.compareTo("none")==0) {
-		    		cs.sendMessage("Town: "+ChatColor.GRAY+townName);
-		    	}
-		    	else {
-		    		cs.sendMessage("Town: "+ChatColor.GREEN+townName);
-		    	}
-		    	if (nationName.compareTo("none")==0) {
-		    		cs.sendMessage("Nation: "+ChatColor.GRAY+nationName);
-		    	}
-		    	else {
-		    		cs.sendMessage("Nation: "+ChatColor.GREEN+nationName);
-		    	}
-		    	cs.sendMessage(ChatColor.GREEN + "--------------------");
-		    	unknownCommand=false;
-		    }
-			catch (NotRegisteredException ex)
-		    {
-				cs.sendMessage(ChatColor.RED + farg + " does not exist!");
-		    }*/
-		    	if (unknownCommand) {
-		    		cs.sendMessage(ChatColor.RED + "Unknown twar command.");
-		    	}
-		    	return true;
 			}
 		}
-		
-	}  
+	}
+	
+	private void showWarStatus(CommandSender cs, War war) {
+		WarParticipant first = null;
+		WarParticipant second = null;
+		for (WarParticipant st : war.getWarParticipants()) {
+			if (first == null) {
+				first = st;
+			} else {
+				second = st;
+			}
+		}
+		String message = this.plugin.getLanguage().listWarsMessage;
+		if(message.contains("%participant1%"))
+			message = message.replace("%participant1%", first.getName());
+		if(message.contains("%participant2%"))
+			message = message.replace("%participant2%", second.getName());
+		if(message.contains("%participant1_points%"))
+			message = message.replace("%participant1_points%", Integer.toString(war.getParticipantPoints(first)));
+		if(message.contains("%participant2_points%"))
+			message = message.replace("%participant2_points%", Integer.toString(war.getParticipantPoints(second)));		
+		TownyWarsLanguage.sendFormattedMessage(cs, message);
+	}
 		private boolean addTownDp(CommandSender cs, String[] strings) {
 			Town town = null;
 			if(strings.length != 2){
@@ -977,6 +1028,18 @@ private boolean showRebellion(CommandSender cs, String[] strings, boolean admin)
     }
     cs.sendMessage(ChatColor.GREEN + "Declared war on " + onat.getName() + "!");
     return true;
+  }
+  
+  private boolean hasPermission(CommandSender sender, String permission) {
+	  if(permission=="")
+		  return true;
+	  if(sender instanceof Player) {
+		  Player player = (Player)sender;
+		  if(player.hasPermission(permission))
+			  return true;
+	  }else
+		  return true;
+	  return false;
   }
   
   public void sendYesNoMessage(Player player){

@@ -40,8 +40,6 @@ public class WarManager
 	private static Set<War> activeWars = new HashSet<War>();
 	private static Set<Rebellion> plannedRebellions = new HashSet<Rebellion>();
 	private static Set<WarParticipant> requestedPeace = new HashSet<WarParticipant>();
-	
-	//private static final int SAVING_VERSION = 1;
   
 	public WarManager() throws Exception {
 		if(TownyWars.getInstance().getDataManager().loadWars()!=null)

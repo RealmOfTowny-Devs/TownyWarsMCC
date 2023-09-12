@@ -60,7 +60,8 @@ public class TownyWars extends JavaPlugin
     private static final Charset utf8 = StandardCharsets.UTF_8;
     private WarExecutor executor;
     private CommandMap cmap;   
-    private CCommand command;
+    private List<CCommand> commands;
+    private PluginManager pm;
 	
     private static final String deathsFile="deaths.txt";
 
@@ -79,7 +80,7 @@ public class TownyWars extends JavaPlugin
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-	  	PluginManager pm = getServer().getPluginManager();
+	  	this.pm = getServer().getPluginManager();
 	  	this.executor = new WarExecutor(this);
 	  	this.RegisterCommands();
 	  	gm = new GriefManager(this);
@@ -140,18 +141,33 @@ public class TownyWars extends JavaPlugin
   @Override
   public void onDisable()
   {
+	  try
+	  {
+		  dataManager.save();  
+	  }
+	  catch (Exception ex)
+	  {
+		  Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
+	  }
+	    
+	  this.unRegisterCommands();
+  }
+  
+  public boolean reload() {
+	  try
+	  {
+	      dataManager.save();  
+	  }
+	  catch (Exception ex)
+	  {
+	      Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
+	      return false;
+	  }
 	  
-    try
-    {
-        dataManager.save();  
-    }
-    catch (Exception ex)
-    {
-      Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    
-    this.unRegisterCommands();
-    
+	  this.unRegisterCommands();
+	  pm.disablePlugin(TownyWars.plugin);
+	  pm.enablePlugin(TownyWars.plugin);
+	  return true;
   }
   
   public void addTownyWarsResident(String playerName){
@@ -226,18 +242,19 @@ public class TownyWars extends JavaPlugin
     			f.setAccessible(true);
     			cmap = (CommandMap)f.get(Bukkit.getServer());
     			boolean defalt = false;
-    			for(String cmd : getLanguage().commandNameMain) { 				
+    			for(String cmd : getLanguage().mainCommand.getNames()) { 				
     				if (!cmd.equals(null)) {
-        				this.command = new CCommand(cmd);
-        				if(!cmap.register("twars", this.command)) {
+    					CCommand command = new CCommand(cmd);
+        				this.commands.add(command);
+        				if(!cmap.register("twars", command)) {
         					if(!defalt) {
         						Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &aCommand &e" + cmd + " &chas already been taken. Defaulting to &e'twars' &cfor TownyWars command."));
             					defalt = true;
-        					}     					
+        					}			
         				}else {
         	     	        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + "&aCommand &e" + cmd + " &aRegistered!"));
         				}
-        				this.command.setExecutor(executor);        
+        				command.setExecutor(executor);        
         			}
     			}   			 
     		} catch (Exception e) {
@@ -257,8 +274,10 @@ public class TownyWars extends JavaPlugin
                 Field f = clazz.getDeclaredField("commandMap");
                 f.setAccessible(true);
                 cmap = (CommandMap)f.get(Bukkit.getServer());
-                this.command.unregister(cmap);
-                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &aCommands " + getLanguage().mainCommandString + " have been Unregistered!"));
+                for(CCommand command : this.commands) {
+                	command.unregister(cmap);
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &aCommand " + command.getName() + " has been Unregistered!"));
+                }
             } catch (Exception e) {
             e.printStackTrace();
             } 
