@@ -29,6 +29,7 @@ public class TownyWarsLanguage
 	public String messagePrefix;
 	public String noPermissionMessage;
 	public String notInWarErrorMessage;
+	public String notInTownErrorMessage;
 	
 	//commands
 	public Command mainCommand;
@@ -40,6 +41,14 @@ public class TownyWarsLanguage
 	public String adminHelpPerm;
 	public List<String> leaderMessages;
 	public Command status;
+	public Command showTownMaxDP;
+	public Command showTownDP;
+	public Command neutral;
+	public List<String> neutralMessageOff;
+	public List<String> adminMessageNeutral;
+	public List<String> adminMessageNeutralOff;
+	public String adminPermissionNeutral;
+	
 	
 	public TownyWarsLanguage(TownyWars plugin) {
 		this.plugin = plugin;
@@ -65,6 +74,7 @@ public class TownyWarsLanguage
 		this.messagePrefix = language.getString("messagePrefix");
 		this.noPermissionMessage = language.getString("noPermissionMessage");
 		this.notInWarErrorMessage = language.getString("notInWarErrorMessage");
+		this.notInTownErrorMessage = language.getString("notInTownErrorMessage");
 		loadCommands();		
 	}
 	
@@ -78,6 +88,13 @@ public class TownyWarsLanguage
 		this.adminHelpPerm = language.getString("commands.help.adminMessages.permission");
 		this.leaderMessages = language.getStringList("commands.help.leaderMessages");
 		this.status = new Command(language.getString("commands.status.name"), language.getStringList("commands.status.message"), language.getString("commands.status.permission"));
+		this.showTownMaxDP = new Command(language.getString("commands.showtownmaxdp.name"), language.getStringList("commands.showtownmaxdp.message"), language.getString("commands.showtownmaxdp.permission"));
+		this.showTownDP = new Command(language.getString("commands.showtowndp.name"), language.getStringList("commands.showtowndp.message"), language.getString("commands.showtowndp.permission"));
+		this.neutral = new Command(language.getString("commands.neutral.name"), language.getStringList("commands.neutral.message"), language.getString("commands.neutral.permission"));
+		this.neutralMessageOff = language.getStringList("commands.neutral.messageOff");
+		this.adminMessageNeutral = language.getStringList("commands.neutral.adminMessage");
+		this.adminMessageNeutralOff = language.getStringList("commands.neutral.adminMessageOff");
+		this.adminPermissionNeutral = language.getString("commands.neutral.adminPermission");
 	}
 	
 	public static void sendFormattedMessage(Player player, List<String> message) {
@@ -85,9 +102,7 @@ public class TownyWarsLanguage
 	}
 	
 	public static void sendFormattedMessage(Player player, String message) {
-		List<String> messages = new ArrayList<String>();
-		messages.add(message);
-		TownyWarsLanguage.sendFormattedMessage(player, messages);
+		TownyWarsLanguage.sendFormattedMessage(player, message);
 	}
 	
 	public static void sendFormattedMessage(CommandSender sender, String message) {

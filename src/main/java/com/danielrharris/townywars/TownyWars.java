@@ -6,6 +6,7 @@ import com.danielrharris.townywars.config.TownyWarsLanguage;
 import com.danielrharris.townywars.listeners.*;
 import com.danielrharris.townywars.placeholders.PlaceholderAPI;
 import com.danielrharris.townywars.placeholders.mvdwPlaceholderAPI;
+import com.danielrharris.townywars.warObjects.TownyWarsResident;
 import com.danielrharris.townywars.warObjects.War;
 import com.danielrharris.townywars.warObjects.WarParticipant;
 import com.github.Anon8281.universalScheduler.UniversalScheduler;
@@ -69,10 +70,24 @@ public class TownyWars extends JavaPlugin
     public void onEnable()
     {
     	scheduler = UniversalScheduler.getScheduler(this);
-    	this.papi = null;
 	  	TownyWars.plugin = this;
+	  	
+	  	// Load Config and Language Files
+	  	
         this.config = new TownyWarsConfig(this);
         this.language = new TownyWarsLanguage(this);
+        if(Bukkit.getPluginManager().isPluginEnabled("MVdWPlaceholderAPI")) {
+	  		Bukkit.getServer().getLogger().info("Hooked into MVdWPlaceholderAPI!");
+	      	this.mpapi = new mvdwPlaceholderAPI(plugin);
+	    }
+	    if(Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+	    	Bukkit.getServer().getLogger().info("Hooked into PlaceholderAPI!");
+	      	this.papi = new PlaceholderAPI(plugin);
+	      	papi.register();
+	    }
+	    
+	    // Load Data Manager and load data into WarManager and Blocks Data Manager
+        
         this.dataManager = new TownyWarsDataManager(this);
         try {
 			this.warManager = new WarManager();
@@ -80,15 +95,23 @@ public class TownyWars extends JavaPlugin
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+        
+        // Register commands and set WarExecutor        
+        
 	  	this.pm = getServer().getPluginManager();
 	  	this.executor = new WarExecutor(this);
 	  	this.RegisterCommands();
+	  	
+	  	// Register Listeners
+	  	
 	  	gm = new GriefManager(this);
 	  	pm.registerEvents(new GriefListener(this, gm), this);
 	  	pm.registerEvents(new WarListener(this), this);
 	  	pm.registerEvents(new PvPListener(this), this);
 	  	pm.registerEvents(new NationWalkEvent(),this);
 	  	pm.registerEvents(new EnemyWalkWWar(),this);
+	  	
+	  	// Do PvP Enabling stuff
 	  	
 	  	tUniverse = TownyUniverse.getInstance();
 	  	for(Town town : tUniverse.getTowns()){
@@ -105,16 +128,8 @@ public class TownyWars extends JavaPlugin
 	  	}
     
 	  	tUniverse.getDataSource().saveTowns();
-        
-	  	if(Bukkit.getPluginManager().isPluginEnabled("MVdWPlaceholderAPI")) {
-	  		Bukkit.getServer().getLogger().info("Hooked into MVdWPlaceholderAPI!");
-	      	this.mpapi = new mvdwPlaceholderAPI(plugin);
-	    }
-	    if(Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-	    	Bukkit.getServer().getLogger().info("Hooked into PlaceholderAPI!");
-	      	this.papi = new PlaceholderAPI(plugin);
-	      	papi.register();
-	    }
+	  	
+	  	//  wall config stuff
 	  	
 	  	if(!(wallConfigFile.exists())){
 	  		try {
@@ -123,7 +138,9 @@ public class TownyWars extends JavaPlugin
 	  		}catch (IOException e) {
 	  				e.printStackTrace();
 	  		}
-	  	}  
+	  	}
+	  	
+	  	// create TownyWars Residents (I may remove this)
     
 	  	try{
 	  		for (Resident re : tUniverse.getResidents()){
@@ -138,53 +155,52 @@ public class TownyWars extends JavaPlugin
 	  	}   
     }
   
-  @Override
-  public void onDisable()
-  {
-	  try
-	  {
-		  dataManager.save();  
-	  }
-	  catch (Exception ex)
-	  {
-		  Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
-	  }
+    @Override
+    public void onDisable()
+ 	{
+    	try
+    	{
+    		dataManager.save();  
+    	}
+    	catch (Exception ex)
+    	{
+    		Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
+    	}
 	    
-	  this.unRegisterCommands();
-  }
+    	this.unRegisterCommands();
+ 	}
   
-  public boolean reload() {
-	  try
-	  {
-	      dataManager.save();  
-	  }
-	  catch (Exception ex)
-	  {
-	      Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
-	      return false;
-	  }
+    public boolean reload() {
+    	try
+    	{
+    		dataManager.save();  
+    	}
+    	catch (Exception ex)
+		 {
+    		Logger.getLogger(TownyWars.class.getName()).log(Level.SEVERE, null, ex);
+    		return false;
+		 }
 	  
-	  this.unRegisterCommands();
-	  pm.disablePlugin(TownyWars.plugin);
-	  pm.enablePlugin(TownyWars.plugin);
-	  return true;
-  }
+    	this.unRegisterCommands();
+    	pm.disablePlugin(TownyWars.plugin);
+    	pm.enablePlugin(TownyWars.plugin);
+    	return true;
+    }
   
-  public void addTownyWarsResident(String playerName){
-	  TownyWarsResident newPlayer = new TownyWarsResident(playerName);
-	  allTownyWarsResidents.put(playerName,newPlayer);
-  }
+    public void addTownyWarsResident(String playerName){
+    	TownyWarsResident newPlayer = new TownyWarsResident(playerName);
+    	allTownyWarsResidents.put(playerName,newPlayer);
+    }
   
-  public TownyWarsResident getTownyWarsResident(String playerName){
-	  return allTownyWarsResidents.get(playerName);
-  }
+    public TownyWarsResident getTownyWarsResident(String playerName){
+    	return allTownyWarsResidents.get(playerName);
+ 	}
   
 
-	
-  // takes in information about the death that just happened and writes it to a file
-  public int writeKillRecord(long deathTime, String playerName, String killerName, String damageCause, String deathMessage){
-		
-		// convert the time in milliseconds to a date and then convert it to a string in a useful format (have to tack on the milliseconds)
+    
+    // takes in information about the death that just happened and writes it to a file
+    public int writeKillRecord(long deathTime, String playerName, String killerName, String damageCause, String deathMessage){
+    	// convert the time in milliseconds to a date and then convert it to a string in a useful format (have to tack on the milliseconds)
 		// format example: 2014-08-29 EDT 10:05:25:756
 		Date deathDate = new Date(deathTime);
 	    String deathDateString = format.format(deathDate)+":"+deathTime%1000;
@@ -285,7 +301,7 @@ public class TownyWars extends JavaPlugin
             Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', getLanguage().messagePrefix + " &ccould not be unloaded, is this even Spigot or CraftBukkit?"));
             setEnabled(false);
         } 
-  }
+    }
 	
 	public static TownyWars getInstance(){
 		return plugin;

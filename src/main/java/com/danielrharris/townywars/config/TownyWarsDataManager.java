@@ -1,6 +1,7 @@
 package com.danielrharris.townywars.config;
 
 import java.util.Set;
+import java.util.UUID;
 
 import com.danielrharris.townywars.TownyWars;
 import com.danielrharris.townywars.WarManager;
@@ -73,6 +74,19 @@ public class TownyWarsDataManager {
     			this.ymlfile.saveRebellions(WarManager.getPlannedRebellions());
 		}
 	}
+	
+	public void saveNeutral() throws Exception {
+		switch (TownyWars.getInstance().getConfigInstance().method) {
+    		case file:
+    			this.ymlfile.saveNeutral(WarManager.getNeutralSet());
+    		case mysql:
+                this.mysql.saveNeutral(WarManager.getNeutralSet());
+    		case sqlite:
+    			this.sqlite.saveNeutral(WarManager.getNeutralSet());
+    		default:
+    			this.ymlfile.saveNeutral(WarManager.getNeutralSet());
+		}
+	}
   
 	public Set<War> loadWars() throws Exception {
   		switch (TownyWars.getInstance().getConfigInstance().method) {
@@ -110,6 +124,19 @@ public class TownyWarsDataManager {
             return sqlite.loadPeace();
     	default:
       	    return ymlfile.loadPeace();
+		}
+	}
+	
+	public Set<UUID> loadNeutral() throws Exception {
+		switch (TownyWars.getInstance().getConfigInstance().method) {
+    	case file:
+      	    return ymlfile.loadNeutral();
+    	case mysql:
+    		return mysql.loadNeutral();
+    	case sqlite:
+            return sqlite.loadNeutral();
+    	default:
+      	    return ymlfile.loadNeutral();
 		}
 	}
 }

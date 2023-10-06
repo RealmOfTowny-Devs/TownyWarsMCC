@@ -1,4 +1,4 @@
-package com.danielrharris.townywars;
+package com.danielrharris.townywars.warObjects;
 
 // some extra resident fields needed to properly record deaths
 public class TownyWarsResident{
@@ -8,7 +8,7 @@ public class TownyWarsResident{
 	private String lastAttacker=null;
 	
 	public TownyWarsResident(String name){
-		// not much to construct here . . .
+		this.name = name;
 	}
 	
 	// get and set methods

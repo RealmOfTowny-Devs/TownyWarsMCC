@@ -13,8 +13,8 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 import com.danielrharris.townywars.TownyWars;
-import com.danielrharris.townywars.TownyWarsResident;
 import com.danielrharris.townywars.WarManager;
+import com.danielrharris.townywars.warObjects.TownyWarsResident;
 import com.danielrharris.townywars.warObjects.War;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;

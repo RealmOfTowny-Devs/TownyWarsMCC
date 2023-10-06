@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -126,6 +127,27 @@ public class SQLite {
     	return peaceRequested;
     }
     
+    public void saveNeutral(Set<UUID> neutral) {
+    	createTable("neutral");
+    	if(neutral!=null)
+    		if(!neutral.isEmpty())
+		    	for(UUID id : neutral) {
+		    		storeValues("neutral", id.toString());
+		    	}
+    }
+    
+    public Set<UUID> loadNeutral() {
+    	Set<UUID> neutral = new HashSet<UUID>();
+    	createTable("neutral");
+    	if(getColumnKeys("neutral")!=null)
+    		if(!getColumnKeys("neutral").isEmpty())
+    			for(int key : getColumnKeys("neutral")) {    		
+    				String uuid = retrieveUUID("neutral", key);
+					neutral.add(UUID.fromString(uuid));
+    			}  		 	
+    	return neutral;
+    }
+    
     public void createTable(String table) {
         try (Connection connection = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement statement = connection.prepareStatement(
@@ -158,6 +180,23 @@ public class SQLite {
 			try (ResultSet resultSet = statement.executeQuery()) {
 				if (resultSet.next()) {
 					return resultSet.getString("base64");
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public String retrieveUUID(String table, int id) {
+		try (Connection connection = DriverManager.getConnection(DATABASE_URL);
+				PreparedStatement statement = connection.prepareStatement(
+						"SELECT uuid FROM " + table + " WHERE id = ?"
+						)) {
+			statement.setInt(1, id);
+			try (ResultSet resultSet = statement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getString("uuid");
 				}
 			}
 		} catch (SQLException e) {

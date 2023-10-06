@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 
@@ -162,6 +163,49 @@ public class MySQL {
 	  			        PreparedStatement ps = getStatement("REPLACE INTO peace" + " SET base64= ? WHERE uuid= ?");
 	  			        ps.setString(1, w.encodeToString());
 	  			        ps.setString(2, w.getUuid().toString());
+	  			        ps.executeUpdate();
+	  			        ps.close();
+	  			      } catch (Exception ex) {
+	  			    	  //put error message here
+	  			      }
+	  	  		}
+  	}
+  	
+  	public Set<UUID> loadNeutral() {
+  		Set<UUID> neutral = new HashSet<UUID>();
+  		try {
+  			if(getTableColumnNames("neutral")!=null)
+  				if(getTableColumnNames("neutral").isEmpty())
+					for(String key : getTableColumnNames("neutral")) {
+						try {
+						      PreparedStatement ps = getStatement("SELECT * FROM neutral" + " WHERE uuid2= ?");
+						      ps.setString(1, key);
+						      ResultSet rs = ps.executeQuery();
+						      rs.next();
+						      String uuid = rs.getString("uuid2");
+						      rs.close();
+						      ps.close();
+						      neutral.add(UUID.fromString(uuid));
+						  } catch (Exception ex) {
+						      Bukkit.getServer().getConsoleSender().sendMessage("Couldn't load " + key);
+						  }
+					}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+  		return neutral;
+  	}
+  	
+  	public void saveNeutral(Set<UUID> neutral) {	
+  		if(neutral!=null)
+  			if(!neutral.isEmpty())
+	  			for(UUID id : neutral) {
+	  				try {
+	  					createTable("neutral");
+	  			        PreparedStatement ps = getStatement("REPLACE INTO neutral" + " SET uuid= ? WHERE uuid2= ?");
+	  			        ps.setString(1, id.toString());
+	  			        ps.setString(2, id.toString());
 	  			        ps.executeUpdate();
 	  			        ps.close();
 	  			      } catch (Exception ex) {

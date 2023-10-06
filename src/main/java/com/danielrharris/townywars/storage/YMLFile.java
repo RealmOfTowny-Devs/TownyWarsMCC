@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -21,6 +23,8 @@ public class YMLFile {
     private FileConfiguration rebel;
     private File peaceFile = null;
     private FileConfiguration peace;
+    private File neutralFile = null;
+    private FileConfiguration neutral;
   
     private Plugin plugin;
   
@@ -46,6 +50,10 @@ public class YMLFile {
             this.peaceFile = new File(this.dataFolder, "peaceRequested.yml"); 
         if (!this.peaceFile.exists())
             this.plugin.saveResource("data/peaceRequested.yml", false);
+        if (this.neutralFile == null)
+            this.neutralFile = new File(this.dataFolder, "neutral.yml"); 
+        if (!this.neutralFile.exists())
+            this.plugin.saveResource("data/neutral.yml", false);
     }
   
     public Set<War> loadWars() {
@@ -166,6 +174,37 @@ public class YMLFile {
         } 
         try {
             this.peaceFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
+    
+    public Set<UUID> loadNeutral() {
+    	Set<UUID> neutral = new HashSet<UUID>();
+        this.neutral = (FileConfiguration)YamlConfiguration.loadConfiguration(this.neutralFile);
+        if (this.neutral.getKeys(false) != null)
+        	if(!this.neutral.getKeys(false).isEmpty())
+	            for (String s : this.neutral.getKeys(false)) {
+					neutral.add(UUID.fromString(s));
+	            }
+        return neutral;
+    }
+    
+    public void saveNeutral(Set<UUID> neutral) {
+        if (neutral != null)
+        	if(!neutral.isEmpty())
+	            for (UUID id : neutral) {
+	            	this.neutral.set(id.toString(), id.toString()); 
+	            } 
+        if (this.neutralFile.exists())
+            this.neutralFile.delete(); 
+        try {
+            this.neutral.save(this.neutralFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        try {
+            this.neutralFile.createNewFile();
         } catch (IOException e) {
             e.printStackTrace();
         } 

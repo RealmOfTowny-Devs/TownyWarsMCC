@@ -40,7 +40,10 @@ public class WarManager
 	private static Set<War> activeWars = new HashSet<War>();
 	private static Set<Rebellion> plannedRebellions = new HashSet<Rebellion>();
 	private static Set<WarParticipant> requestedPeace = new HashSet<WarParticipant>();
-  
+	private static Set<UUID> neutral = new HashSet<UUID>();
+	
+	//Will need to create save tasks and then start them here as well after loading
+	
 	public WarManager() throws Exception {
 		if(TownyWars.getInstance().getDataManager().loadWars()!=null)
 			activeWars = TownyWars.getInstance().getDataManager().loadWars();
@@ -48,6 +51,8 @@ public class WarManager
 			plannedRebellions = TownyWars.getInstance().getDataManager().loadRebellions();
 		if(TownyWars.getInstance().getDataManager().loadPeace()!=null)
 			requestedPeace = TownyWars.getInstance().getDataManager().loadPeace();
+		if(TownyWars.getInstance().getDataManager().loadNeutral()!=null)
+			neutral = TownyWars.getInstance().getDataManager().loadNeutral();
 	}
   	
   	public static Set<War> getWars()
@@ -968,4 +973,57 @@ public class WarManager
 		throw(new Exception("Rebellion not found!"));
     }
     
+    public static boolean isNeutral(Town town) {
+    	if(WarManager.isAtWar(town))
+    		return false;
+    	if(town.hasNation()) {
+    		try {
+				Nation nation = town.getNation();
+				return WarManager.isNeutral(nation);
+			} catch (NotRegisteredException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}    		
+    	}else {
+			if(neutral.contains(town.getUUID()))
+				return true;
+    	}
+    	return false;
+    }
+    
+    public static boolean isNeutral(Nation nation) {
+    	if(WarManager.isAtWar(nation))
+			return false;
+		if(neutral.contains(nation.getUUID()))
+			return true;
+		return false;
+    }
+
+	private static boolean addNeutral(UUID id) {
+		return neutral.add(id);
+	}
+	
+	public static boolean setNeutral(Town town) {
+		return addNeutral(town.getUUID());
+	}
+    
+	public static boolean setNeutral(Nation nation) {
+		return addNeutral(nation.getUUID());
+	}
+	
+	private static boolean removeNeutral(UUID id) {
+		return neutral.remove(id);
+	}
+	
+	public static boolean setNonNeutral(Town town) {
+		return removeNeutral(town.getUUID());
+	}
+	
+	public static boolean setNonNeutral(Nation nation) {
+		return removeNeutral(nation.getUUID());
+	}
+	
+	public static Set<UUID> getNeutralSet() {
+		return neutral;
+	}
 }

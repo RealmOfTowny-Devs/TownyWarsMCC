@@ -1,9 +1,19 @@
 ###############################                                     TownyWars Language File                                  #####################################
 ###################   Colors, PlaceholderAPI placeholders, mvdwPlaceholderAPI placeholders, and json messages all work here   ####################################
+
+                                                                ##### Main plugin stuffs #####
+
 pluginName: "TownyWars"    ## Don't use colors here
 messagePrefix: "&8[&eTowny&bWars&8]"
+
+                                                            ##### General Error Messages #####
+
 noPermissionMessage: "&cYou do not have permission to perform this command."
 notInWarErrorMessage: "&cThe specified party is not in a war"
+notInTownErrorMessage: "&cYou are not in a Town!"
+
+                                                          ##### Commands and their messages #####
+
 commands: ## These are the actual TownyWars commands. They are all renameable! The messages sections are messages returned by the commands. Permissions are obviously permissions
     main:
         name: "townywars, twars" ######### VERY IMPORTANT: MUST SPACE COMMANDS FOR MULTIPLE COMMANDS WITH A COMMA(",") or COMMA *and* SPACE (", ")
@@ -18,7 +28,7 @@ commands: ## These are the actual TownyWars commands. They are all renameable! T
         successfulReloadMessage: "&aPlugin reloaded!"    ## Some commands may have extra parameters, like reload
         permission: "townywars.admin"   ## only players with "townywars.admin" permission or the console may execute this command
     help:
-        name: "help"
+        name: "help, h"
         message: 
             - "!&aTowny Wars Help:"
             - "&b/twar - &eThe basic TownyWars command"
@@ -29,30 +39,56 @@ commands: ## These are the actual TownyWars commands. They are all renameable! T
             - "&b/twar showtownmaxdp - &eShows your towns max defense points."
         permission: "" ## Left blank for no permission. Some admin messages such as permission below for admin section are handled seperately when displaying hidden help sections.
         rebellionMessages: ## Must be in a nation that is not currently involved in a war to start or join a rebellion
-            - "&b/twar createrebellion [name] - &eCreates a (secret) rebellion within your nation."
+            - "!&b/twar createrebellion [name] - &eCreates a (secret) rebellion within your nation."
             - "&b/twar joinrebellion [name] - &eJoins a rebellion within your nation using the name."
             - "&b/twar leaverebellion - &eLeaves your current rebellion."
             - "&b/twar showrebellion - &eShows your current rebellion and its members."
             - "&b/twar executerebellion - &eExecutes your rebellion and you go to war with your nation (requires to be leader of rebellion)."
         leaderMessages: 
-            - "&b/twar declare [town/nation] - &eStarts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT OR MAYOR/ASSISTANT"
+            - "!&b/twar declare [town/nation] - &eStarts a war with another nation (REQUIRES YOU TO BE A KING/ASSISTANT OR MAYOR/ASSISTANT"
             - "&b/twar peace - &eRequest from enemy nations king to end the ongoing war. (REQUIRES YOU TO BE A KING/ASSISTANT)"
             - "&b/twar repair - &eAllows you to repair war grief by paying money from town bank"
+            - "&b/twar neutral - &eAllows you to declare your town neutral and free from being warred upon."
         adminMessages:
             message: 
-                - "&b/twar reload - &eReload the plugin"
+                - "!&b/twar reload - &eReload the plugin"
                 - "&b/twar start [town/nation] [town/nation] - &eForces two parties to go to war"
                 - "&b/twar end [town/nation] [town/nation] - &eForces two parties to stop a war"
                 - "&b/twar addtowndp [town] [amount] - &eAdds DP to the town"
                 - "&b/twar removetowndp [town] [amount] -&e Removes DP from the town"
+                - "&b/twar neutral [name] [name] [etc.] - &eAllows you to declare towns neutral"
             permission: "townywars.admin" ### You probably want to set the same permission to execute every one of the above commands... But hey, who am I to judge?
     status:
-        name: "status"
+        name: "status"      
+        message:
+            - "&aList of on-going wars:"
         ### Some other commands have special variables like this one. The main twars status command will display on-going wars with current scores. The command message below has
         ### special chat variables, %participant1%, %participant2%, %participant1_points%, and %participant2_points%. These are replaced at command runtime with the actual values
         ### of those variables. Keep in mind these are processed before any PlaceholderAPI placeholders or json parsing
-        message: 
-            - "&a%participant1%: &f%participant1_points% &evs. &c%participant2% &f%participant2_points%" 
+        listMessage: "!&a%participant1%: &f%participant1_points% &evs. &c%participant2% &f%participant2_points%"
         permission: ""
-        
+    showtownmaxdp:
+        name: "showtownmaxdp"      
+        message: ## Variable: %max_defense_points%
+            - "&eYour town's max defense value is currently &f%max_defense_points%&e defense points!"
+            - "&eClaim more land or get more residents to increase it!"
+        permission: ""
+    showtowndp:
+        name: "showtowndp"      
+        message: ## Variables: %defense_points%, %max_defense_points%
+            - "&eYour town's current defense value is &f%defense_points%/%max_defense_points%&e defense points!"
+            - "&eYour points will return to max value when the war ends!"
+        permission: ""
+    neutral:
+        name: "neutral"      
+        message:
+            - "&eYour town/nation has declared itself neutral!"
+        messageOff:
+            - "&eYour town/nation has declared itself engageable!"
+        adminMessage: ## Variables: %townOrNation%
+            - "&eYou have declared %townOrNation% as neutral!"
+        adminMessageOff: ## Variables: %townOrNation%
+            - "&eYou have declared %townOrNation% as engageable!"
+        permission: ""
+        adminPermission: "townywars.admin"
         
