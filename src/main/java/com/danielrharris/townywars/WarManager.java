@@ -903,8 +903,11 @@ public class WarManager
 				towns.put(id, winner.getTownsMap().get(id));
 			}
 			towns.put(townToAdd.getUUID(), WarManager.getTownMaxPoints(townToAdd));
-			WarParticipant[] participants = war.getWarParticipantsAsArray();
 			Set<WarParticipant> parts = new HashSet<WarParticipant>();
+			parts.add(WarParticipant.createWarParticipant(nation, nation.getUUID(), towns));
+			parts.add(WarManager.getEnemy(winner));
+			/* Seems Redundant? Maybe I did it for a reason...?
+			 * WarParticipant[] participants = war.getWarParticipantsAsArray();
 			if(winner == participants[0]) {
 				parts.add(WarParticipant.createWarParticipant(nation, nation.getUUID(), towns));
 				parts.add(WarManager.getEnemy(winner));
@@ -912,7 +915,7 @@ public class WarManager
 			if(winner == participants[1]) {
 				parts.add(WarParticipant.createWarParticipant(nation, nation.getUUID(), towns));
 				parts.add(WarManager.getEnemy(winner));
-			}
+			}*/
 			if(!parts.isEmpty() && parts.size() == 2)
 			    war.setWarParticipants(parts);
 			return nation;
@@ -921,6 +924,26 @@ public class WarManager
 			e1.printStackTrace();
 		}
 		return null;
+	}
+	
+	public static Resident getLeader(Town town) {
+		return town.getMayor();
+	}
+	
+	public static Resident getLeader(Nation nation) {
+		return nation.getKing();
+	}
+
+	//town.getTrustedResidents() may need revisited on testing later, not sure it does what I think it does
+	public static Set<Resident> getAssistants(Town town) {
+		return town.getTrustedResidents();
+	}
+	
+	public static Set<Resident> getAssistants(Nation nation) {
+		Set<Resident> residents = new HashSet<Resident>();
+		for(Resident re : nation.getAssistants())
+			residents.add(re);
+		return residents;
 	}
 	
 	public static Set<Rebellion> getPlannedRebellions() {

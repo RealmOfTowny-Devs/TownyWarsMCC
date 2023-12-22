@@ -21,7 +21,9 @@ import org.bukkit.plugin.PluginManager;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +47,7 @@ class WarExecutor implements CommandExecutor
 		for(String commandName : this.plugin.getLanguage().mainCommand.getNames()) {
 			if (cmnd.getName().equalsIgnoreCase(commandName)) {					
 				if(hasPermission(cs, this.plugin.getLanguage().mainCommand.getPermission())) {
-//				    ******************************       Main Command       ***********************
+                    //  ******************************       Main Command       ***********************
 					
 					if (strings.length == 0)
 					{
@@ -310,9 +312,9 @@ class WarExecutor implements CommandExecutor
 											if(TownyWars.getInstance().getConfigInstance().isBossBar){
 												//new ShowDPTask(town, plugin).runTask(plugin);
 											}
-										}										
-										List<String> message = new ArrayList<String>();
+										}																
 										if(this.plugin.getLanguage().showTownMaxDP.getMessage()!=null) {
+											List<String> message = new ArrayList<String>();
 											for(String s : this.plugin.getLanguage().showTownMaxDP.getMessage()) {
 												if(s.contains("%max_defense_points%"))
 													s = s.replace("%max_defense_points%", proper);
@@ -370,9 +372,9 @@ class WarExecutor implements CommandExecutor
 												if(TownyWars.getInstance().getConfigInstance().isBossBar){
 													//new ShowDPTask(town, plugin).runTask(plugin);
 												}
-											}										
-											List<String> message = new ArrayList<String>();
+											}																					
 											if(this.plugin.getLanguage().showTownDP.getMessage()!=null) {
+												List<String> message = new ArrayList<String>();
 												for(String s : this.plugin.getLanguage().showTownDP.getMessage()) {
 													if(s.contains("%max_defense_points%"))
 														s = s.replace("%max_defense_points%", max);
@@ -389,9 +391,9 @@ class WarExecutor implements CommandExecutor
 												if(TownyWars.getInstance().getConfigInstance().isBossBar){
 													//new ShowDPTask(town, plugin).runTask(plugin);
 												}
-											}										
-											List<String> message = new ArrayList<String>();
+											}																					
 											if(this.plugin.getLanguage().showTownMaxDP.getMessage()!=null) {
+												List<String> message = new ArrayList<String>();
 												for(String s : this.plugin.getLanguage().showTownMaxDP.getMessage()) {
 													if(s.contains("%max_defense_points%"))
 														s = s.replace("%max_defense_points%", max);
@@ -412,96 +414,211 @@ class WarExecutor implements CommandExecutor
 					}
 					
 					/// *************************   Set town/nation as Neutral Command   ******************************
-					/// Going to have to think about this one a lot. Gotta check if the player is typing in their own town name, if the player is in a nation, and if so, if they are king/assistant
-					/// If they are only in a town, are they mayor/assistant, if they are admins typing town names, if neutral is on, toggle it off, if it's off, toggle it on
-					
+
 					for(String neutral : this.plugin.getLanguage().neutral.getNames()) {
 						if (farg.equalsIgnoreCase(neutral)){
-							List<Town> towns = new ArrayList<Town>();
-							if (strings.length == 1)
-							{
-								if(hasPermission(cs, this.plugin.getLanguage().neutral.getPermission())) {
-									try {
-										Resident re = TownyUniverse.getInstance().getResident(cs.getName());
-										if(re.hasTown()){
-											towns.add(re.getTown());									
+							Set<Town> towns = new HashSet<Town>();
+							Set<Nation> nations = new HashSet<Nation>();
+							Resident re = null;
+							try {
+								re = TownyUniverse.getInstance().getResident(cs.getName());		
+							} catch (NotRegisteredException e) {
+								TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notInTownErrorMessage);
+								return false;
+							}
+							if(re!=null) {
+
+								// Already in a war
+								if(WarManager.isAtWar(re)) {
+									TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().alreadyInWarErrorMessage);
+									return false;
+								}
+								if (strings.length == 1)
+								{
+									if(hasPermission(cs, this.plugin.getLanguage().neutral.getPermission())) {
+										if(re.hasNation()){
+											Nation nation = re.getNation();
+											if(re == nation.getKing() || WarManager.getAssistants(nation).contains(re)) {
+											    nations.add(nation);
+											} else {
+												TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notHighEnoughRankInTownErrorMessage);
+												return false;
+											}
+										}else if(re.hasTown()) {
+											Town town = re.getTown();
+											if(re == town.getMayor() || WarManager.getAssistants(town).contains(re)) {
+												towns.add(town);
+											} else {
+												TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notHighEnoughRankInTownErrorMessage);
+												return false;
+											}											
 										}else{
 											TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notInTownErrorMessage);
 											return false;
-										}		
-									} catch (NotRegisteredException e) {
-										TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notInTownErrorMessage);
+										}
+									}else {
+										TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
 										return false;
 									}
-								}else {
-									TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
-									return false;
 								}
-							}
-							if(strings.length > 1) {
-								for (int i = 0; i < strings.length; i++) {
-									if(!strings[i].equalsIgnoreCase(neutral))
-										if(TownyUniverse.getInstance().hasTown(strings[i])) {
-											Town town = TownyUniverse.getInstance().getTown(strings[i]);
-											try {
-												Resident re = TownyUniverse.getInstance().getResident(cs.getName());
-												if(re.hasTown()){
-													if(re.getTown()==town) {
-														
+								//This one will have to check for admins and all that :/
+								if(strings.length > 1) {
+									if(hasPermission(cs, this.plugin.getLanguage().neutral.getPermission()) && !hasPermission(cs, this.plugin.getLanguage().adminPermissionNeutral)) {
+										for (int i = 0; i < strings.length; i++) {
+											if(!strings[i].equalsIgnoreCase(neutral))
+												if(TownyUniverse.getInstance().hasTown(strings[i])) {
+													Town town = TownyUniverse.getInstance().getTown(strings[i]);
+													if(re.hasTown()) {
+														if(re.getTown()==town) {
+															if(re == town.getMayor() || WarManager.getAssistants(town).contains(re)) {
+																towns.add(town);
+															} else {
+																TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notHighEnoughRankInTownErrorMessage);
+																return false;
+															}
+														}else {
+															TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().cannotAddNotUrOwn);
+															return false;
+														}
 													}
+												}else if(TownyUniverse.getInstance().hasNation(strings[i])) {
+													Nation nation = TownyUniverse.getInstance().getNation(strings[i]);
+													if(re.hasNation()) {
+														if(re.getNation()==nation) {
+															if(re == nation.getKing() || WarManager.getAssistants(nation).contains(re)) {
+															    nations.add(nation);
+															} else {
+																TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().notHighEnoughRankInTownErrorMessage);
+																return false;
+															}
+															nations.add(nation);
+														}else {
+															TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().cannotAddNotUrOwn);
+															return false;
+														}
+													}
+												}else {
+													if(this.plugin.getLanguage().noTownsNationsExist!=null) {
+														List<String> message = new ArrayList<String>();
+														for(String s : this.plugin.getLanguage().noTownsNationsExist) {
+															if(s.contains("%townOrNation%"))
+																s = s.replace("%townOrNation%", strings[i]);
+															message.add(s);
+														}
+														TownyWarsLanguage.sendFormattedMessage(cs, message);										
+													}
+													return false;
 												}
-											} catch (NotRegisteredException e) {
-												
+										}
+									}else if(hasPermission(cs, this.plugin.getLanguage().adminPermissionNeutral)) { // admin
+										for (int i = 0; i < strings.length; i++) {
+											if(!strings[i].equalsIgnoreCase(neutral))
+												if(TownyUniverse.getInstance().hasTown(strings[i])) {
+													towns.add(TownyUniverse.getInstance().getTown(strings[i]));						
+												}else if(TownyUniverse.getInstance().hasNation(strings[i])) {
+													nations.add(TownyUniverse.getInstance().getNation(strings[i]));											
+												}else {
+													if(this.plugin.getLanguage().noTownsNationsExist!=null) {
+														List<String> message = new ArrayList<String>();
+														for(String s : this.plugin.getLanguage().noTownsNationsExist) {
+															if(s.contains("%townOrNation%"))
+																s = s.replace("%townOrNation%", strings[i]);
+															message.add(s);
+														}
+														TownyWarsLanguage.sendFormattedMessage(cs, message);										
+													}
+													return false;
+												}
+										}
+									}else {
+										TownyWarsLanguage.sendFormattedMessage(cs, this.plugin.getLanguage().noPermissionMessage);
+										return false;
+									}
+								}
+								if(towns!=null && !towns.isEmpty()) {
+									for(Town town : towns) {
+										if(WarManager.isNeutral(town)) {
+											WarManager.setNonNeutral(town);
+											if(this.plugin.getLanguage().selfMessageNeutralOff!=null) {
+												List<String> message = new ArrayList<String>();
+												for(String s : this.plugin.getLanguage().selfMessageNeutralOff) {
+													if(s.contains("%townOrNation%"))
+														s = s.replace("%townOrNation%", town.getName());
+													message.add(s);
+												}
+												TownyWarsLanguage.sendFormattedMessage(cs, message);										
+											}
+											for(Resident r : town.getResidents()) {
+												Player p = WarManager.getPlayerFromResident(r);
+												if(p!=null) {
+													TownyWarsLanguage.sendFormattedMessage(p, this.plugin.getLanguage().neutralMessageOff);
+												}
+											}
+										}else {
+											WarManager.setNeutral(town);
+											if(this.plugin.getLanguage().selfMessageNeutral!=null) {
+												List<String> message = new ArrayList<String>();
+												for(String s : this.plugin.getLanguage().selfMessageNeutral) {
+													if(s.contains("%townOrNation%"))
+														s = s.replace("%townOrNation%", town.getName());
+													message.add(s);
+												}
+												TownyWarsLanguage.sendFormattedMessage(cs, message);										
+											}
+											for(Resident r : town.getResidents()) {
+												Player p = WarManager.getPlayerFromResident(r);
+												if(p!=null) {
+													TownyWarsLanguage.sendFormattedMessage(p, this.plugin.getLanguage().neutral.getMessage());
+												}
 											}
 										}
+									}
 								}
-							}
-						}
-					}
-					if (farg.equals("neutral"))
-					{
-						unknownCommand=false;
-						if (!cs.hasPermission("townywars.neutral"))
-						{
-							cs.sendMessage(ChatColor.RED + "You are not allowed to do this!");
-							return true;
-						}
-						Nation csNation;
-						try
-						{
-							Town csTown = TownyUniverse.getDataSource().getResident(cs.getName()).getTown();
-							csNation = TownyUniverse.getDataSource().getTown(csTown.toString()).getNation();
-						}
-						catch (NotRegisteredException ex)
-						{
-							cs.sendMessage(ChatColor.RED + "You are not not part of a town, or your town is not part of a nation!");
-							Logger.getLogger(WarExecutor.class.getName()).log(Level.SEVERE, null, ex);
-							return true;
-				    	}
-						if ((!cs.isOp()) && (!csNation.toString().equals(strings[1])))
-						{
-							cs.sendMessage(ChatColor.RED + "You may only set your own nation to neutral, not others.");
-							return true;
-						}
-						if (strings.length == 0) {
-							cs.sendMessage(ChatColor.RED + "You must specify a nation to toggle neutrality for (eg. /twar neutral [nation]");
-						}
-						if (strings.length == 1)
-						{
-							String onation = strings[1];
-							Nation t;
-							try
-							{
-								t = TownyUniverse.getDataSource().getNation(onation);
-							}
-							catch (NotRegisteredException ex)
-							{
-								cs.sendMessage(ChatColor.GOLD + "The nation called " + onation + " could not be found!");
+								if(nations!=null && !nations.isEmpty()) {
+									for(Nation nation : nations) {
+										if(WarManager.isNeutral(nation)) {
+											WarManager.setNonNeutral(nation);
+											if(this.plugin.getLanguage().selfMessageNeutralOff!=null) {
+												List<String> message = new ArrayList<String>();
+												for(String s : this.plugin.getLanguage().selfMessageNeutralOff) {
+													if(s.contains("%townOrNation%"))
+														s = s.replace("%townOrNation%", nation.getName());
+													message.add(s);
+												}
+												TownyWarsLanguage.sendFormattedMessage(cs, message);										
+											}
+											for(Resident r : nation.getResidents()) {
+												Player p = WarManager.getPlayerFromResident(r);
+												if(p!=null) {
+													TownyWarsLanguage.sendFormattedMessage(p, this.plugin.getLanguage().neutralMessageOff);
+												}
+											}
+										}else {
+											WarManager.setNeutral(nation);
+											if(this.plugin.getLanguage().selfMessageNeutral!=null) {
+												List<String> message = new ArrayList<String>();
+												for(String s : this.plugin.getLanguage().selfMessageNeutral) {
+													if(s.contains("%townOrNation%"))
+														s = s.replace("%townOrNation%", nation.getName());
+													message.add(s);
+												}
+												TownyWarsLanguage.sendFormattedMessage(cs, message);										
+											}
+											for(Resident r : nation.getResidents()) {
+												Player p = WarManager.getPlayerFromResident(r);
+												if(p!=null) {
+													TownyWarsLanguage.sendFormattedMessage(p, this.plugin.getLanguage().neutral.getMessage());
+												}
+											}
+										}
+									}
+								}
 								return true;
-							}
-							WarManager.getNeutral().put(t.toString(), 0D);
+							}						
 						}
 					}
+					
+					/// *************************   Admin Start War Command   ******************************
 					
 					if (farg.equals("astart"))
 					{

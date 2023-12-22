@@ -11,6 +11,8 @@ messagePrefix: "&8[&eTowny&bWars&8]"
 noPermissionMessage: "&cYou do not have permission to perform this command."
 notInWarErrorMessage: "&cThe specified party is not in a war"
 notInTownErrorMessage: "&cYou are not in a Town!"
+alreadyInWarErrorMessage: "&cThe specified party is already in a war"
+notHighEnoughRankErrorMessage: "&cYou are not high enough rank in your town/nation to complete this command"
 
                                                           ##### Commands and their messages #####
 
@@ -81,14 +83,18 @@ commands: ## These are the actual TownyWars commands. They are all renameable! T
         permission: ""
     neutral:
         name: "neutral"      
-        message:
+        messageBroadcastOn:
             - "&eYour town/nation has declared itself neutral!"
-        messageOff:
+        messageBroadcastOff:
             - "&eYour town/nation has declared itself engageable!"
-        adminMessage: ## Variables: %townOrNation%
-            - "&eYou have declared %townOrNation% as neutral!"
-        adminMessageOff: ## Variables: %townOrNation%
-            - "&eYou have declared %townOrNation% as engageable!"
+        selfMessageOn: ## Variables: %townOrNation%
+            - "&eYou have declared &f%townOrNation% &eas neutral!"
+        selfMessageOff: ## Variables: %townOrNation%
+            - "&eYou have declared &f%townOrNation% &eas engageable!"
+        cannotAddNotUrOwn:
+            - "&cYou can't set a town/nation that is not your own as neutral!"
+        noTownsNationsExist: ## Variables: %townOrNation%
+            - "&cNo town or Nation exists with the name &f%townOrNation%"
         permission: ""
         adminPermission: "townywars.admin"
         

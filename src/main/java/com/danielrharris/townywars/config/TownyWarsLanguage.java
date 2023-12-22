@@ -30,6 +30,8 @@ public class TownyWarsLanguage
 	public String noPermissionMessage;
 	public String notInWarErrorMessage;
 	public String notInTownErrorMessage;
+	public String alreadyInWarErrorMessage;
+	public String notHighEnoughRankInTownErrorMessage;
 	
 	//commands
 	public Command mainCommand;
@@ -45,8 +47,10 @@ public class TownyWarsLanguage
 	public Command showTownDP;
 	public Command neutral;
 	public List<String> neutralMessageOff;
-	public List<String> adminMessageNeutral;
-	public List<String> adminMessageNeutralOff;
+	public List<String> selfMessageNeutral;
+	public List<String> selfMessageNeutralOff;
+	public List<String> cannotAddNotUrOwn;
+	public List<String> noTownsNationsExist;
 	public String adminPermissionNeutral;
 	
 	
@@ -75,6 +79,8 @@ public class TownyWarsLanguage
 		this.noPermissionMessage = language.getString("noPermissionMessage");
 		this.notInWarErrorMessage = language.getString("notInWarErrorMessage");
 		this.notInTownErrorMessage = language.getString("notInTownErrorMessage");
+		this.notHighEnoughRankInTownErrorMessage = language.getString("notHighEnoughRankErrorMessage");
+		this.alreadyInWarErrorMessage = language.getString("alreadyInWarErrorMessage");
 		loadCommands();		
 	}
 	
@@ -90,10 +96,12 @@ public class TownyWarsLanguage
 		this.status = new Command(language.getString("commands.status.name"), language.getStringList("commands.status.message"), language.getString("commands.status.permission"));
 		this.showTownMaxDP = new Command(language.getString("commands.showtownmaxdp.name"), language.getStringList("commands.showtownmaxdp.message"), language.getString("commands.showtownmaxdp.permission"));
 		this.showTownDP = new Command(language.getString("commands.showtowndp.name"), language.getStringList("commands.showtowndp.message"), language.getString("commands.showtowndp.permission"));
-		this.neutral = new Command(language.getString("commands.neutral.name"), language.getStringList("commands.neutral.message"), language.getString("commands.neutral.permission"));
-		this.neutralMessageOff = language.getStringList("commands.neutral.messageOff");
-		this.adminMessageNeutral = language.getStringList("commands.neutral.adminMessage");
-		this.adminMessageNeutralOff = language.getStringList("commands.neutral.adminMessageOff");
+		this.neutral = new Command(language.getString("commands.neutral.name"), language.getStringList("commands.neutral.messageBroadcastOn"), language.getString("commands.neutral.permission"));
+		this.neutralMessageOff = language.getStringList("commands.neutral.messageBroadcastOff");
+		this.selfMessageNeutral = language.getStringList("commands.neutral.selfMessageOn");
+		this.selfMessageNeutralOff = language.getStringList("commands.neutral.selfMessageOff");
+		this.cannotAddNotUrOwn = language.getStringList("commands.neutral.cannotAddNotUrOwn");
+		this.noTownsNationsExist = language.getStringList("commands.neutral.noTownsNationsExist");
 		this.adminPermissionNeutral = language.getString("commands.neutral.adminPermission");
 	}
 	
