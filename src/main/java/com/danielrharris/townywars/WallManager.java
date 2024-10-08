@@ -35,36 +35,34 @@ public class WallManager {
     }
 
     public boolean isWallDetected(Block block, Player player) {
+        // Log entry when method is called
+        Bukkit.getLogger().info("[Wall Detection] Checking wall for player: " + player.getName() + ", Block: " + block.getType() + ", Location: " + block.getLocation());
+    
         // Check if the block is within a claimed territory
         if (TownyAPI.getInstance().getTownBlock(block.getLocation()) == null) {
-            if (player != null) {
-                player.sendMessage(ChatColor.RED + "The wall must be built in claimed territory.");
-            }
+            player.sendMessage(ChatColor.RED + "The wall must be built in claimed territory.");
             return false; // Exit if it's not within a claimed territory
         }
-
-        int count = 0;
-        int maxCount = 384;
-        boolean checked = false;
-        while (count <= maxCount) {
-            if (block.getY() + count <= 300) {
-                Block targetAbove = block.getWorld().getBlockAt(block.getX(), block.getY() + count, block.getZ());
-                if (isValidWallBlock(targetAbove)) return true;
-                checked = true;
+    
+        // Check vertically up and down from the block
+        for (int count = 0; count <= 384; count += 2) {
+            if (checkVertical(block, count, true) || checkVertical(block, count, false)) {
+                return true;
             }
-
-            if (block.getY() - count >= -64) {
-                Block targetBelow = block.getWorld().getBlockAt(block.getX(), block.getY() - count, block.getZ());
-                if (isValidWallBlock(targetBelow)) return true;
-                checked = true;
-            }
-
-            if(!checked) return false;
-            count += 2;
         }
         return false;
     }
-
+    
+    private boolean checkVertical(Block block, int count, boolean isAbove) {
+        int newY = isAbove ? block.getY() + count : block.getY() - count;
+        if (newY > 300 || newY < -64) return false; // Exceeds world height or depth
+        Block targetBlock = block.getWorld().getBlockAt(block.getX(), newY, block.getZ());
+        if (isValidWallBlock(targetBlock)) {
+            Bukkit.getLogger().info("[Wall Detection] Wall detected at: " + targetBlock.getLocation());
+            return true;
+        }
+        return false;
+    }
 
     public String generateUniqueBlockIdentifier(Location location) {
         return location.getWorld().getUID().toString() + "_" + location.getBlockX() + "_" + location.getBlockY() + "_" + location.getBlockZ();
@@ -224,46 +222,58 @@ public class WallManager {
         return widthX >= 3 || widthZ >= 3;
     }
 
-    public void movePlayerFromWall(TownyWars plugin){
+    public void movePlayerFromWall(TownyWars plugin) {
         final Map<Player, Stack<Location>> pastLocation = new HashMap<>();
-        final int storeLimit = 10; // You can set this to an appropriate value
-
+        final int storeLimit = 10; // You can adjust this value as needed
+    
         new BukkitRunnable() {
-            long timeTrack = System.currentTimeMillis();
-
+            long timeTrack = System.currentTimeMillis();  // Define timeTrack here
+    
             @Override
             public void run() {
                 for (Player target : Bukkit.getOnlinePlayers()) {
-                    Tuple<Boolean, Boolean> verifyTowny = townyVerification(target, target.getLocation());
-                    boolean isWallDetected = isWallDetected(target.getLocation().getBlock(), target);
-                    boolean partOfTown = verifyTowny.a();
-                    boolean playerInTown = verifyTowny.b();
-
-                    if (!partOfTown || playerInTown) continue;
-
-                    if (isWallDetected) {
-                        for (int i = 1; i < storeLimit - 1; i++) {
-                            if (!pastLocation.containsKey(target)) break;
-                            if (i >= pastLocation.get(target).size()) break;
-                            Block targetPosition = pastLocation.get(target).elementAt(pastLocation.get(target).size() - i).getBlock();
-                            if (!isWallDetected(targetPosition, target) || i + 1 >= storeLimit - 1) {
-                                Location targetLocation = targetPosition.getLocation();
-                                targetLocation.setDirection(target.getLocation().getDirection());
-                                Bukkit.getScheduler().runTask(plugin, () -> target.teleport(targetLocation));
-                                break;
-                            }
-                        }
-                    } else {
-                        if (System.currentTimeMillis() - timeTrack >= 500) {
-                            if (!pastLocation.containsKey(target)) pastLocation.put(target, new Stack<>());
-                            Stack<Location> locationStack = pastLocation.get(target);
-                            locationStack.push(target.getLocation());
-                            if (locationStack.size() > storeLimit) locationStack.removeElementAt(0);
-                            timeTrack = System.currentTimeMillis();
+                    if (target.getLocation().getBlock().getType() != Material.AIR) {  // Check if the player is not in an AIR block
+                        Tuple<Boolean, Boolean> verifyTowny = townyVerification(target, target.getLocation());
+                        boolean partOfTown = verifyTowny.a();
+                        boolean playerInTown = verifyTowny.b();
+    
+                        if (!partOfTown || playerInTown) continue;
+    
+                        Block targetBlock = target.getLocation().getBlock();
+                        boolean isWallDetected = isWallDetected(targetBlock, target);
+                        if (isWallDetected) {
+                            handleDetectedWall(pastLocation, target, storeLimit);
+                        } else {
+                            updatePastLocation(pastLocation, target, timeTrack);
                         }
                     }
                 }
             }
-        }.runTaskTimerAsynchronously(plugin, 0, 0);
+    
+            private void handleDetectedWall(Map<Player, Stack<Location>> pastLocation, Player target, int limit) {
+                for (int i = 1; i < limit - 1; i++) {
+                    if (!pastLocation.containsKey(target)) break;
+                    Stack<Location> locations = pastLocation.get(target);
+                    if (i >= locations.size()) break;
+    
+                    Block targetPosition = locations.elementAt(locations.size() - i).getBlock();
+                    if (!isWallDetected(targetPosition, target) || i + 1 >= limit - 1) {
+                        Location targetLocation = targetPosition.getLocation();
+                        targetLocation.setDirection(target.getLocation().getDirection());
+                        Bukkit.getScheduler().runTask(plugin, () -> target.teleport(targetLocation));
+                        break;
+                    }
+                }
+            }
+    
+            private void updatePastLocation(Map<Player, Stack<Location>> pastLocation, Player target, long lastTrackTime) {
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastTrackTime >= 500) {
+                    pastLocation.computeIfAbsent(target, k -> new Stack<>()).push(target.getLocation());
+                    timeTrack = currentTime;  // Update the last tracked time
+                }
+            }
+        }.runTaskTimerAsynchronously(plugin, 0, 20);  // Run this task asynchronously every tick
     }
+    
 }

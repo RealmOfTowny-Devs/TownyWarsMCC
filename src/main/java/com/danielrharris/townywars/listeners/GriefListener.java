@@ -165,21 +165,27 @@ public class GriefListener implements Listener {
         }
     }
 
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void blockBreak(BlockBreakEvent event) {
-        Tuple<Boolean, Boolean> verifyTowny = townyVerification(event.getPlayer(), event.getBlock().getLocation());
-        boolean isWallDetected = mplugin.getWallManager().isWallDetected(event.getBlock(), event.getPlayer());
+        Block block = event.getBlock();
+        if (block.getType() == Material.AIR) {
+            return; // Do not process AIR blocks
+        }
+    
+        Tuple<Boolean, Boolean> verifyTowny = townyVerification(event.getPlayer(), block.getLocation());
+        boolean isWallDetected = mplugin.getWallManager().isWallDetected(block, event.getPlayer());
         boolean partOfTown = verifyTowny.a();
         boolean playerInTown = verifyTowny.b();
-
-        if(isWallDetected && partOfTown && !playerInTown) {
+    
+        Bukkit.getLogger().info("BlockBreak called: isWallDetected=" + isWallDetected + ", partOfTown=" + partOfTown + ", playerInTown=" + playerInTown);
+    
+        if (isWallDetected && partOfTown && !playerInTown) {
             try {
-                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(event.getBlock().getLocation()));
+                TownBlock townBlock = TownyUniverse.getInstance().getTownBlock(WorldCoord.parseWorldCoord(block.getLocation()));
                 if (townBlock != null) {
                     // Capture a snapshot before the block is broken
                     PlotBlockData snapshot = new PlotBlockData(townBlock);
-
+    
                     // Asynchronously save the snapshot
                     Bukkit.getScheduler().runTaskAsynchronously(TownyWars.getInstance(), () -> {
                         try {
@@ -192,11 +198,12 @@ public class GriefListener implements Listener {
             } catch (NotRegisteredException ignored) {
                 return;
             }
-
+    
             // Cancel the block break event
             event.setCancelled(true);
         }
     }
+    
 
     private void saveSnapshot(PlotBlockData snapshot, String blockName) throws IOException {
         if (!townyWarsDataDir.exists()) {
