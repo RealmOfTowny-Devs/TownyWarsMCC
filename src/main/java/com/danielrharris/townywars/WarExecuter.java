@@ -51,22 +51,27 @@ class WarExecutor implements CommandExecutor {
             return true;
         }
         String farg = strings[0];
-        if (farg.equals("reload")) {
-            unknownCommand = false;
+        if (farg.equalsIgnoreCase("admin") && strings.length > 1 && strings[1].equalsIgnoreCase("help")) {
             if (!cs.hasPermission("townywars.admin")) {
-                return false;
+                cs.sendMessage(ChatColor.RED + "You do not have permission to view the admin commands.");
+                return true;
             }
-            cs.sendMessage(ChatColor.GREEN + "Reloading plugin...");
-            PluginManager pm = Bukkit.getServer().getPluginManager();
-            pm.disablePlugin(this.plugin);
-            pm.enablePlugin(this.plugin);
-            cs.sendMessage(ChatColor.GREEN + "Plugin reloaded!");
+            cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
+            cs.sendMessage(ChatColor.BLUE + " Towny Wars " + ChatColor.WHITE + "Admin Commands");
+            cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
+            cs.sendMessage(ChatColor.WHITE + "/twar reload " + ChatColor.GRAY + "- Reload the plugin");
+            cs.sendMessage(ChatColor.WHITE + "/twar astart [nation] [nation] " + ChatColor.GRAY + "- Force nations into war");
+            cs.sendMessage(ChatColor.WHITE + "/twar aend [nation] [nation] " + ChatColor.GRAY + "- Force end war between nations");
+            cs.sendMessage(ChatColor.WHITE + "/twar aaddtowndp [town] " + ChatColor.GRAY + "- Add DP to town");
+            cs.sendMessage(ChatColor.WHITE + "/twar aremovetowndp [town] " + ChatColor.GRAY + "- Remove DP from town");
+            cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
+            return true;
         }
         if (farg.equals("help")) {
             cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
-            cs.sendMessage(ChatColor.BLUE + " Towny Wars " + ChatColor.WHITE + "Help");
+            cs.sendMessage(ChatColor.BLUE + " Towny Wars " + ChatColor.WHITE + "General Help");
             cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
-
+    
             // General Commands
             cs.sendMessage(ChatColor.GOLD + "General Commands");
             cs.sendMessage(ChatColor.WHITE + "/twar " + ChatColor.GRAY + "- Displays the TownyWars configuration information");
@@ -76,46 +81,24 @@ class WarExecutor implements CommandExecutor {
             cs.sendMessage(ChatColor.WHITE + "/twar status [nation] " + ChatColor.GRAY + "- Displays a nation's towns and their defense points");
             cs.sendMessage(ChatColor.WHITE + "/twar showtowndp " + ChatColor.GRAY + "- Shows your town's current defense points");
             cs.sendMessage(ChatColor.WHITE + "/twar showtownmaxdp " + ChatColor.GRAY + "- Shows your town's max defense points");
-
+    
             // Leader Commands
-            if (cs.hasPermission("townywars.leader")) {
-                cs.sendMessage(ChatColor.GOLD + "Leader Commands");
-                cs.sendMessage(ChatColor.WHITE + "/twar repair " + ChatColor.GRAY + "- Repair war grief using town bank funds");
-                cs.sendMessage(ChatColor.WHITE + "/twar declare [nation] " + ChatColor.GRAY + "- Declare war on another nation");
-                cs.sendMessage(ChatColor.WHITE + "/twar end " + ChatColor.GRAY + "- Request war termination (KING/ASSISTANT only)");
-                cs.sendMessage(ChatColor.WHITE + "/twar ideology [ideology] " + ChatColor.GRAY + "- Set town ideology (Economic, Religious, Militaristic)");
-            }
-
+            cs.sendMessage(ChatColor.GOLD + "Leader Commands");
+            cs.sendMessage(ChatColor.WHITE + "/twar repair " + ChatColor.GRAY + "- Repair war grief using town bank funds");
+            cs.sendMessage(ChatColor.WHITE + "/twar declare [nation] " + ChatColor.GRAY + "- Declare war on another nation");
+            cs.sendMessage(ChatColor.WHITE + "/twar end " + ChatColor.GRAY + "- Request war termination (KING/ASSISTANT only)");
+            cs.sendMessage(ChatColor.WHITE + "/twar ideology [ideology] " + ChatColor.GRAY + "- Set town ideology (Economic, Religious, Militaristic)");
+    
             // Rebellion Commands
-            if (cs instanceof Player) {
-                Player p = (Player) cs;
-                try {
-                    Resident res = TownyUniverse.getInstance().getResident(p.getName());
-                    if (res.getTown().getNation().getCapital() != res.getTown()) {
-                        cs.sendMessage(ChatColor.GOLD + "Rebellion Commands");
-                        cs.sendMessage(ChatColor.WHITE + "/twar createrebellion [name] " + ChatColor.GRAY + "- Create a rebellion");
-                        cs.sendMessage(ChatColor.WHITE + "/twar joinrebellion [name] " + ChatColor.GRAY + "- Join a rebellion");
-                        cs.sendMessage(ChatColor.WHITE + "/twar leaverebellion " + ChatColor.GRAY + "- Leave a rebellion");
-                        cs.sendMessage(ChatColor.WHITE + "/twar showrebellion " + ChatColor.GRAY + "- View your rebellion");
-                        cs.sendMessage(ChatColor.WHITE + "/twar executerebellion " + ChatColor.GRAY + "- Start rebellion war");
-                    }
-                } catch (Exception e) {
-                    return true;
-                }
-            }
-
-            // Admin Commands
-            if (cs.hasPermission("townywars.admin")) {
-                cs.sendMessage(ChatColor.GOLD + "Admin Commands");
-                cs.sendMessage(ChatColor.WHITE + "/twar reload " + ChatColor.GRAY + "- Reload the plugin");
-                cs.sendMessage(ChatColor.WHITE + "/twar astart [nation] [nation] " + ChatColor.GRAY + "- Force nations into war");
-                cs.sendMessage(ChatColor.WHITE + "/twar aend [nation] [nation] " + ChatColor.GRAY + "- Force end war between nations");
-                cs.sendMessage(ChatColor.WHITE + "/twar aaddtowndp [town] " + ChatColor.GRAY + "- Add DP to town");
-                cs.sendMessage(ChatColor.WHITE + "/twar aremovetowndp [town] " + ChatColor.GRAY + "- Remove DP from town");
-            }
-
+            cs.sendMessage(ChatColor.GOLD + "Rebellion Commands");
+            cs.sendMessage(ChatColor.WHITE + "/twar createrebellion [name] " + ChatColor.GRAY + "- Create a rebellion");
+            cs.sendMessage(ChatColor.WHITE + "/twar joinrebellion [name] " + ChatColor.GRAY + "- Join a rebellion");
+            cs.sendMessage(ChatColor.WHITE + "/twar leaverebellion " + ChatColor.GRAY + "- Leave a rebellion");
+            cs.sendMessage(ChatColor.WHITE + "/twar showrebellion " + ChatColor.GRAY + "- View your rebellion");
+            cs.sendMessage(ChatColor.WHITE + "/twar executerebellion " + ChatColor.GRAY + "- Start rebellion war");
+    
             cs.sendMessage(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "==========================");
-
+    
             return true;
         }
 

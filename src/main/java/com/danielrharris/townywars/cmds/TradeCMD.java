@@ -60,17 +60,29 @@ public class TradeCMD {
                     Town town = TownyUniverse.getInstance().getTown(townName);
                     assert resident != null;
                     Town rTown = resident.getTown();
-
+        
                     if (tc.getConfigurationSection(rTown.getName()) != null) {
                         if (rTown.hasResidentWithRank(resident, "Assistant") || rTown.getMayor() == resident) {
-                            SLocation sPickOff = SLocation.deSerialize(tc.getString(rTown.getName() + ".pickoff"));
+                            String sPickOffString = tc.getString(rTown.getName() + ".pickoff");
+                            if (sPickOffString == null) {
+                                player.sendMessage("§cPick-off location not set!");
+                                return;
+                            }
+                            SLocation sPickOff = SLocation.deSerialize(sPickOffString);
                             Location pickoff = sPickOff.toLocation();
-                            SLocation sDropOff = SLocation.deSerialize(tc.getString(townName + ".dropoff"));
+        
+                            String sDropOffString = tc.getString(townName + ".dropoff");
+                            if (sDropOffString == null) {
+                                player.sendMessage("§cDrop-off location not set!");
+                                return;
+                            }
+                            SLocation sDropOff = SLocation.deSerialize(sDropOffString);
                             Location dropoff = sDropOff.toLocation();
-
+        
                             ItemStack stack = null;
-                            SLocation sPickUpChestLoc = SLocation.deSerialize(tc.getString(rTown.getName() + ".pickup"));
-                            if (sPickUpChestLoc != null) {
+                            String sPickUpChestString = tc.getString(rTown.getName() + ".pickup");
+                            if (sPickUpChestString != null) {
+                                SLocation sPickUpChestLoc = SLocation.deSerialize(sPickUpChestString);
                                 Location pickUpChestLoc = sPickUpChestLoc.toLocation();
                                 Block chestBlock = pickUpChestLoc.getBlock();
                                 if (chestBlock.getType() == Material.CHEST) {
@@ -84,30 +96,31 @@ public class TradeCMD {
                                     }
                                 }
                             }
-
-
+        
                             if (stack == null || stack.getType().equals(Material.AIR)) {
                                 player.sendMessage("§cNo items available in the pickup chest for trading!");
                                 return;
                             }
-
+                            
                             World world = pickoff.getWorld();
                             Horse entity = (Horse) world.spawnEntity(pickoff, EntityType.HORSE);
-                            entity.setAI(false);
-
+                            entity.setTamed(true); // Ensure the horse is tamed to avoid it running off.
+                            entity.setAdult(); // Ensure the horse is not a baby for obvious size reasons.
+                            entity.setAI(false); // Turning off AI to manually control its path.
+                            
                             double totalDistance = pickoff.distance(dropoff);
-                            double speed = TownyWars.getInstance().getConfig().getDouble("trade.speed");
-                            double distancePerTick = speed / 20.0 * totalDistance;
-
-                            ItemStack finalStack = stack;
+                            double speed = TownyWars.getInstance().getConfig().getDouble("trade.speed", 0.25); // Default speed if not set
+                            double ticksToComplete = totalDistance / speed;
+                            long tickInterval = 1; // Run every tick for smooth movement
+                            
                             new BukkitRunnable() {
-                                double traveledDistance = 0.0;
-
+                                private double elapsedTicks = 0;
+                            
                                 @Override
                                 public void run() {
-                                    double fractionTraveled = traveledDistance / totalDistance;
-
-                                    if (fractionTraveled > 1) {
+                                    if (elapsedTicks >= ticksToComplete) {
+                                        // Finalize the trade and reward both towns
+                                        Bukkit.getScheduler().runTaskLater(TownyWars.getInstance(), entity::remove, 20L); // Remove horse after 1 second
                                         double reward = TownyWars.getInstance().getConfig().getDouble("trade.reward");
                                         town.getAccount().deposit(reward, "Trade Complete with Town \"" + rTown.getName() + "\"");
                                         town.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&',
@@ -115,77 +128,26 @@ public class TradeCMD {
                                         rTown.getAccount().deposit(reward, "Trade Complete with Town \"" + town.getName() + "\"");
                                         rTown.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&',
                                                 "&aTrade Complete with Town \"" + rTown.getName() + "\"" + " &b+$" + reward)));
-
-                                        // Check the pickup chest location and attempt to add the item
-                                        String pickupLocString = tc.getString(town.getName() + ".pickup");
-                                        if (pickupLocString != null) {
-                                            SLocation sPickUp = null;
-                                            try {
-                                                sPickUp = SLocation.deSerialize(pickupLocString);
-                                            } catch (IOException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                            Location pickupLoc = sPickUp.toLocation();
-                                            Block block = pickupLoc.getBlock();
-                                            if (block.getState() instanceof Chest) {
-                                                Chest chest = (Chest) block.getState();
-                                                if (chest.getBlockInventory().addItem(finalStack).isEmpty()) {
-                                                    player.sendMessage("§aTrade item added to the pickup chest!");
-                                                } else {
-                                                    entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
-                                                    player.sendMessage("§cPickup chest is full, item dropped on ground!");
-                                                }
-                                            } else {
-                                                entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
-                                                player.sendMessage("§cPickup chest no longer exists, item dropped on ground!");
-                                            }
-                                        } else {
-                                            entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
-                                            player.sendMessage("§cNo pickup chest set, item dropped on ground!");
-                                        }
-
-                                        Bukkit.getScheduler().runTaskLater(TownyWars.getInstance(), entity::remove, 30 * 20);
+                            
                                         this.cancel();
                                         return;
                                     }
-
+                            
+                                    double fractionTraveled = elapsedTicks / ticksToComplete;
                                     double x = pickoff.getX() + fractionTraveled * (dropoff.getX() - pickoff.getX());
-                                    double y = pickoff.getY() + fractionTraveled * (dropoff.getY() - pickoff.getY());
                                     double z = pickoff.getZ() + fractionTraveled * (dropoff.getZ() - pickoff.getZ());
-
+                                    double y = getGroundYLevel(new Location(world, x, pickoff.getY(), z), new Vector(dropoff.getX() - pickoff.getX(), 0, dropoff.getZ() - pickoff.getZ())) + 1.0; // Adjust Y based on ground level
+                            
                                     Location nextLocation = new Location(world, x, y, z);
-                                    Vector direction = dropoff.clone().subtract(nextLocation).toVector();
-                                    if (!isPathClear(nextLocation, direction)) {
-                                        // Set the location to the top of the obstacle
-                                        nextLocation.setY(getTopYLevel(nextLocation, direction));
-                                    } else {
-                                        // Descend to the ground level if there's nothing beneath or if path below isn't clear
-                                        double groundY = getGroundYLevel(nextLocation, direction);
-                                        nextLocation.setY(groundY);
-                                    }
-
-                                    // 3. Load Chunks
-                                    Chunk chunk = nextLocation.getChunk();
-                                    if (!chunk.isLoaded()) {
-                                        chunk.load();
-                                    }
-
-                                    if (entity.isDead()) {
-                                        entity.getLocation().getWorld().dropItem(entity.getLocation(), finalStack);
-                                        cancel();
-                                    }
-                                    nextLocation.setDirection(direction);
                                     entity.teleport(nextLocation);
-
-                                    // 4. Move the Entity
-
-                                    traveledDistance += distancePerTick;
+                            
+                                    elapsedTicks += tickInterval;
                                 }
-
-                            }.runTaskTimer(TownyWars.getInstance(), 0L, 1L);
-                        } else {
-                            player.sendMessage("§cYou need to be either the §nMayor§c or an §nAssistant§c to initiate a trade!");
-                        }
+                            }.runTaskTimer(TownyWars.getInstance(), 0L, tickInterval);                            
+                            
+                            } else {
+                                player.sendMessage("§cYou need to be either the §nMayor§c or an §nAssistant§c to initiate a trade!");
+                            }
                     } else {
                         player.sendMessage("§cTrade setup incomplete. Set your §npick-off§c and §ndrop-off§c locations!");
                     }
